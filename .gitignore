@@ -1,0 +1,25 @@
+# Build outputs & large binaries - DO NOT commit
+dist/
+desktop/electron/node_modules/
+desktop/electron/dist/
+
+# Maven build
+backend/restaurant-pos-api/target/
+*.jar
+
+# Node modules (frontend)
+frontend/angular-pos/node_modules/
+frontend/angular-pos/dist/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

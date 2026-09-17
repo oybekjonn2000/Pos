@@ -1,0 +1,181 @@
+package com.restaurantpos.orders.controller;
+
+import com.restaurantpos.auth.security.UserPrincipal;
+import com.restaurantpos.common.response.ApiResponse;
+import com.restaurantpos.orders.dto.OrderDto;
+import com.restaurantpos.orders.service.OrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/orders")
+@RequiredArgsConstructor
+@Tag(name = "Orders", description = "POS Orders Lifecycle API")
+@PreAuthorize("!hasRole('KITCHEN')")
+public class OrderController {
+
+    private final OrderService orderService;
+
+    @GetMapping({"", "/active"})
+    @Operation(summary = "Get active orders with optional pagination")
+    public ResponseEntity<ApiResponse<List<OrderDto.Response>>> getActiveOrders(
+            @AuthenticationPrincipal UserPrincipal user,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null) {
+            org.springframework.data.domain.Pageable pageable = com.restaurantpos.common.config.PaginationUtils.safePageable(page, size);
+            org.springframework.data.domain.Page<OrderDto.Response> pageResult = orderService.getActiveOrdersPaginated(user.getTenantId(), user, pageable);
+            return ResponseEntity.ok(ApiResponse.success(pageResult.getContent(), ApiResponse.PageMeta.of(pageResult)));
+        }
+        List<OrderDto.Response> orders = orderService.getActiveOrders(user.getTenantId(), user);
+        return ResponseEntity.ok(ApiResponse.success(orders));
+    }
+
+    @GetMapping("/history")
+    @Operation(summary = "Get paid/closed orders history with optional pagination")
+    public ResponseEntity<ApiResponse<List<OrderDto.Response>>> getOrderHistory(
+            @RequestParam(required = false) UUID tableId,
+            @RequestParam(required = false) String paymentMethod,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @AuthenticationPrincipal UserPrincipal user) {
+        if (page != null) {
+            org.springframework.data.domain.Pageable pageable = com.restaurantpos.common.config.PaginationUtils.safePageable(page, size);
+            org.springframework.data.domain.Page<OrderDto.Response> pageResult = orderService.getOrderHistoryPaginated(user.getTenantId(), tableId, paymentMethod, search, user, pageable);
+            return ResponseEntity.ok(ApiResponse.success(pageResult.getContent(), ApiResponse.PageMeta.of(pageResult)));
+        }
+        List<OrderDto.Response> orders = orderService.getOrderHistory(user.getTenantId(), tableId, paymentMethod, search, user);
+        return ResponseEntity.ok(ApiResponse.success(orders));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Get order by ID")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> getOrder(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.getOrderById(id, user.getTenantId(), user);
+        return ResponseEntity.ok(ApiResponse.success(order));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('CREATE_ORDER')")
+    @Operation(summary = "Create new order")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> createOrder(
+            @Valid @RequestBody OrderDto.CreateRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.createOrder(user.getTenantId(), user.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order created successfully"));
+    }
+
+    @PostMapping("/{id}/items")
+    @PreAuthorize("hasAuthority('EDIT_ORDER')")
+    @Operation(summary = "Add items to existing order")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> addItems(
+            @PathVariable UUID id,
+            @Valid @RequestBody OrderDto.AddItemsRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.addItemsToOrder(id, user.getTenantId(), user, request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Items added to order"));
+    }
+
+    @PostMapping("/{id}/send-to-kitchen")
+    @PreAuthorize("hasAnyAuthority('CREATE_ORDER', 'EDIT_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
+    @Operation(summary = "Send NEW items in order to kitchen stations without re-sending already-sent items")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> sendToKitchen(
+            @PathVariable UUID id,
+            @RequestBody(required = false) OrderDto.SendToKitchenRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.sendNewItemsToKitchen(id, user.getTenantId(), user, request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Yangi mahsulotlar oshxonaga muvaffaqiyatli yuborildi"));
+    }
+
+    @GetMapping("/{id}/batches")
+    @Operation(summary = "Get all kitchen batches (rounds) for an order")
+    public ResponseEntity<ApiResponse<List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>>> getOrderBatches(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response> batches = orderService.getOrderBatches(id, user.getTenantId());
+        return ResponseEntity.ok(ApiResponse.success(batches));
+    }
+
+    @DeleteMapping("/{id}/items/{itemId}")
+    @PreAuthorize("hasAuthority('EDIT_ORDER')")
+    @Operation(summary = "Void an item from order with reason")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> voidItem(
+            @PathVariable UUID id,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody OrderDto.VoidItemRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.voidOrderItem(id, itemId, user.getUserId(), user.getTenantId(), user, request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Item voided"));
+    }
+
+    @PutMapping("/{id}/discount")
+    @PreAuthorize("hasAuthority('APPLY_DISCOUNT')")
+    @Operation(summary = "Apply discount to order")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> applyDiscount(
+            @PathVariable UUID id,
+            @Valid @RequestBody OrderDto.ApplyDiscountRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        UUID tenantId = user != null ? user.getTenantId() : null;
+        OrderDto.Response order = orderService.applyDiscount(id, tenantId, user, request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Discount applied"));
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('EDIT_ORDER') or hasRole('ADMIN') or hasRole('MANAGER') or hasRole('WAITER')")
+    @Operation(summary = "Update order status")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> updateStatus(
+            @PathVariable UUID id,
+            @Valid @RequestBody OrderDto.UpdateStatusRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        UUID tenantId = user != null ? user.getTenantId() : null;
+        OrderDto.Response order = orderService.updateOrderStatus(id, tenantId, user, request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order status updated"));
+    }
+
+    @PostMapping("/{id}/items/{itemId}/cancel")
+    @PreAuthorize("hasAnyAuthority('EDIT_ORDER', 'DELETE_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
+    @Operation(summary = "Cancel an order item (full or partial quantity) with mandatory reason")
+    public ResponseEntity<ApiResponse<com.restaurantpos.orders.dto.CancellationReceiptDto.CancellationResult>> cancelItem(
+            @PathVariable UUID id,
+            @PathVariable UUID itemId,
+            @Valid @RequestBody com.restaurantpos.orders.dto.CancellationReceiptDto.CancelItemRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        com.restaurantpos.orders.dto.CancellationReceiptDto.CancellationResult result =
+                orderService.cancelOrderItem(id, itemId, user.getUserId(), user.getTenantId(), user, request);
+        return ResponseEntity.ok(ApiResponse.success(result, "Mahsulot bekor qilindi"));
+    }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyAuthority('DELETE_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
+    @Operation(summary = "Cancel full order with mandatory reason")
+    public ResponseEntity<ApiResponse<com.restaurantpos.orders.dto.CancellationReceiptDto.CancellationResult>> cancelOrder(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.restaurantpos.orders.dto.CancellationReceiptDto.CancelOrderRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        com.restaurantpos.orders.dto.CancellationReceiptDto.CancellationResult result =
+                orderService.cancelOrder(id, user.getUserId(), user.getTenantId(), user, request);
+        return ResponseEntity.ok(ApiResponse.success(result, "Buyurtma to'liq bekor qilindi"));
+    }
+
+    @GetMapping("/{id}/cancellation-receipts")
+    @Operation(summary = "Get cancellation receipts for order")
+    public ResponseEntity<ApiResponse<List<com.restaurantpos.orders.dto.CancellationReceiptDto.Response>>> getCancellationReceipts(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        List<com.restaurantpos.orders.dto.CancellationReceiptDto.Response> receipts =
+                orderService.getCancellationReceipts(id, user.getTenantId(), user);
+        return ResponseEntity.ok(ApiResponse.success(receipts));
+    }
+}
