@@ -99,6 +99,16 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Yangi mahsulotlar oshxonaga muvaffaqiyatli yuborildi"));
     }
 
+    @PostMapping("/{id}/close")
+    @PreAuthorize("hasAnyAuthority('CREATE_ORDER', 'EDIT_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
+    @Operation(summary = "Hisobni yopish (Stolni bo'shatadi, buyurtma CLOSED/UNPAID holatga o'tadi)")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> closeOrder(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.closeOrder(id, user.getTenantId(), user);
+        return ResponseEntity.ok(ApiResponse.success(order, "Hisob muvaffaqiyatli yopildi. Stol bo'shatildi."));
+    }
+
     @GetMapping("/{id}/batches")
     @Operation(summary = "Get all kitchen batches (rounds) for an order")
     public ResponseEntity<ApiResponse<List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>>> getOrderBatches(

@@ -247,6 +247,36 @@ public class PrintRoutingService {
     }
 
     /**
+     * Dispatches bill / hisob cheki print job to the primary cashier printer upon closing an account.
+     * Event: ACCOUNT_CLOSED.
+     * Printed with TO'LOV HOLATI: TO'LANMAGAN.
+     */
+    @Transactional
+    public Order routeAndPrintBill(Order order) {
+        UUID tenantId = order.getTenant().getId();
+        UUID orderId = order.getId();
+
+        log.info("[ACCOUNT_CLOSED] Dispatching hisob cheki for orderId: {}, orderNumber: {}",
+                orderId, order.getOrderNumber());
+
+        order.setReceiptPrintStatus(Order.ReceiptPrintStatus.PRINTING);
+        order.setReceiptPrintAttempts(order.getReceiptPrintAttempts() + 1);
+        order = orderRepository.save(order);
+
+        // Find Cashier Printer
+        Printer cashierPrinter = findCashierPrinter(tenantId);
+        if (cashierPrinter == null) {
+            log.warn("[PRINT_FAILED] Hisob cheki chop etish uchun kassa chek printeri topilmadi yoki sozlanmagan. OrderId: {}",
+                    orderId);
+            order.setReceiptPrintStatus(Order.ReceiptPrintStatus.PRINT_FAILED);
+            order.setReceiptPrintError("Kassa chek printeri topilmadi yoki sozlanmagan");
+            return orderRepository.save(order);
+        }
+
+        return printReceiptSafely(cashierPrinter, order, null, false);
+    }
+
+    /**
      * Dispatches receipt print job to the primary cashier printer.
      * Guaranteed duplicate prevention & safe non-blocking execution.
      */

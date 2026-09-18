@@ -112,7 +112,6 @@ export interface KitchenOrderBatch {
   waiterName?: string;
   customerName?: string;
   customerPhone?: string;
-  deliveryAddress?: string;
   kitchenId?: string;
   kitchenName?: string;
   kitchenCode?: string;
@@ -202,6 +201,22 @@ export class KitchenService {
     return this.http.put<ApiResponse<KitchenOrderBatchItem>>(`${this.API}/batches/items/${itemId}/status`, {}, {
       params: new HttpParams().set('status', status)
     });
+  }
+
+  updateTableStatus(tableId: string, status: string, kitchenId?: string): Observable<ApiResponse<KitchenOrderBatch[]>> {
+    let params = new HttpParams().set('status', status);
+    if (kitchenId) {
+      params = params.set('kitchenId', kitchenId);
+    }
+    return this.http.put<ApiResponse<KitchenOrderBatch[]>>(`${this.API}/tables/${tableId}/status`, {}, { params });
+  }
+
+  updateOrderBatchesStatus(orderId: string, status: string, kitchenId?: string): Observable<ApiResponse<KitchenOrderBatch[]>> {
+    let params = new HttpParams().set('status', status);
+    if (kitchenId) {
+      params = params.set('kitchenId', kitchenId);
+    }
+    return this.http.put<ApiResponse<KitchenOrderBatch[]>>(`${this.API}/orders/${orderId}/batches/status`, {}, { params });
   }
 
   getKitchenOrders(kitchenId?: string): Observable<ApiResponse<Order[]>> {

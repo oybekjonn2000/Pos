@@ -40,7 +40,7 @@ export interface PosCartItem {
       <div class="pos-menu">
         <!-- Top Search and Table selector bar -->
         <div class="pos-toolbar">
-          <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <button class="btn-change-table" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); display: flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13px;" (click)="onLeaveTable()" title="Stollar xaritasiga qaytish">
               ⬅ Stollar
             </button>
@@ -49,6 +49,9 @@ export interface PosCartItem {
               @if (selectedTable()) {
                 <div class="table-badge__info">
                   <strong>{{ selectedTable()?.name }}</strong> (#{{ selectedTable()?.tableNumber }})
+                  @if (zonePercentage() > 0) {
+                    <span class="zone-pct-pill">{{ zoneName() }}: {{ zonePercentage() }}%</span>
+                  }
                 </div>
                 <button class="btn-change-table" (click)="onLeaveTable()">O'zgartirish</button>
               } @else {
@@ -136,9 +139,14 @@ export interface PosCartItem {
       <div class="pos-cart">
         <div class="cart-header">
           <div class="cart-title">
-            <span>🛒 Buyurtma</span>
-            @if (selectedTable()) {
-              <span class="cart-table-pill">{{ selectedTable()?.name }}</span>
+            @if (orderType() === 'TAKEAWAY') {
+              <span>🛍 Olib Ketish</span>
+              <span class="cart-table-pill takeaway-pill">TAKEAWAY</span>
+            } @else {
+              <span>🛒 Buyurtma</span>
+              @if (selectedTable()) {
+                <span class="cart-table-pill">{{ selectedTable()?.name }}</span>
+              }
             }
           </div>
           <div class="cart-header-actions">
@@ -249,10 +257,12 @@ export interface PosCartItem {
             <span>Jami:</span>
             <span>{{ formatPrice(subtotal()) }}</span>
           </div>
-          <div class="summary-row">
-            <span>Xizmat haqi (10%):</span>
-            <span>{{ formatPrice(serviceCharge()) }}</span>
-          </div>
+          @if (zonePercentage() > 0) {
+            <div class="summary-row">
+              <span>{{ zoneName() }} foizi ({{ zonePercentage() }}%):</span>
+              <span>{{ formatPrice(placeFee()) }}</span>
+            </div>
+          }
           <div class="summary-row summary-row--total">
             <span>Umumiy Summa:</span>
             <span>{{ formatPrice(total()) }}</span>
@@ -268,64 +278,14 @@ export interface PosCartItem {
                 <span class="new-count-badge">{{ newItemsCount() }} ta yangi</span>
               }
             </button>
-            @if (canProcessPayment()) {
-              <button class="btn-pay" 
-                      [disabled]="subtotal() === 0 || isSubmitting()"
-                      (click)="openPaymentModal()">
-                💳 To'lov Qilish
-              </button>
-            }
+            <button class="btn-close-bill" 
+                    [disabled]="!canCloseBill()"
+                    (click)="closeBill()">
+              🔒 HISOBNI YOPISH
+            </button>
           </div>
         </div>
       </div>
-
-      <!-- Payment Modal -->
-      @if (showPaymentModal()) {
-        <div class="modal-backdrop" (click)="closePaymentModal()">
-          <div class="modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h3>To'lov Qabul Qilish</h3>
-              <button class="modal-close" (click)="closePaymentModal()">✕</button>
-            </div>
-            <div class="modal-body">
-              <div class="payment-total-box">
-                <span>To'lanishi kerak bo'lgan summa:</span>
-                <h2>{{ formatPrice(total()) }}</h2>
-              </div>
-
-              <div class="form-group">
-                <label>To'lov Usuli</label>
-                <div class="payment-methods">
-                  <button type="button" class="method-btn" [class.method-btn--active]="paymentMethod === 'CASH'" (click)="paymentMethod = 'CASH'">
-                    💵 Naqd (CASH)
-                  </button>
-                  <button type="button" class="method-btn" [class.method-btn--active]="paymentMethod === 'CARD'" (click)="paymentMethod = 'CARD'">
-                    💳 Karta (CARD)
-                  </button>
-                </div>
-              </div>
-
-              @if (paymentMethod === 'CASH') {
-                <div class="form-group">
-                  <label>Mijozdan olingan summa</label>
-                  <input type="number" [(ngModel)]="cashReceived" class="pos-input" placeholder="0 UZS" />
-                  @if (cashReceived > total()) {
-                    <div class="change-display">
-                      Qaytim: <strong>{{ formatPrice(cashReceived - total()) }}</strong>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn--secondary" (click)="closePaymentModal()">Bekor qilish</button>
-              <button class="btn btn--primary" (click)="submitPayment()" [disabled]="isSubmitting()">
-                To'lovni Tasdiqlash
-              </button>
-            </div>
-          </div>
-        </div>
-      }
 
       <!-- Cancel Item Modal -->
       @if (showCancelModal()) {
@@ -518,6 +478,52 @@ export interface PosCartItem {
       font-weight: 700;
       cursor: pointer;
     }
+    /* Order Type Toggle */
+    .order-type-toggle {
+      display: flex;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .order-type-btn {
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      &:hover { background: rgba(var(--primary-rgb), 0.1); color: var(--text-primary); }
+      &--active {
+        background: var(--primary);
+        color: white;
+      }
+    }
+    .order-type-fixed-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      background: rgba(var(--primary-rgb), 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(var(--primary-rgb), 0.3);
+      &.takeaway-badge {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+    }
+    .takeaway-pill {
+      background: rgba(245, 158, 11, 0.2) !important;
+      color: #f59e0b !important;
+      border: 1px solid rgba(245, 158, 11, 0.4) !important;
+    }
     .search-box {
       display: flex;
       align-items: center;
@@ -632,7 +638,7 @@ export interface PosCartItem {
         position: relative;
         width: 100%;
         height: 120px;
-        background: #141721;
+        background: var(--bg-tertiary);
         overflow: hidden;
         border-bottom: 1px solid var(--border);
       }
@@ -831,7 +837,7 @@ export interface PosCartItem {
         height: 44px;
         border-radius: 6px;
         overflow: hidden;
-        background: #141721;
+        background: var(--bg-tertiary);
         border: 1px solid var(--border);
         flex-shrink: 0;
         display: flex;
@@ -1110,7 +1116,7 @@ export interface PosCartItem {
       gap: 10px;
       margin-top: 12px;
     }
-    .btn-kitchen, .btn-pay {
+    .btn-kitchen, .btn-close-bill {
       flex: 1;
       padding: 11px 8px;
       border: none;
@@ -1135,10 +1141,20 @@ export interface PosCartItem {
       color: white;
       &:hover:not(:disabled) { background: #d97706; }
     }
-    .btn-pay {
+    .btn-close-bill {
       background: #10b981;
       color: white;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
       &:hover:not(:disabled) { background: #059669; }
+    }
+    .zone-pct-pill {
+      font-size: 11px;
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--primary-light, #818cf8);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 700;
     }
 
     .modal-backdrop {
@@ -1428,6 +1444,7 @@ export class PosComponent implements OnInit {
   filteredProducts = signal<Product[]>([]);
   loadingProducts = signal(true);
 
+  orderType = signal<'DINE_IN' | 'TAKEAWAY'>('DINE_IN');
   selectedKitchenId = signal<string | undefined>(undefined);
   selectedCategoryId = signal<string | undefined>(undefined);
   searchQuery = '';
@@ -1441,13 +1458,10 @@ export class PosComponent implements OnInit {
 
   selectedTable = signal<RestaurantTable | null>(null);
   currentOrderId = signal<string | null>(null);
+  activeOrder = signal<Order | null>(null);
 
   cart = signal<PosCartItem[]>([]);
   isSubmitting = signal(false);
-
-  showPaymentModal = signal(false);
-  paymentMethod: 'CASH' | 'CARD' = 'CASH';
-  cashReceived = 0;
 
   // Cancel item modal state
   showCancelModal = signal(false);
@@ -1480,7 +1494,7 @@ export class PosComponent implements OnInit {
     this.newItems().reduce((sum, item) => sum + (item.quantity - (item.sentQuantity || 0)), 0)
   );
 
-  canSendToKitchen = computed(() => this.newItemsCount() > 0 && !this.isSubmitting());
+  canSendToKitchen = computed(() => this.newItemsCount() > 0 && !this.isSubmitting() && !!this.selectedTable());
 
   subtotal = computed(() => {
     return this.cart()
@@ -1488,17 +1502,30 @@ export class PosComponent implements OnInit {
       .reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
   });
 
-  serviceCharge = computed(() => Math.round(this.subtotal() * 0.10));
-  total = computed(() => this.subtotal() + this.serviceCharge());
+  zonePercentage = computed(() => {
+    const order = this.activeOrder();
+    if (order?.placePercentage != null && order.placePercentage > 0) return order.placePercentage;
+    const table = this.selectedTable();
+    return table?.zonePercentage ?? 0;
+  });
 
-  canProcessPayment = computed(() => {
-    const user = this.auth.user();
-    const role = (user?.role || '').toUpperCase();
-    const username = (user?.username || '').toLowerCase();
-    if (role === 'WAITER' || username === 'waiter') {
-      return false;
-    }
-    return this.auth.hasPermission('PROCESS_PAYMENT') || role === 'ADMIN' || role === 'MANAGER' || role === 'CASHIER';
+  zoneName = computed(() => {
+    const order = this.activeOrder();
+    if (order?.zoneName) return order.zoneName;
+    const table = this.selectedTable();
+    return table?.zoneName || 'Joy';
+  });
+
+  placeFee = computed(() => {
+    const pct = this.zonePercentage();
+    if (pct <= 0) return 0;
+    return Math.round((this.subtotal() * pct) / 100);
+  });
+
+  total = computed(() => this.subtotal() + this.placeFee());
+
+  canCloseBill = computed(() => {
+    return !!this.currentOrderId() && !this.isSubmitting() && this.cart().filter(i => !i.voided).length > 0;
   });
 
   constructor(
@@ -1912,12 +1939,11 @@ export class PosComponent implements OnInit {
     this.isSubmitting.set(true);
 
     if (!this.currentOrderId()) {
-      // First order on a free table
       const req: CreateOrderRequest = {
-        tableId: this.selectedTable()?.id,
-        orderType: 'DINE_IN',
-        guestCount: 2,
-        notes: 'Oshxonaga yuborildi',
+        tableId: this.orderType() === 'DINE_IN' ? this.selectedTable()?.id : undefined,
+        orderType: this.orderType(),
+        guestCount: this.orderType() === 'DINE_IN' ? 2 : 1,
+        notes: this.orderType() === 'TAKEAWAY' ? 'Olib ketish buyurtmasi' : 'Oshxonaga yuborildi',
         items: unsent.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -1931,7 +1957,10 @@ export class PosComponent implements OnInit {
           if (res.success && res.data) {
             this.currentOrderId.set(res.data.id);
             this.updateCartFromOrder(res.data);
-            this.notify.success('Buyurtma oshxonaga yuborildi va stol band qilindi!');
+            const msg = this.orderType() === 'TAKEAWAY'
+              ? '🛍 Olib ketish buyurtmasi oshxonaga yuborildi!'
+              : '👨‍🍳 Buyurtma oshxonaga yuborildi va stol band qilindi!';
+            this.notify.success(msg);
           }
         },
         error: (err) => {
@@ -1940,7 +1969,7 @@ export class PosComponent implements OnInit {
         }
       });
     } else {
-      // Occupied table: send ONLY new unsent quantities!
+      // Existing order: send ONLY new unsent quantities!
       const itemsReq: CreateOrderItemRequest[] = unsent.map(item => ({
         productId: item.productId,
         quantity: item.quantity - (item.sentQuantity || 0),
@@ -1960,6 +1989,14 @@ export class PosComponent implements OnInit {
           this.notify.error(err.error?.message || 'Oshxonaga yuborishda xatolik yuz berdi');
         }
       });
+    }
+  }
+
+  setOrderType(type: 'DINE_IN' | 'TAKEAWAY'): void {
+    if (this.currentOrderId()) return; // Can't change after order created
+    this.orderType.set(type);
+    if (type === 'TAKEAWAY') {
+      this.selectedTable.set(null);
     }
   }
 
@@ -2015,79 +2052,33 @@ export class PosComponent implements OnInit {
     });
   }
 
-  openPaymentModal(): void {
-    if (!this.canProcessPayment()) {
-      this.notify.error("Ofitsiant to'lov qabul qila olmaydi. To'lov faqat Kassa orqali amalga oshiriladi!");
-      return;
-    }
-    this.cashReceived = this.total();
-    this.showPaymentModal.set(true);
-  }
-
-  closePaymentModal(): void {
-    this.showPaymentModal.set(false);
-  }
-
-  submitPayment(): void {
-    if (!this.canProcessPayment()) {
-      this.notify.error("Ofitsiant to'lov qabul qila olmaydi. To'lov faqat Kassa orqali amalga oshiriladi!");
-      return;
-    }
-    if (this.subtotal() === 0) return;
-    this.isSubmitting.set(true);
-
-    // If no order created yet, create order first then pay
+  closeBill(): void {
     if (!this.currentOrderId()) {
-      const orderReq: CreateOrderRequest = {
-        tableId: this.selectedTable()?.id,
-        orderType: 'DINE_IN',
-        guestCount: 2,
-        items: this.cart().filter(i => !i.voided).map(item => ({
-          productId: item.productId,
-          quantity: item.quantity
-        }))
-      };
-
-      this.orderService.createOrder(orderReq).subscribe({
-        next: (orderRes) => {
-          if (orderRes.success && orderRes.data) {
-            this.executePayment(orderRes.data.id);
-          }
-        },
-        error: (err) => {
-          this.isSubmitting.set(false);
-          this.notify.error(err.error?.message || 'Buyurtma yaratishda xatolik yuz berdi');
-        }
-      });
-    } else {
-      this.executePayment(this.currentOrderId()!);
+      this.notify.warning("Hisobni yopish uchun avval buyurtmani oshxonaga yuboring!");
+      return;
     }
-  }
 
-  private executePayment(orderId: string): void {
-    this.paymentService.processPayment({
-      orderId: orderId,
-      paymentMethod: this.paymentMethod,
-      amount: this.total(),
-      cashReceived: this.paymentMethod === 'CASH' ? this.cashReceived : this.total(),
-      changeGiven: this.paymentMethod === 'CASH' ? Math.max(0, this.cashReceived - this.total()) : 0
-    }).subscribe({
+    if (this.newItemsCount() > 0) {
+      if (!confirm("Oshxonaga hali yuborilmagan mahsulotlar bor! Ular yuborilmasdan hisob yopilsinmi? (Tavsiya: avval 'Oshxonaga' tugmasini bosing)")) {
+        return;
+      }
+    }
+
+    this.isSubmitting.set(true);
+    this.orderService.closeOrder(this.currentOrderId()!).subscribe({
       next: (res) => {
         this.isSubmitting.set(false);
         if (res.success) {
-          if (res.data?.receiptPrintStatus === 'PRINT_FAILED') {
-            this.notify.warning("To'lov muvaffaqiyatli qabul qilindi, ammo chek chop etishda muammo bo'ldi! Buyurtmalar ro'yxatidan qayta chop etishingiz mumkin.");
-          } else {
-            this.notify.success("To'lov muvaffaqiyatli qabul qilindi! Chek chop etildi.");
-          }
-          this.closePaymentModal();
-          this.clearCart();
+          this.notify.success("Hisob muvaffaqiyatli yopildi va hisob cheki printerdan chiqarildi! Stol bo'shatildi.");
+          this.cart.set([]);
+          this.currentOrderId.set(null);
+          this.activeOrder.set(null);
           this.router.navigate(['/tables']);
         }
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        this.notify.error(err.error?.message || "To'lov jarayonida xatolik yuz berdi");
+        this.notify.error(err.error?.message || "Hisobni yopishda xatolik yuz berdi");
       }
     });
   }

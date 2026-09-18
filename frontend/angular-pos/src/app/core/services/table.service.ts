@@ -8,6 +8,7 @@ export interface RestaurantTable {
   id: string;
   zoneId?: string;
   zoneName?: string;
+  zonePercentage?: number;
   tableNumber: string;
   name: string;
   capacity: number;
@@ -31,6 +32,7 @@ export interface TableZone {
   id: string;
   name: string;
   description?: string;
+  percentage?: number;
   sortOrder: number;
   active: boolean;
 }
@@ -64,8 +66,16 @@ export class TableService {
     return this.http.get<ApiResponse<TableZone[]>>(`${this.API}/zones`);
   }
 
-  createZone(request: { name: string; description?: string; sortOrder?: number }): Observable<ApiResponse<TableZone>> {
+  createZone(request: { name: string; percentage?: number; description?: string; sortOrder?: number }): Observable<ApiResponse<TableZone>> {
     return this.http.post<ApiResponse<TableZone>>(`${this.API}/zones`, request);
+  }
+
+  updateZone(id: string, request: { name: string; percentage?: number; description?: string; sortOrder?: number }): Observable<ApiResponse<TableZone>> {
+    return this.http.put<ApiResponse<TableZone>>(`${this.API}/zones/${id}`, request);
+  }
+
+  deleteZone(id: string): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.API}/zones/${id}`);
   }
 
   getTableById(id: string): Observable<ApiResponse<RestaurantTable>> {

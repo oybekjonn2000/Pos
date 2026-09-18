@@ -118,19 +118,39 @@ public class WindowsPrintService {
 
             Graphics2D g2d = (Graphics2D) graphics;
             g2d.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
-            g2d.setFont(new Font("Monospaced", Font.PLAIN, 9));
+            Font normalFont = new Font("Monospaced", Font.PLAIN, 9);
+            Font boldFont = new Font("Monospaced", Font.BOLD, 10);
+            Font largeFont = new Font("Monospaced", Font.BOLD, 13);
             g2d.setColor(Color.BLACK);
 
-            FontMetrics fm = g2d.getFontMetrics();
-            int lineHeight = fm.getHeight();
-            int y = lineHeight;
+            FontMetrics fm = g2d.getFontMetrics(normalFont);
+            int normalLineHeight = fm.getHeight();
+            int y = normalLineHeight;
 
             String[] lines = text.split("\n");
             for (String line : lines) {
                 // Strip control escape characters from display
                 String cleanLine = line.replaceAll("[\\x00-\\x1F]", "");
-                g2d.drawString(cleanLine, 5, y);
-                y += lineHeight;
+                if (cleanLine.trim().isEmpty()) {
+                    y += normalLineHeight / 2;
+                    continue;
+                }
+
+                if (cleanLine.contains(">>") && cleanLine.contains("so'm") && cleanLine.contains("<<")) {
+                    g2d.setFont(largeFont);
+                    int h = g2d.getFontMetrics(largeFont).getHeight();
+                    g2d.drawString(cleanLine, 5, y + 2);
+                    y += h + 2;
+                } else if (cleanLine.contains("JAMI TO'LOV") || cleanLine.contains("HISOB CHEKI") || cleanLine.contains("KASSA CHEKI")) {
+                    g2d.setFont(boldFont);
+                    int h = g2d.getFontMetrics(boldFont).getHeight();
+                    g2d.drawString(cleanLine, 5, y);
+                    y += h;
+                } else {
+                    g2d.setFont(normalFont);
+                    g2d.drawString(cleanLine, 5, y);
+                    y += normalLineHeight;
+                }
             }
 
             return PAGE_EXISTS;

@@ -40,7 +40,6 @@ public class PaymentService {
     private final EntityManager entityManager;
     private final com.restaurantpos.common.websocket.WebSocketNotificationService wsNotification;
     private final com.restaurantpos.orders.service.OrderService orderService;
-    private final com.restaurantpos.printers.service.PrintRoutingService printRoutingService;
     private final com.restaurantpos.inventory.service.InventoryService inventoryService;
 
     private long nextPaymentSequence() {
@@ -57,7 +56,7 @@ public class PaymentService {
             Order order = orderRepository.findByIdWithLock(request.getOrderId(), tenantId)
                     .orElseThrow(() -> PosException.notFound("Order not found: " + request.getOrderId()));
 
-            if (order.getStatus() == Order.OrderStatus.PAID) {
+            if (order.getStatus() == Order.OrderStatus.PAID || order.getPaymentStatus() == Order.PaymentStatus.PAID) {
                 throw PosException.badRequest("Buyurtma allaqachon to'langan");
             }
             if (order.getStatus() == Order.OrderStatus.CANCELLED) {
@@ -65,6 +64,9 @@ public class PaymentService {
             }
             if (order.getStatus() == Order.OrderStatus.REFUNDED) {
                 throw PosException.badRequest("Qaytarilgan buyurtmaga to'lov qabul qilinmaydi");
+            }
+            if (order.getStatus() != Order.OrderStatus.CLOSED) {
+                throw PosException.badRequest("To'lov qilish uchun avval buyurtma hisobini yopish (hisob chekini chiqarish) lozim!");
             }
 
             if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
@@ -112,12 +114,15 @@ public class PaymentService {
             log.info("[PAYMENT_SUCCESS] Payment completed successfully. paymentId: {}, paymentNumber: {}, orderId: {}, amount: {}",
                     saved.getId(), saved.getPaymentNumber(), order.getId(), saved.getAmount());
 
-            // Update Order status to PAID
-            order.setStatus(Order.OrderStatus.PAID);
+            // Update Order status and payment status
+            order.setStatus(Order.OrderStatus.CLOSED);
+            order.setPaymentStatus(Order.PaymentStatus.PAID);
             order.setCashier(cashier);
             Instant now = Instant.now();
             order.setPaidAt(now);
-            order.setClosedAt(now);
+            if (order.getClosedAt() == null) {
+                order.setClosedAt(now);
+            }
             if (saved.getAmount() != null && saved.getAmount().compareTo(BigDecimal.ZERO) > 0) {
                 order.setTotal(saved.getAmount());
             }
@@ -130,22 +135,19 @@ public class PaymentService {
                 log.error("Error deducting inventory for paid order {}: {}", order.getId(), invEx.getMessage());
             }
 
-            // Hardware Print Routing: dispatch receipt to Cashier printer
-            try {
-                savedOrder = printRoutingService.routeAndPrintReceipt(savedOrder, saved);
-                saved.setOrder(savedOrder);
-            } catch (Exception pex) {
-                log.warn("Receipt print warning during payment: {}", pex.getMessage());
-            }
+            // PAYMENT_COMPLETED event: No receipt is printed on payment.
+            // Receipt/bill printing is exclusively done on ACCOUNT_CLOSED (hisobni yopish).
 
-            // Free the table
+            // Free the table if still bound to this order
             if (order.getTable() != null) {
                 RestaurantTable table = order.getTable();
-                table.setStatus(com.restaurantpos.tables.entity.RestaurantTable.TableStatus.FREE);
-                table.setCurrentOrderId(null);
-                table.setWaiter(null);
-                RestaurantTable savedTable = tableRepository.save(table);
-                wsNotification.notifyTableUpdated(tenantId, orderService.toTableResponse(savedTable, null));
+                if (table.getCurrentOrderId() != null && table.getCurrentOrderId().equals(order.getId())) {
+                    table.setStatus(com.restaurantpos.tables.entity.RestaurantTable.TableStatus.FREE);
+                    table.setCurrentOrderId(null);
+                    table.setWaiter(null);
+                    RestaurantTable savedTable = tableRepository.save(table);
+                    wsNotification.notifyTableUpdated(tenantId, orderService.toTableResponse(savedTable, null));
+                }
             }
 
             // Notify order status changed & paid

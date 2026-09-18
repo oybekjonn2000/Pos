@@ -153,8 +153,9 @@ interface NavItem {
         }
 
         &.active {
-          background: rgba(var(--primary-rgb), 0.15);
-          color: var(--primary-light);
+          background: rgba(var(--primary-rgb), 0.14);
+          color: var(--primary);
+          font-weight: 600;
         }
       }
 
@@ -211,14 +212,14 @@ interface NavItem {
         padding: 8px 12px;
         margin-bottom: 8px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
         cursor: pointer;
         transition: all 0.2s;
 
         &:hover {
-          background: rgba(255, 255, 255, 0.08);
-          border-color: rgba(255, 255, 255, 0.15);
+          background: var(--bg-hover);
+          border-color: var(--border-light);
         }
 
         .server-dot {
@@ -286,10 +287,8 @@ export class SidebarComponent {
 
   navItems: NavItem[] = [
     { icon: '📊', label: 'Boshqaruv paneli', route: '/dashboard', permission: 'VIEW_DASHBOARD' },
-    { icon: '🖥️', label: 'Kassa (POS)', route: '/pos', permission: 'CREATE_ORDER' },
-    { icon: '🪑', label: 'Stollar', route: '/tables' },
+    { icon: '🪑', label: 'Joylar va Stollar', route: '/tables' },
     { icon: '📋', label: 'Buyurtmalar', route: '/orders' },
-    { icon: '🚚', label: 'Yetkazib berish', route: '/delivery', disallowRoles: ['KITCHEN', 'WAITER'] },
     { icon: '👨‍🍳', label: 'Oshxona', route: '/kitchen', permission: 'KITCHEN_VIEW' },
     { icon: '🍔', label: 'Mahsulotlar', route: '/products', permission: 'MANAGE_PRODUCTS' },
     { icon: '📁', label: 'Kategoriyalar', route: '/categories', permission: 'MANAGE_CATEGORIES' },
@@ -317,8 +316,8 @@ export class SidebarComponent {
       if (role === 'KITCHEN' && item.route !== '/kitchen') {
         return false;
       }
-      // Waiter user must ONLY see /tables
-      if (role === 'WAITER' && item.route !== '/tables') {
+      // Waiter user must ONLY see /tables and /orders
+      if (role === 'WAITER' && item.route !== '/tables' && item.route !== '/orders') {
         return false;
       }
       if (this.auth.isAdmin()) {

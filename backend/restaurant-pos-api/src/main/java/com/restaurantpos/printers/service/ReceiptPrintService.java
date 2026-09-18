@@ -90,11 +90,25 @@ public class ReceiptPrintService {
                     .orElse(false);
         }
 
+        boolean isPaid = (payment != null && payment.getStatus() == Payment.PaymentStatus.COMPLETED)
+                || order.getPaymentStatus() == Order.PaymentStatus.PAID;
+
+        String placeName = order.getZone() != null ? order.getZone().getName() : (order.getTable() != null && order.getTable().getZone() != null ? order.getTable().getZone().getName() : null);
         String tableName = order.getTable() != null ? order.getTable().getName() : "Olib ketish";
+        String displayPlace;
+        if (placeName != null && !placeName.isBlank()) {
+            if (tableName != null && !tableName.isBlank() && !placeName.trim().equalsIgnoreCase(tableName.trim())) {
+                displayPlace = placeName + " - " + tableName;
+            } else {
+                displayPlace = placeName;
+            }
+        } else {
+            displayPlace = tableName != null ? tableName : "Joy ko'rsatilmagan";
+        }
         String waiterName = (order.getWaiter() != null && order.getWaiter().getFullName() != null)
                 ? order.getWaiter().getFullName() : "Noma'lum";
         String cashierName = payment != null && payment.getCashier() != null
-                ? payment.getCashier().getFullName() : "Kassir";
+                ? payment.getCashier().getFullName() : null;
 
         String divider = width == 58 ? "--------------------------------\n" : "------------------------------------------\n";
         String doubleDivider = width == 58 ? "================================\n" : "==========================================\n";
@@ -106,21 +120,36 @@ public class ReceiptPrintService {
         sb.append(centerText(restPhone, maxChars)).append("\n");
         sb.append(doubleDivider);
 
-        if (isReprint) {
-            sb.append(centerText("*** NUSXA / REPRINT CHEK ***", maxChars)).append("\n");
+        if (!isPaid) {
+            sb.append(centerText("*** HISOB CHEKI ***", maxChars)).append("\n");
+            sb.append(doubleDivider);
+        } else if (isReprint) {
+            sb.append(centerText("*** QAYTA CHOP ETILDI (NUSXA) ***", maxChars)).append("\n");
+            sb.append(doubleDivider);
+        } else {
+            sb.append(centerText("*** KASSA CHEKI ***", maxChars)).append("\n");
+            sb.append(doubleDivider);
+        }
+
+        // Order type header
+        if (order.getOrderType() == Order.OrderType.TAKEAWAY) {
+            sb.append(centerText("🛍 OLIB KETISH", maxChars)).append("\n");
             sb.append(doubleDivider);
         }
 
         String checkNum = payment != null && payment.getPaymentNumber() != null
                 ? payment.getPaymentNumber() : order.getOrderNumber();
 
-        sb.append(String.format("BUYURTMA RAQAMI: %s\n", order.getOrderNumber()));
-        sb.append(String.format("CHEK RAQAMI:     %s\n", checkNum));
-        sb.append(String.format("STOL RAQAMI:     %s\n", tableName));
-        sb.append(String.format("OFITSIANT:       %s\n", waiterName));
-        sb.append(String.format("KASSIR:          %s\n", cashierName));
-        sb.append(String.format("SANA:            %s\n", dateStr));
-        sb.append(String.format("VAQT:            %s\n", timeStr));
+        sb.append(String.format("BUYURTMA №:   %s\n", order.getOrderNumber()));
+        if (isPaid) {
+            sb.append(String.format("CHEK RAQAMI:  %s\n", checkNum));
+        }
+        sb.append(String.format("JOY / STOL:   %s\n", displayPlace));
+        sb.append(String.format("OFITSIANT:    %s\n", waiterName));
+        if (isPaid && cashierName != null && !cashierName.isBlank()) {
+            sb.append(String.format("KASSIR:       %s\n", cashierName));
+        }
+        sb.append(String.format("SANA VA VAQT: %s  %s\n", dateStr, timeStr));
         sb.append(divider);
 
         if (width == 58) {
@@ -130,10 +159,12 @@ public class ReceiptPrintService {
                 for (OrderItem item : order.getItems()) {
                     if (item.isVoided()) continue;
                     sb.append(truncate(item.getProductName(), 32)).append("\n");
-                    sb.append(String.format("  %7.0f x %2.0f = %12.0f\n",
-                            item.getUnitPrice(),
-                            item.getQuantity(),
-                            item.getSubtotal()));
+                    String qtyStr = (item.getQuantity().remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) == 0)
+                            ? String.valueOf(item.getQuantity().intValue())
+                            : String.format(java.util.Locale.US, "%.2f", item.getQuantity());
+                    String leftPart = String.format(" %s x %s =", formatMoney(item.getUnitPrice()), qtyStr);
+                    String rightPart = formatMoney(item.getSubtotal());
+                    sb.append(formatTwoColumns(leftPart, rightPart, 32)).append("\n");
                 }
             }
         } else {
@@ -143,10 +174,12 @@ public class ReceiptPrintService {
                 for (OrderItem item : order.getItems()) {
                     if (item.isVoided()) continue;
                     sb.append(truncate(item.getProductName(), 42)).append("\n");
-                    sb.append(String.format("   %8.0f x %2.0f = %18.0f\n",
-                            item.getUnitPrice(),
-                            item.getQuantity(),
-                            item.getSubtotal()));
+                    String qtyStr = (item.getQuantity().remainder(BigDecimal.ONE).compareTo(BigDecimal.ZERO) == 0)
+                            ? String.valueOf(item.getQuantity().intValue())
+                            : String.format(java.util.Locale.US, "%.2f", item.getQuantity());
+                    String leftPart = String.format("   %s x %s =", formatMoney(item.getUnitPrice()), qtyStr);
+                    String rightPart = formatMoney(item.getSubtotal());
+                    sb.append(formatTwoColumns(leftPart, rightPart, 42)).append("\n");
                 }
             }
         }
@@ -156,116 +189,106 @@ public class ReceiptPrintService {
         BigDecimal discountPercent = order.getDiscountPercent();
         BigDecimal netAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
         BigDecimal taxAmount = order.getTaxAmount() != null ? order.getTaxAmount() : BigDecimal.ZERO;
-        BigDecimal deliveryFee = order.getDeliveryFee() != null ? order.getDeliveryFee() : BigDecimal.ZERO;
 
-        BigDecimal serviceChargeAmount = BigDecimal.ZERO;
-        double effectiveServicePercent = serviceChargePercent;
+        BigDecimal serviceChargeAmount = (order.getPlaceFee() != null && order.getPlaceFee().compareTo(BigDecimal.ZERO) > 0)
+                ? order.getPlaceFee() : BigDecimal.ZERO;
+        double effectiveServicePercent = (order.getPlacePercentage() != null && order.getPlacePercentage().compareTo(BigDecimal.ZERO) > 0)
+                ? order.getPlacePercentage().doubleValue() : serviceChargePercent;
 
-        if (payment != null && payment.getAmount() != null && payment.getAmount().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal paid = payment.getAmount();
-            BigDecimal baseTotal = netAmount.add(taxAmount).add(deliveryFee);
-            if (paid.compareTo(baseTotal) > 0) {
-                serviceChargeAmount = paid.subtract(baseTotal);
-                if (netAmount.compareTo(BigDecimal.ZERO) > 0) {
-                    effectiveServicePercent = serviceChargeAmount.multiply(BigDecimal.valueOf(100))
-                            .divide(netAmount, 1, RoundingMode.HALF_UP)
-                            .doubleValue();
+        if (serviceChargeAmount.compareTo(BigDecimal.ZERO) == 0) {
+            if (payment != null && payment.getAmount() != null && payment.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal paid = payment.getAmount();
+                BigDecimal baseTotal = netAmount.add(taxAmount);
+                if (paid.compareTo(baseTotal) > 0) {
+                    serviceChargeAmount = paid.subtract(baseTotal);
+                    if (netAmount.compareTo(BigDecimal.ZERO) > 0) {
+                        effectiveServicePercent = serviceChargeAmount.multiply(BigDecimal.valueOf(100))
+                                .divide(netAmount, 1, RoundingMode.HALF_UP)
+                                .doubleValue();
+                    }
+                } else if (serviceChargeEnabled && showServiceCharge && serviceChargePercent > 0) {
+                    serviceChargeAmount = netAmount.multiply(BigDecimal.valueOf(serviceChargePercent))
+                            .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
                 }
             } else if (serviceChargeEnabled && showServiceCharge && serviceChargePercent > 0) {
                 serviceChargeAmount = netAmount.multiply(BigDecimal.valueOf(serviceChargePercent))
                         .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
             }
-        } else if (serviceChargeEnabled && showServiceCharge && serviceChargePercent > 0) {
-            serviceChargeAmount = netAmount.multiply(BigDecimal.valueOf(serviceChargePercent))
-                    .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
         }
 
         BigDecimal finalTotal;
         if (payment != null && payment.getAmount() != null && payment.getAmount().compareTo(BigDecimal.ZERO) > 0) {
             finalTotal = payment.getAmount();
         } else {
-            finalTotal = netAmount.add(serviceChargeAmount).add(taxAmount).add(deliveryFee);
+            finalTotal = netAmount.add(serviceChargeAmount).add(taxAmount);
         }
 
         sb.append(divider);
-        if (width == 58) {
-            sb.append(String.format("JAMI SUMMA:     %11.0f so'm\n", subtotal));
-            if (discountAmount.compareTo(BigDecimal.ZERO) > 0 && showDiscount) {
-                String pctStr = (discountPercent != null && discountPercent.compareTo(BigDecimal.ZERO) > 0)
-                        ? String.format("%.0f%%", discountPercent) : "";
-                String lbl = pctStr.isEmpty() ? "CHEGIRMA:" : String.format("CHEGIRMA(%s):", pctStr);
-                sb.append(String.format("%-14s%+11.0f so'm\n", lbl, discountAmount.negate()));
-            }
-            if (serviceChargeAmount.compareTo(BigDecimal.ZERO) > 0 && showServiceCharge) {
-                String pctStr = (effectiveServicePercent % 1 == 0)
-                        ? String.format("%.0f%%", effectiveServicePercent)
-                        : String.format("%.1f%%", effectiveServicePercent);
-                String lbl = String.format("XIZMAT(%s):", pctStr);
-                sb.append(String.format("%-14s%+11.0f so'm\n", lbl, serviceChargeAmount));
-            }
-            if (taxAmount.compareTo(BigDecimal.ZERO) > 0 && showTax) {
-                sb.append(String.format("%-14s%+11.0f so'm\n", "SOLIQ (QQS):", taxAmount));
-            }
-            if (deliveryFee.compareTo(BigDecimal.ZERO) > 0) {
-                sb.append(String.format("%-14s%+11.0f so'm\n", "YETKAZIB:", deliveryFee));
-            }
+        String subtotalVal = formatMoney(subtotal) + " so'm";
+        sb.append(formatTwoColumns("Mahsulotlar summasi:", subtotalVal, maxChars)).append("\n");
 
-            sb.append(doubleDivider);
-            sb.append(String.format("YAKUNIY SUMMA:  %11.0f so'm\n", finalTotal));
+        if (discountAmount.compareTo(BigDecimal.ZERO) > 0 && showDiscount) {
+            String pctStr = (discountPercent != null && discountPercent.compareTo(BigDecimal.ZERO) > 0)
+                    ? String.format(" (%.0f%%)", discountPercent) : "";
+            String lbl = "Chegirma" + pctStr + ":";
+            String val = "-" + formatMoney(discountAmount) + " so'm";
+            sb.append(formatTwoColumns(lbl, val, maxChars)).append("\n");
+        }
 
-            if (payment != null) {
-                String payMethod = payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "NAQD";
-                if ("CASH".equalsIgnoreCase(payMethod)) payMethod = "NAQD";
-                else if ("CARD".equalsIgnoreCase(payMethod)) payMethod = "KARTA";
+        if (serviceChargeAmount.compareTo(BigDecimal.ZERO) > 0) {
+            String pctStr = (effectiveServicePercent % 1 == 0)
+                    ? String.format("%.0f%%", effectiveServicePercent)
+                    : String.format("%.1f%%", effectiveServicePercent);
+            String lbl = String.format("Joy foizi (%s):", pctStr);
+            String val = "+" + formatMoney(serviceChargeAmount) + " so'm";
+            sb.append(formatTwoColumns(lbl, val, maxChars)).append("\n");
+        }
 
-                sb.append(String.format("TO'LOV TURI:    %11s\n", payMethod));
-                sb.append(String.format("TO'LANGAN SUMMA:%11.0f so'm\n", payment.getAmount()));
-                if (payment.getChangeAmount() != null && payment.getChangeAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    sb.append(String.format("QAYTIM:         %11.0f so'm\n", payment.getChangeAmount()));
-                }
-            }
-        } else {
-            // 80mm standard formatting (maxChars = 42)
-            sb.append(String.format("JAMI SUMMA:       %12.0f so'm\n", subtotal));
-            if (discountAmount.compareTo(BigDecimal.ZERO) > 0 && showDiscount) {
-                String pctStr = (discountPercent != null && discountPercent.compareTo(BigDecimal.ZERO) > 0)
-                        ? String.format(" (%.0f%%)", discountPercent) : "";
-                String lbl = "CHEGIRMA" + pctStr + ":";
-                sb.append(String.format("%-18s%+12.0f so'm\n", lbl, discountAmount.negate()));
-            }
-            if (serviceChargeAmount.compareTo(BigDecimal.ZERO) > 0 && showServiceCharge) {
-                String pctStr = (effectiveServicePercent % 1 == 0)
-                        ? String.format("%.0f%%", effectiveServicePercent)
-                        : String.format("%.1f%%", effectiveServicePercent);
-                String lbl = String.format("XIZMAT HAQI (%s):", pctStr);
-                sb.append(String.format("%-18s%+12.0f so'm\n", lbl, serviceChargeAmount));
-            }
-            if (taxAmount.compareTo(BigDecimal.ZERO) > 0 && showTax) {
-                sb.append(String.format("%-18s%+12.0f so'm\n", "SOLIQ (QQS):", taxAmount));
-            }
-            if (deliveryFee.compareTo(BigDecimal.ZERO) > 0) {
-                sb.append(String.format("%-18s%+12.0f so'm\n", "YETKAZIB BERISH:", deliveryFee));
-            }
-
-            sb.append(doubleDivider);
-            sb.append(String.format("YAKUNIY SUMMA:    %12.0f so'm\n", finalTotal));
-
-            if (payment != null) {
-                String payMethod = payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "NAQD";
-                if ("CASH".equalsIgnoreCase(payMethod)) payMethod = "NAQD";
-                else if ("CARD".equalsIgnoreCase(payMethod)) payMethod = "KARTA";
-
-                sb.append(String.format("TO'LOV TURI:      %12s\n", payMethod));
-                sb.append(String.format("TO'LANGAN SUMMA:  %12.0f so'm\n", payment.getAmount()));
-                if (payment.getChangeAmount() != null && payment.getChangeAmount().compareTo(BigDecimal.ZERO) > 0) {
-                    sb.append(String.format("QAYTIM:           %12.0f so'm\n", payment.getChangeAmount()));
-                }
-            }
+        if (taxAmount.compareTo(BigDecimal.ZERO) > 0 && showTax) {
+            String lbl = "Soliq (QQS):";
+            String val = "+" + formatMoney(taxAmount) + " so'm";
+            sb.append(formatTwoColumns(lbl, val, maxChars)).append("\n");
         }
 
         sb.append(doubleDivider);
-        sb.append(centerText("XARIDINGIZ UCHUN RAHMAT!", maxChars)).append("\n");
-        sb.append(centerText("YANA KUTIB QOLAMIZ!", maxChars)).append("\n");
+        sb.append(centerText("JAMI TO'LOV:", maxChars)).append("\n");
+
+        String formattedTotal = formatMoney(finalTotal) + " so'm";
+        String totalBoxed = ">> " + formattedTotal + " <<";
+
+        // ESC/POS control bytes: Bold ON (\u001B\u0045\u0001), Double Height ON (\u001D\u0021\u0001)
+        sb.append("\u001B\u0045\u0001\u001D\u0021\u0001");
+        sb.append(centerText(totalBoxed, maxChars)).append("\n");
+        sb.append("\u001D\u0021\u0000\u001B\u0045\u0000");
+
+        sb.append(doubleDivider);
+
+        if (!isPaid) {
+            sb.append(centerText("Holati: TO'LANMAGAN", maxChars)).append("\n");
+            sb.append(centerText("(To'lov kassada qabul qilinadi)", maxChars)).append("\n");
+            sb.append(divider);
+            sb.append(centerText("Rahmat, yana kutib qolamiz!", maxChars)).append("\n");
+        } else {
+            sb.append(formatTwoColumns("To'lov holati:", "TO'LANGAN", maxChars)).append("\n");
+            if (payment != null) {
+                String payMethod = payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : "NAQD";
+                if ("CASH".equalsIgnoreCase(payMethod)) payMethod = "NAQD";
+                else if ("CARD".equalsIgnoreCase(payMethod)) payMethod = "KARTA";
+
+                sb.append(formatTwoColumns("To'lov turi:", payMethod, maxChars)).append("\n");
+                if (payment.getPaidAt() != null) {
+                    String paidTime = payment.getPaidAt().atZone(zoneId).format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                    sb.append(formatTwoColumns("To'lov vaqti:", paidTime, maxChars)).append("\n");
+                }
+                sb.append(formatTwoColumns("To'langan summa:", formatMoney(payment.getAmount()) + " so'm", maxChars)).append("\n");
+                if (payment.getChangeAmount() != null && payment.getChangeAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    sb.append(formatTwoColumns("Qaytim:", formatMoney(payment.getChangeAmount()) + " so'm", maxChars)).append("\n");
+                }
+            }
+            sb.append(divider);
+            sb.append(centerText("Xaridingiz uchun rahmat!", maxChars)).append("\n");
+            sb.append(centerText("Yana kutib qolamiz!", maxChars)).append("\n");
+        }
         sb.append("\n\n\n\n");
 
         String textContent = sb.toString();
@@ -289,9 +312,28 @@ public class ReceiptPrintService {
         return result;
     }
 
+    private int visibleLength(String str) {
+        if (str == null) return 0;
+        return str.replaceAll("[\\x00-\\x1F]", "").length();
+    }
+
+    private String formatMoney(BigDecimal amount) {
+        if (amount == null) return "0";
+        return String.format(java.util.Locale.US, "%,.0f", amount).replace(',', ' ');
+    }
+
+    private String formatTwoColumns(String left, String right, int width) {
+        int totalLen = visibleLength(left) + visibleLength(right);
+        if (totalLen >= width) {
+            return left + " " + right;
+        }
+        return left + " ".repeat(width - totalLen) + right;
+    }
+
     private String centerText(String text, int width) {
-        if (text.length() >= width) return text;
-        int pad = (width - text.length()) / 2;
+        int vLen = visibleLength(text);
+        if (vLen >= width) return text;
+        int pad = (width - vLen) / 2;
         return " ".repeat(pad) + text;
     }
 

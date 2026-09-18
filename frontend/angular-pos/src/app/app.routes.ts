@@ -58,7 +58,7 @@ export const routes: Routes = [
         path: 'orders',
         loadComponent: () => import('./orders/orders-list/orders-list.component').then(m => m.OrdersListComponent),
         canActivate: [permissionGuard],
-        data: { disallowRoles: ['KITCHEN', 'WAITER'], title: 'Orders' }
+        data: { disallowRoles: ['KITCHEN'], title: 'Orders' }
       },
       {
         path: 'products',
@@ -112,12 +112,6 @@ export const routes: Routes = [
         loadComponent: () => import('./devices/devices.component').then(m => m.DevicesComponent),
         canActivate: [permissionGuard],
         data: { permission: 'MANAGE_DEVICES', disallowRoles: ['WAITER'], title: 'Devices' }
-      },
-      {
-        path: 'delivery',
-        loadComponent: () => import('./delivery/delivery.component').then(m => m.DeliveryComponent),
-        canActivate: [permissionGuard],
-        data: { disallowRoles: ['KITCHEN', 'WAITER'], title: 'Delivery' }
       },
       {
         path: 'shifts',

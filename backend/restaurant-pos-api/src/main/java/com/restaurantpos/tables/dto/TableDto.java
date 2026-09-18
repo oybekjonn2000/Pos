@@ -20,6 +20,7 @@ public class TableDto {
         private UUID id;
         private String name;
         private String description;
+        private BigDecimal percentage;
         private int sortOrder;
         private boolean active;
     }
@@ -32,6 +33,7 @@ public class TableDto {
         private UUID id;
         private UUID zoneId;
         private String zoneName;
+        private BigDecimal zonePercentage;
         private String tableNumber;
         private String name;
         private int capacity;
@@ -54,10 +56,23 @@ public class TableDto {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class UpdateZoneRequest {
+        @NotBlank(message = "Zona nomi kiritilishi shart")
+        private String name;
+        private String description;
+        private BigDecimal percentage;
+        private Integer sortOrder;
+        private Boolean active;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CreateZoneRequest {
         @NotBlank(message = "Zona nomi kiritilishi shart (masalan: Zal, Ko'cha, Ayvon, Podval)")
         private String name;
         private String description;
+        private BigDecimal percentage;
         private int sortOrder = 0;
     }
 

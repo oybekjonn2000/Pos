@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { CategoryService, Category, CreateCategoryRequest } from '../core/services/category.service';
 import { KitchenService, KitchenStation } from '../core/services/kitchen.service';
+import { NotificationService } from '../core/services/notification.service';
 
 @Component({
   selector: 'app-categories',
@@ -585,6 +586,7 @@ export class CategoriesComponent implements OnInit {
   constructor(
     private categoryService: CategoryService,
     private kitchenService: KitchenService,
+    private notify: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -732,13 +734,13 @@ export class CategoriesComponent implements OnInit {
   saveCategory(): void {
     if (!this.formData.kitchenId) {
       this.kitchenError = true;
-      alert('Oshxona tanlanishi kerak!');
+      this.notify.warning('Oshxona tanlanishi kerak!');
       this.cdr.markForCheck();
       return;
     }
 
     if (!this.formData.name.trim()) {
-      alert('Iltimos, kategoriya nomini kiriting!');
+      this.notify.warning('Iltimos, kategoriya nomini kiriting!');
       return;
     }
 
@@ -748,26 +750,28 @@ export class CategoriesComponent implements OnInit {
       this.categoryService.updateCategory(this.editingId, this.formData).subscribe({
         next: () => {
           this.saving = false;
+          this.notify.success('Kategoriya muvaffaqiyatli yangilandi!');
           this.closeModal();
           this.loadCategories();
         },
         error: (err) => {
           this.saving = false;
           this.cdr.markForCheck();
-          alert('Xatolik: ' + (err.error?.message || err.message));
+          this.notify.error('Xatolik: ' + (err.error?.message || err.message));
         }
       });
     } else {
       this.categoryService.createCategory(this.formData).subscribe({
         next: () => {
           this.saving = false;
+          this.notify.success('Yangi kategoriya muvaffaqiyatli yaratildi!');
           this.closeModal();
           this.loadCategories();
         },
         error: (err) => {
           this.saving = false;
           this.cdr.markForCheck();
-          alert('Xatolik: ' + (err.error?.message || err.message));
+          this.notify.error('Xatolik: ' + (err.error?.message || err.message));
         }
       });
     }
@@ -779,11 +783,12 @@ export class CategoriesComponent implements OnInit {
     }
     this.categoryService.deleteCategory(cat.id).subscribe({
       next: () => {
+        this.notify.success(`"${cat.name}" kategoriyasi muvaffaqiyatli o'chirildi`);
         this.loadCategories();
       },
       error: (err) => {
         this.cdr.markForCheck();
-        alert('O‘chirishda xatolik:\n' + (err.error?.message || err.message));
+        this.notify.error('O‘chirishda xatolik: ' + (err.error?.message || err.message));
       }
     });
   }

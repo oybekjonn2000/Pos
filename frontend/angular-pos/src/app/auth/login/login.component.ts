@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
 import { LanServerConfigModalComponent } from '../../shared/components/lan-server-config-modal/lan-server-config-modal.component';
+import { ThemeService } from '../../core/services/theme.service';
 
 interface QuickAccount {
   role: string;
@@ -24,6 +25,20 @@ interface QuickAccount {
   imports: [CommonModule, ReactiveFormsModule, LanServerConfigModalComponent],
   template: `
     <div class="login-page">
+      <!-- Top Right Theme Switcher -->
+      <div class="login-theme-bar">
+        <div class="theme-switcher"
+             [title]="theme.isDark() ? 'Kunduzgi rejimga o‘tish (Light)' : 'Tungi rejimga o‘tish (Dark)'"
+             (click)="theme.toggleTheme()">
+          <button type="button" class="theme-btn" [class.active]="!theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('light')" title="Light Theme">
+            <span>☀</span> Light
+          </button>
+          <button type="button" class="theme-btn" [class.active]="theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('dark')" title="Dark Theme">
+            <span>🌙</span> Dark
+          </button>
+        </div>
+      </div>
+
       <!-- Background decorations -->
       <div class="login-page__bg">
         <div class="login-page__blob login-page__blob--1"></div>
@@ -194,6 +209,52 @@ interface QuickAccount {
       position: relative;
       overflow: hidden;
 
+      .login-theme-bar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 10;
+      }
+
+      .theme-switcher {
+        display: inline-flex;
+        align-items: center;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        padding: 3px;
+        gap: 2px;
+        cursor: pointer;
+        user-select: none;
+        box-shadow: var(--shadow-sm);
+        transition: all var(--transition);
+
+        &:hover {
+          border-color: var(--primary-light);
+        }
+      }
+
+      .theme-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: 100px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+        &.active {
+          background: var(--bg-card);
+          color: var(--text-primary);
+          box-shadow: var(--shadow-sm);
+        }
+      }
+
       &__bg { position: absolute; inset: 0; pointer-events: none; }
 
       &__blob {
@@ -338,7 +399,7 @@ interface QuickAccount {
       &::before, &::after {
         content: '';
         flex: 1;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid var(--divider);
       }
 
       span {
@@ -730,6 +791,7 @@ interface QuickAccount {
 })
 export class LoginComponent implements OnInit {
   lan = inject(LanStatusService);
+  theme = inject(ThemeService);
   showServerModal = signal<boolean>(false);
   isNetworkError = signal<boolean>(false);
 

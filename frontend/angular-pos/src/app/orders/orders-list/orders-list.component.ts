@@ -8,6 +8,7 @@ import { PaymentService, PaymentProcessRequest } from '../../core/services/payme
 import { TableService, RestaurantTable } from '../../core/services/table.service';
 import { AuthService } from '../../core/services/auth.service';
 import { PrinterService } from '../../core/services/printer.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-orders-list',
@@ -39,8 +40,8 @@ import { PrinterService } from '../../core/services/printer.service';
             <span>Yangilash</span>
           </button>
 
-          <a routerLink="/pos" class="pos-btn pos-btn--primary">
-            <span>➕ Yangi Buyurtma</span>
+          <a routerLink="/tables" class="pos-btn pos-btn--primary">
+            <span>➕ Joylar va Stollar</span>
           </a>
         </div>
       </div>
@@ -55,10 +56,16 @@ import { PrinterService } from '../../core/services/printer.service';
             Barchasi ({{ orders.length }})
           </button>
           <button
+            class="tab-btn tab-btn--closed"
+            [class.active]="activeTab === 'CLOSED'"
+            (click)="setTab('CLOSED')">
+            🔒 Yopilgan / To'lov Kutilmoqda ({{ closedOrdersCount }})
+          </button>
+          <button
             class="tab-btn"
             [class.active]="activeTab === 'ACTIVE'"
             (click)="setTab('ACTIVE')">
-            Faol ({{ activeOrdersCount }})
+            Ochiq ({{ openOrdersCount }})
           </button>
           <button
             class="tab-btn"
@@ -149,18 +156,19 @@ import { PrinterService } from '../../core/services/printer.service';
           <table class="pos-table">
             <thead>
               <tr *ngIf="activeTab !== 'PAID'">
-                <th>Chek #</th>
-                <th>Stol / Joy</th>
+                <th>№ (Chek)</th>
+                <th>Joy / Stol</th>
                 <th>Ofitsiant</th>
                 <th>Mahsulotlar</th>
                 <th>Jami summa</th>
                 <th>Holati</th>
+                <th>To‘lov</th>
                 <th>Vaqti</th>
                 <th style="text-align: right;">Amallar</th>
               </tr>
               <tr *ngIf="activeTab === 'PAID'">
                 <th>Chek #</th>
-                <th>Stol</th>
+                <th>Joy / Stol</th>
                 <th>Yopilgan sana & vaqt</th>
                 <th>Mahsulotlar</th>
                 <th>Jami summa</th>
@@ -178,7 +186,14 @@ import { PrinterService } from '../../core/services/printer.service';
                     <strong>#{{ order.orderNumber }}</strong>
                   </td>
                   <td>
-                    <span class="table-tag">{{ order.tableName || order.tableNumber || 'Olib ketish' }}</span>
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                      <span class="table-tag">
+                        📍 {{ order.zoneName ? (order.zoneName + ' — ' + (order.tableName || order.tableNumber || 'Stol')) : (order.tableName || order.tableNumber || 'Joy') }}
+                      </span>
+                      <span *ngIf="getPlacePercentage(order) > 0" class="zone-badge-sm">
+                        Foiz: {{ getPlacePercentage(order) }}%
+                      </span>
+                    </div>
                   </td>
                   <td>
                     <span class="waiter-name">{{ order.waiterName || '—' }}</span>
@@ -194,8 +209,13 @@ import { PrinterService } from '../../core/services/printer.service';
                       {{ getStatusLabel(order.status) }}
                     </span>
                   </td>
+                  <td>
+                    <span class="payment-status-pill" [ngClass]="getPaymentStatusClass(order)">
+                      {{ getPaymentStatusLabel(order) }}
+                    </span>
+                  </td>
                   <td class="time-col">
-                    {{ formatTime(order.openedAt || order.createdAt) }}
+                    {{ formatTime(order.closedAt || order.openedAt || order.createdAt) }}
                   </td>
                   <td class="actions-col">
                     <div class="action-buttons">
@@ -207,13 +227,15 @@ import { PrinterService } from '../../core/services/printer.service';
                         👁️ Ko'rish
                       </button>
 
-                      <!-- Payment Button (Cashier) -->
+                      <!-- Payment Button (Cashier): YONADI faqat hisob yopilganda (CLOSED), bo'lmasa READONLY -->
                       <button
-                        *ngIf="canProcessPayment() && order.status !== 'PAID' && order.status !== 'CANCELLED'"
-                        class="pos-btn pos-btn--success pos-btn--sm"
-                        title="To'lovni qabul qilish"
-                        (click)="openPaymentModal(order)">
-                        💳 To'lov
+                        *ngIf="canProcessPayment() && order.paymentStatus !== 'PAID' && order.status !== 'PAID' && order.status !== 'CANCELLED'"
+                        class="pos-btn pos-btn--sm"
+                        [ngClass]="order.status === 'CLOSED' ? 'btn-payment-active' : 'btn-payment-readonly'"
+                        [disabled]="order.status !== 'CLOSED'"
+                        [title]="order.status === 'CLOSED' ? 'To‘lovni qabul qilish' : 'Hisob hali yopilmagan! Avval hisobni yoping'"
+                        (click)="onPaymentButtonClick(order)">
+                        💳 To'lov qilish
                       </button>
 
                       <!-- Receipt Button -->
@@ -224,9 +246,9 @@ import { PrinterService } from '../../core/services/printer.service';
                         🧾 Chek
                       </button>
 
-                      <!-- Cancel / Void -->
+                      <!-- Cancel / Void (Only for open orders) -->
                       <button
-                        *ngIf="order.status !== 'PAID' && order.status !== 'CANCELLED'"
+                        *ngIf="order.status !== 'CLOSED' && order.status !== 'PAID' && order.status !== 'CANCELLED'"
                         class="pos-btn pos-btn--danger pos-btn--sm"
                         title="Bekor qilish"
                         (click)="openCancelOrderModal(order, $event)">
@@ -244,7 +266,14 @@ import { PrinterService } from '../../core/services/printer.service';
                     <strong class="history-order-num">#{{ order.orderNumber }}</strong>
                   </td>
                   <td>
-                    <span class="table-tag">{{ order.tableName || order.tableNumber || 'Stol' }}</span>
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                      <span class="table-tag">
+                        📍 {{ order.zoneName ? (order.zoneName + ' — ' + (order.tableName || order.tableNumber || 'Stol')) : (order.tableName || order.tableNumber || 'Joy') }}
+                      </span>
+                      <span *ngIf="getPlacePercentage(order) > 0" class="zone-badge-sm">
+                        Foiz: {{ getPlacePercentage(order) }}%
+                      </span>
+                    </div>
                   </td>
                   <td class="time-col">
                     <div style="font-weight: 600; color: var(--text-primary);">
@@ -406,9 +435,14 @@ import { PrinterService } from '../../core/services/printer.service';
             <div>
               <h2 class="modal-title">Buyurtma #{{ selectedOrder.orderNumber }}</h2>
               <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
-                <span class="table-tag">{{ selectedOrder.tableName || selectedOrder.tableNumber || 'Stol' }}</span>
+                <span class="table-tag">
+                  📍 {{ selectedOrder.zoneName ? (selectedOrder.zoneName + ' — ' + (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol')) : (selectedOrder.tableName || selectedOrder.tableNumber || 'Joy') }}
+                </span>
                 <span class="status-pill" [ngClass]="getStatusClass(selectedOrder.status)">
                   {{ getStatusLabel(selectedOrder.status) }}
+                </span>
+                <span class="payment-status-pill" [ngClass]="getPaymentStatusClass(selectedOrder)">
+                  {{ getPaymentStatusLabel(selectedOrder) }}
                 </span>
                 <span *ngIf="selectedOrder.status === 'PAID'" class="history-tag">
                   📁 TARIXIY BUYURTMA (FAQAT KO‘RISH)
@@ -420,13 +454,16 @@ import { PrinterService } from '../../core/services/printer.service';
 
           <div class="modal-body">
             <div class="detail-meta-grid">
+              <div><span>Joy:</span> <strong>{{ selectedOrder.zoneName ? (selectedOrder.zoneName + ' — ' + (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol')) : (selectedOrder.tableName || selectedOrder.tableNumber || 'Joy') }}</strong></div>
               <div><span>Ofitsiant:</span> <strong>{{ selectedOrder.waiterName || '—' }}</strong></div>
               <div><span>Holati:</span> <span class="status-pill" [ngClass]="getStatusClass(selectedOrder.status)">{{ getStatusLabel(selectedOrder.status) }}</span></div>
+              <div><span>To‘lov holati:</span> <span class="payment-status-pill" [ngClass]="getPaymentStatusClass(selectedOrder)">{{ getPaymentStatusLabel(selectedOrder) }}</span></div>
               <div><span>Ochilgan vaqt:</span> <strong>{{ formatDateTime(selectedOrder.openedAt || selectedOrder.createdAt) }}</strong></div>
-              <div><span>Mehmonlar soni:</span> <strong>{{ selectedOrder.guestCount || 1 }} kishi</strong></div>
+              <div><span>Joy foizi:</span> <strong>{{ getPlacePercentage(selectedOrder) }}%</strong></div>
+              <div *ngIf="selectedOrder.closedAt"><span>Yopilgan vaqti:</span> <strong>{{ formatDateTime(selectedOrder.closedAt) }}</strong></div>
+              <div *ngIf="selectedOrder.paidAt"><span>To‘lov vaqti:</span> <strong>{{ formatDateTime(selectedOrder.paidAt) }}</strong></div>
               <div *ngIf="selectedOrder.cashierName"><span>Kassir:</span> <strong>{{ selectedOrder.cashierName }}</strong></div>
               <div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong>{{ selectedOrder.paymentMethod === 'CARD' ? '💳 Karta' : '💵 Naqd' }}</strong></div>
-              <div *ngIf="selectedOrder.closedAt || selectedOrder.paidAt"><span>Yopilgan vaqti:</span> <strong>{{ formatDateTime(selectedOrder.closedAt || selectedOrder.paidAt) }}</strong></div>
               <div *ngIf="selectedOrder.paidAmount"><span>To‘langan summa:</span> <strong style="color: #10b981;">{{ selectedOrder.paidAmount | number:'1.0-0' }} so'm</strong></div>
             </div>
 
@@ -443,7 +480,7 @@ import { PrinterService } from '../../core/services/printer.service';
                   <th style="text-align: right;">Narxi</th>
                   <th style="text-align: right;">Jami</th>
                   <th>Oshxona</th>
-                  <th *ngIf="selectedOrder.status !== 'PAID'" style="text-align: right;">Amal</th>
+                  <th *ngIf="selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CLOSED'" style="text-align: right;">Amal</th>
                 </tr>
               </thead>
               <tbody>
@@ -474,7 +511,7 @@ import { PrinterService } from '../../core/services/printer.service';
                       {{ getItemKitchenStatusLabel(item) }}
                     </span>
                   </td>
-                  <td *ngIf="selectedOrder.status !== 'PAID'" style="text-align: right;">
+                  <td *ngIf="selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CLOSED'" style="text-align: right;">
                     <button
                       *ngIf="!item.voided && selectedOrder.status !== 'CANCELLED'"
                       class="pos-btn pos-btn--danger pos-btn--sm"
@@ -499,9 +536,9 @@ import { PrinterService } from '../../core/services/printer.service';
                 <span>Chegirma:</span>
                 <span style="color: var(--danger);">-{{ selectedOrder.discountAmount | number:'1.0-0' }} so'm</span>
               </div>
-              <div class="summary-line" *ngIf="getServiceCharge(selectedOrder) > 0">
-                <span>Xizmat haqi ({{ getServiceChargePercent(selectedOrder) }}%):</span>
-                <span style="color: #6366f1; font-weight: 600;">+{{ getServiceCharge(selectedOrder) | number:'1.0-0' }} so'm</span>
+              <div class="summary-line" *ngIf="getPlaceFee(selectedOrder) > 0">
+                <span>Joy foizi ({{ selectedOrder.zoneName || 'Joy' }} — {{ getPlacePercentage(selectedOrder) }}%):</span>
+                <span style="color: #6366f1; font-weight: 600;">+{{ getPlaceFee(selectedOrder) | number:'1.0-0' }} so'm</span>
               </div>
               <div class="summary-line total">
                 <span>Jami to'lanishi kerak:</span>
@@ -521,7 +558,7 @@ import { PrinterService } from '../../core/services/printer.service';
           <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
               <button
-                *ngIf="selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
+                *ngIf="selectedOrder.status !== 'CLOSED' && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
                 class="pos-btn pos-btn--danger"
                 (click)="openCancelOrderModal(selectedOrder, $event)">
                 🚫 Butun buyurtmani bekor qilish
@@ -529,20 +566,35 @@ import { PrinterService } from '../../core/services/printer.service';
               <span *ngIf="selectedOrder.status === 'PAID'" style="color: var(--text-muted); font-size: 13px;">
                 🔒 Tarixdagi yopilgan buyurtma faqat ko‘rish uchun. Stolga yoki oshxonaga qaytarilmaydi.
               </span>
+              <span *ngIf="selectedOrder.status === 'CLOSED' && selectedOrder.paymentStatus !== 'PAID'" style="color: #38bdf8; font-size: 13px; font-weight: 600;">
+                🔒 Hisob yopilgan. Kassadan to'lov qabul qilinishi kutilmoqda.
+              </span>
             </div>
             <div style="display: flex; gap: 8px;">
               <button
-                *ngIf="selectedOrder.status === 'PAID'"
+                *ngIf="selectedOrder.status === 'PAID' || selectedOrder.status === 'CLOSED'"
                 class="pos-btn pos-btn--primary"
                 (click)="showDetailModal = false; openReceiptModal(selectedOrder)">
-                🧾 Chekni ko'rish / Qayta chop etish
+                🧾 Chekni ko'rish / Chop etish
               </button>
               <button class="pos-btn pos-btn--secondary" (click)="closeModals()">Yopish</button>
+              <!-- Hisobni yopish (agar hali yopilmagan bo'lsa) -->
               <button
-                *ngIf="canProcessPayment() && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
-                class="pos-btn pos-btn--success"
-                (click)="showDetailModal = false; openPaymentModal(selectedOrder)">
-                💳 To'lovga o'tish
+                *ngIf="selectedOrder.status !== 'CLOSED' && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
+                class="pos-btn pos-btn--warning pos-btn--lg"
+                title="Hisobni yopish (Hisob chekini chiqaradi va to'lov tugmasini faollashtiradi)"
+                (click)="closeOrderFromModal(selectedOrder)">
+                🔒 Hisobni yopish
+              </button>
+              <!-- Payment Button: YONADI faqat hisob yopilganda (CLOSED), bo'lmasa READONLY -->
+              <button
+                *ngIf="canProcessPayment() && selectedOrder.paymentStatus !== 'PAID' && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
+                class="pos-btn pos-btn--lg"
+                [ngClass]="selectedOrder.status === 'CLOSED' ? 'btn-payment-active' : 'btn-payment-readonly'"
+                [disabled]="selectedOrder.status !== 'CLOSED'"
+                [title]="selectedOrder.status === 'CLOSED' ? 'To‘lovni qabul qilish' : 'Hisob hali yopilmagan! Avval hisobni yopish lozim'"
+                (click)="onDetailModalPaymentClick(selectedOrder)">
+                💳 TO‘LOV QILISH
               </button>
             </div>
           </div>
@@ -665,11 +717,12 @@ import { PrinterService } from '../../core/services/printer.service';
 
               <div class="receipt-meta">
                 <div>Chek: #{{ selectedOrder.orderNumber }}</div>
-                <div>Stol: {{ selectedOrder.tableName || selectedOrder.tableNumber || 'Stol' }}</div>
+                <div>Joy: {{ selectedOrder.zoneName ? (selectedOrder.zoneName + ' — ' + (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol')) : (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol') }}</div>
                 <div>Ofitsiant: {{ selectedOrder.waiterName || '—' }}</div>
                 <div *ngIf="selectedOrder.cashierName">Kassir: {{ selectedOrder.cashierName }}</div>
-                <div>Vaqt: {{ formatDateTime(selectedOrder.openedAt || selectedOrder.createdAt) }}</div>
-                <div *ngIf="selectedOrder.closedAt || selectedOrder.paidAt">Yopilgan: {{ formatDateTime(selectedOrder.closedAt || selectedOrder.paidAt) }}</div>
+                <div>Ochilgan: {{ formatDateTime(selectedOrder.openedAt || selectedOrder.createdAt) }}</div>
+                <div *ngIf="selectedOrder.closedAt">Yopilgan: {{ formatDateTime(selectedOrder.closedAt) }}</div>
+                <div *ngIf="selectedOrder.paidAt">To'lov vaqti: {{ formatDateTime(selectedOrder.paidAt) }}</div>
                 <div class="receipt-divider">--------------------------------</div>
               </div>
 
@@ -693,9 +746,9 @@ import { PrinterService } from '../../core/services/printer.service';
                   <span>Chegirma:</span>
                   <span>-{{ selectedOrder.discountAmount | number:'1.0-0' }} so'm</span>
                 </div>
-                <div class="r-total-row" *ngIf="getServiceCharge(selectedOrder) > 0">
-                  <span>Xizmat haqi ({{ getServiceChargePercent(selectedOrder) }}%):</span>
-                  <span>+{{ getServiceCharge(selectedOrder) | number:'1.0-0' }} so'm</span>
+                <div class="r-total-row" *ngIf="getPlaceFee(selectedOrder) > 0">
+                  <span>Joy foizi ({{ selectedOrder.zoneName ? selectedOrder.zoneName + ' ' : '' }}{{ getPlacePercentage(selectedOrder) }}%):</span>
+                  <span>+{{ getPlaceFee(selectedOrder) | number:'1.0-0' }} so'm</span>
                 </div>
                 <div class="r-total-row final">
                   <span>JAMI:</span>
@@ -1058,7 +1111,7 @@ import { PrinterService } from '../../core/services/printer.service';
 
     /* Table Footer (tfoot) */
     .tfoot-row {
-      background: rgba(30, 41, 59, 0.7);
+      background: var(--bg-tertiary);
       border-top: 2px solid var(--border);
 
       td {
@@ -1148,8 +1201,9 @@ import { PrinterService } from '../../core/services/printer.service';
       align-items: center;
       flex-wrap: wrap;
       gap: 16px;
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.9));
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
       border-radius: var(--radius-md);
       padding: 12px 18px;
       margin: 12px 16px;
@@ -1165,8 +1219,8 @@ import { PrinterService } from '../../core/services/printer.service';
         display: flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
         padding: 5px 12px;
         border-radius: 8px;
         font-size: 12px;
@@ -1407,7 +1461,9 @@ import { PrinterService } from '../../core/services/printer.service';
     }
 
     .items-count-badge {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
       padding: 3px 8px;
       border-radius: 12px;
       font-size: 12px;
@@ -1467,6 +1523,12 @@ import { PrinterService } from '../../core/services/printer.service';
         border: 1px solid rgba(100, 116, 139, 0.3);
       }
 
+      &.pill--closed {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.4);
+      }
+
       &.pill--paid, &.pill--completed, &.badge-paid {
         background: rgba(139, 92, 246, 0.15);
         color: #a78bfa;
@@ -1477,6 +1539,53 @@ import { PrinterService } from '../../core/services/printer.service';
         background: rgba(239, 68, 68, 0.15);
         color: #f87171;
         border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+    }
+
+    .payment-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      white-space: nowrap;
+
+      &.pay-pill--unpaid {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+      }
+
+      &.pay-pill--paid {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+      }
+    }
+
+    .zone-badge-sm {
+      display: inline-block;
+      width: fit-content;
+      font-size: 10px;
+      font-weight: 700;
+      color: #818cf8;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .tab-btn--closed {
+      border: 1px dashed rgba(56, 189, 248, 0.5) !important;
+      color: #38bdf8 !important;
+
+      &.active {
+        background: #0284c7 !important;
+        color: #fff !important;
       }
     }
 
@@ -1495,6 +1604,45 @@ import { PrinterService } from '../../core/services/printer.service';
       min-height: 32px;
       padding: 4px 10px;
       font-size: 12px;
+    }
+
+    /* Payment Button: YONGAN (Active) vs READONLY (O'chiq) */
+    .btn-payment-active {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+      color: #ffffff !important;
+      border: 1px solid #34d399 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.45) !important;
+      cursor: pointer !important;
+      font-weight: 600 !important;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+
+      &:hover:not(:disabled) {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.75) !important;
+        transform: translateY(-1px);
+      }
+      &:active:not(:disabled) {
+        transform: translateY(0);
+      }
+    }
+
+    .btn-payment-readonly {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #64748b !important;
+      border: 1px dashed rgba(255, 255, 255, 0.16) !important;
+      cursor: not-allowed !important;
+      opacity: 0.52 !important;
+      box-shadow: none !important;
+      font-weight: 500 !important;
+      filter: grayscale(0.85);
+      pointer-events: auto !important;
+      transition: all 0.2s ease !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        color: #94a3b8 !important;
+      }
     }
 
     /* Modal Overlay & Card */
@@ -2142,7 +2290,7 @@ export class OrdersListComponent implements OnInit {
   tablesList: RestaurantTable[] = [];
   loading = false;
   searchQuery = '';
-  activeTab: 'ALL' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' = 'ALL';
+  activeTab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' = 'ALL';
 
   // Pagination
   pageIndex = 0;
@@ -2184,6 +2332,7 @@ export class OrdersListComponent implements OnInit {
     private paymentService: PaymentService,
     private tableService: TableService,
     private printerService: PrinterService,
+    private notify: NotificationService,
     private cdr: ChangeDetectorRef,
     public auth: AuthService
   ) {}
@@ -2251,7 +2400,7 @@ export class OrdersListComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'ALL' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID'): void {
+  setTab(tab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID'): void {
     this.activeTab = tab;
     this.pageIndex = 0;
     if (tab === 'PAID') {
@@ -2321,8 +2470,10 @@ export class OrdersListComponent implements OnInit {
 
     return this.orders.filter(order => {
       // Tab filter
-      if (this.activeTab === 'ACTIVE') {
-        if (order.status === 'PAID' || order.status === 'CANCELLED') return false;
+      if (this.activeTab === 'CLOSED') {
+        if (order.status !== 'CLOSED' || order.paymentStatus === 'PAID') return false;
+      } else if (this.activeTab === 'ACTIVE') {
+        if (order.status === 'CLOSED' || order.status === 'PAID' || order.status === 'CANCELLED') return false;
       } else if (this.activeTab === 'KITCHEN') {
         if (order.status !== 'SENT_TO_KITCHEN' && order.status !== 'PREPARING') return false;
       } else if (this.activeTab === 'READY') {
@@ -2354,6 +2505,14 @@ export class OrdersListComponent implements OnInit {
     }
     const start = this.pageIndex * this.pageSize;
     return list.slice(start, start + this.pageSize);
+  }
+
+  get closedOrdersCount(): number {
+    return this.orders.filter(o => o.status === 'CLOSED' && o.paymentStatus !== 'PAID').length;
+  }
+
+  get openOrdersCount(): number {
+    return this.orders.filter(o => o.status !== 'CLOSED' && o.status !== 'PAID' && o.status !== 'CANCELLED').length;
   }
 
   get activeOrdersCount(): number {
@@ -2442,6 +2601,8 @@ export class OrdersListComponent implements OnInit {
 
   getStatusClass(status: string): string {
     switch (status?.toUpperCase()) {
+      case 'CLOSED':
+        return 'pill--closed';
       case 'OPEN':
       case 'DRAFT':
         return 'pill--new';
@@ -2464,6 +2625,7 @@ export class OrdersListComponent implements OnInit {
 
   getStatusLabel(status: string): string {
     switch (status?.toUpperCase()) {
+      case 'CLOSED': return '🔒 YOPILGAN';
       case 'OPEN': return '🟡 OCHIQ';
       case 'DRAFT': return '⚪ QORALAMA';
       case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';
@@ -2524,9 +2686,49 @@ export class OrdersListComponent implements OnInit {
     this.showDetailModal = true;
   }
 
+  onPaymentButtonClick(order: Order): void {
+    if (order.status !== 'CLOSED') {
+      this.notify.warning(`№ ${order.orderNumber} buyurtma hisobi hali yopilmagan! To'lov qilish uchun avval hisobni yopish (hisob chekini chiqarish) kerak.`);
+      return;
+    }
+    this.openPaymentModal(order);
+  }
+
+  onDetailModalPaymentClick(order: Order): void {
+    if (order.status !== 'CLOSED') {
+      this.notify.warning(`№ ${order.orderNumber} buyurtma hisobi hali yopilmagan! To'lov qilish uchun avval hisobni yopish kerak.`);
+      return;
+    }
+    this.showDetailModal = false;
+    this.openPaymentModal(order);
+  }
+
+  closeOrderFromModal(order: Order): void {
+    if (!order?.id) return;
+    if (!confirm(`№ ${order.orderNumber} buyurtma hisobini yopmoqchimisiz?\n(Hisob cheki printerdan chiqariladi va stol bo'shatiladi)`)) {
+      return;
+    }
+    this.orderService.closeOrder(order.id).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.notify.success(`№ ${order.orderNumber} hisobi muvaffaqiyatli yopildi va hisob cheki printerdan chiqarildi! Endi to‘lov qilish tugmasi faollashdi.`);
+          this.selectedOrder = res.data;
+          this.loadOrders();
+        }
+      },
+      error: (err) => {
+        this.notify.error(err.error?.message || "Hisobni yopishda xatolik yuz berdi");
+      }
+    });
+  }
+
   openPaymentModal(order: Order): void {
+    if (order.status !== 'CLOSED') {
+      this.notify.warning(`№ ${order.orderNumber} buyurtma hisobi hali yopilmagan! To'lov qilish uchun avval hisobni yopish kerak.`);
+      return;
+    }
     if (!this.canProcessPayment()) {
-      alert("Ofitsiant to'lov qabul qila olmaydi. To'lov faqat Kassa orqali amalga oshiriladi!");
+      this.notify.warning("Ofitsiant to'lov qabul qila olmaydi. To'lov faqat Kassa orqali amalga oshiriladi!");
       return;
     }
     this.selectedOrder = order;
@@ -2599,17 +2801,13 @@ export class OrdersListComponent implements OnInit {
             error: (e) => console.warn('Could not free table', e)
           });
         }
-        if (res?.data?.receiptPrintStatus === 'PRINT_FAILED') {
-          alert('To‘lov muvaffaqiyatli qabul qilindi, ammo chek chop etishda xatolik yuz berdi! Qayta chop etish tugmasi orqali qayta chiqarishingiz mumkin.');
-        } else {
-          alert('To‘lov muvaffaqiyatli qabul qilindi va chek chop etildi!');
-        }
+        this.notify.success('To‘lov muvaffaqiyatli qabul qilindi!');
         this.closeModals();
         this.loadOrders();
       },
       error: (err) => {
         this.processingPayment = false;
-        alert('To‘lovda xatolik yuz berdi: ' + (err.error?.message || err.message));
+        this.notify.error('To‘lovda xatolik yuz berdi: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -2667,7 +2865,7 @@ export class OrdersListComponent implements OnInit {
     if (!this.selectedOrder) return;
 
     if (this.cancelReasonCategory === 'Boshqa' && !this.cancelReasonCustom.trim()) {
-      alert('Iltimos, bekor qilish sababini yozing!');
+      this.notify.warning('Iltimos, bekor qilish sababini yozing!');
       return;
     }
 
@@ -2695,7 +2893,7 @@ export class OrdersListComponent implements OnInit {
         },
         error: (err) => {
           this.processingCancel = false;
-          alert('Mahsulotni bekor qilishda xatolik: ' + (err.error?.message || err.message));
+          this.notify.error('Mahsulotni bekor qilishda xatolik: ' + (err.error?.message || err.message));
           this.cdr.markForCheck();
         }
       });
@@ -2720,7 +2918,7 @@ export class OrdersListComponent implements OnInit {
         },
         error: (err) => {
           this.processingCancel = false;
-          alert('Buyurtmani bekor qilishda xatolik: ' + (err.error?.message || err.message));
+          this.notify.error('Buyurtmani bekor qilishda xatolik: ' + (err.error?.message || err.message));
           this.cdr.markForCheck();
         }
       });
@@ -2747,35 +2945,50 @@ export class OrdersListComponent implements OnInit {
     }
     this.printerService.reprintOrderReceipt(this.selectedOrder.id).subscribe({
       next: () => {
-        alert('Kassa cheki Windows printerga qayta chop etishga yuborildi!');
+        this.notify.success('Kassa cheki Windows printerga qayta chop etishga yuborildi!');
       },
       error: (err) => {
-        alert('Chekni chop etishda xatolik: ' + (err.error?.message || err.message));
+        this.notify.error('Chekni chop etishda xatolik: ' + (err.error?.message || err.message));
       }
     });
   }
 
-  getServiceCharge(order: any): number {
-    if (!order) return 0;
-    const subtotal = order.subtotal || 0;
-    const discount = order.discountAmount || 0;
+  getPlacePercentage(order: any): number {
+    if (order?.placePercentage != null) return Number(order.placePercentage);
+    return 0;
+  }
+
+  getPlaceFee(order: any): number {
+    if (order?.placeFee != null && Number(order.placeFee) > 0) return Number(order.placeFee);
+    const subtotal = order?.subtotal || 0;
+    const discount = order?.discountAmount || 0;
     const net = Math.max(0, subtotal - discount);
-    const paid = order.paidAmount || 0;
-    const total = order.total || 0;
-    const effectiveTotal = paid > 0 ? paid : (total > 0 ? total : 0);
-    if (effectiveTotal > net) {
-      return effectiveTotal - net;
+    const pct = this.getPlacePercentage(order);
+    if (pct > 0) {
+      return Math.round(net * (pct / 100));
     }
-    return Math.round(net * 0.10);
+    return 0;
+  }
+
+  getServiceCharge(order: any): number {
+    return this.getPlaceFee(order);
   }
 
   getServiceChargePercent(order: any): number {
-    if (!order) return 10;
-    const subtotal = order.subtotal || 0;
-    const discount = order.discountAmount || 0;
-    const net = Math.max(0, subtotal - discount);
-    if (net <= 0) return 10;
-    const sc = this.getServiceCharge(order);
-    return Math.round((sc / net) * 100);
+    return this.getPlacePercentage(order);
+  }
+
+  getPaymentStatusLabel(order: any): string {
+    if (order?.paymentStatus === 'PAID' || order?.status === 'PAID') {
+      return '🟢 TO‘LANGAN';
+    }
+    return '🟠 TO‘LANMAGAN';
+  }
+
+  getPaymentStatusClass(order: any): string {
+    if (order?.paymentStatus === 'PAID' || order?.status === 'PAID') {
+      return 'pay-pill--paid';
+    }
+    return 'pay-pill--unpaid';
   }
 }

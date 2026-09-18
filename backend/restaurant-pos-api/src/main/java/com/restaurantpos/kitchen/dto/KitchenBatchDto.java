@@ -27,7 +27,6 @@ public class KitchenBatchDto {
         private String waiterName;
         private String customerName;
         private String customerPhone;
-        private String deliveryAddress;
 
         private UUID kitchenId;
         private String kitchenName;

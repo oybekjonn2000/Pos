@@ -116,10 +116,10 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
     .lan-modal-card {
       width: 580px;
       max-width: 92vw;
-      background: #11141e;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 16px;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+      box-shadow: var(--shadow-lg);
       overflow: hidden;
       animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
@@ -128,11 +128,11 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
 
     .lan-modal-header {
       padding: 20px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #151926;
+      background: var(--bg-secondary);
 
       .header-title {
         display: flex;
@@ -147,7 +147,7 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
           margin: 0;
           font-size: 17px;
           font-weight: 700;
-          color: #f1f5f9;
+          color: var(--text-primary);
         }
 
         .subtitle {
@@ -273,10 +273,10 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
           .form-input {
             width: 100%;
             padding: 10px 14px 10px 38px;
-            background: #181d2c;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            color: #f1f5f9;
+            color: var(--text-primary);
             font-size: 14px;
             font-family: 'Consolas', monospace;
             transition: all 0.2s;
@@ -359,8 +359,8 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
 
     .lan-modal-footer {
       padding: 16px 24px;
-      background: #151926;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -390,29 +390,29 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
       }
 
       .btn-discover {
-        background: #1e2436;
-        color: #94a3b8;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
         &:hover:not(:disabled) {
-          background: #283149;
-          color: #f1f5f9;
+          background: var(--bg-hover);
+          color: var(--text-primary);
         }
       }
 
       .btn-test {
-        background: #252d43;
-        color: #60a5fa;
-        border: 1px solid rgba(96, 165, 250, 0.3);
+        background: rgba(99, 102, 241, 0.12);
+        color: var(--primary);
+        border: 1px solid rgba(99, 102, 241, 0.3);
         &:hover:not(:disabled) {
-          background: #2d3854;
+          background: rgba(99, 102, 241, 0.22);
         }
       }
 
       .btn-secondary {
         background: transparent;
-        color: #94a3b8;
+        color: var(--text-muted);
         &:hover {
-          color: #f8fafc;
+          color: var(--text-primary);
         }
       }
 

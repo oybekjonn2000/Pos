@@ -33,30 +33,35 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order.OrderStatus> ACTIVE_STATUSES = List.of(
             Order.OrderStatus.OPEN,
             Order.OrderStatus.IN_PROGRESS,
-            Order.OrderStatus.READY
+            Order.OrderStatus.READY,
+            Order.OrderStatus.CLOSED
     );
 
     List<Order.OrderStatus> HISTORY_STATUSES = List.of(
             Order.OrderStatus.PAID
     );
 
-    default List<Order> findActiveOrders(UUID tenantId) {
-        return findByTenantIdAndStatusInAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, ACTIVE_STATUSES);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.deletedAt IS NULL " +
+           "AND ((o.status IN ('OPEN','IN_PROGRESS','READY')) OR (o.status = 'CLOSED' AND o.paymentStatus = 'UNPAID')) " +
+           "ORDER BY o.openedAt DESC")
+    List<Order> findActiveOrders(@Param("tenantId") UUID tenantId);
 
-    default List<Order> findHistoryOrders(UUID tenantId) {
-        return findByTenantIdAndStatusInAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, HISTORY_STATUSES);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.waiter.id = :waiterId AND o.deletedAt IS NULL " +
+           "AND ((o.status IN ('OPEN','IN_PROGRESS','READY')) OR (o.status = 'CLOSED' AND o.paymentStatus = 'UNPAID')) " +
+           "ORDER BY o.openedAt DESC")
+    List<Order> findActiveOrdersByWaiter(@Param("tenantId") UUID tenantId, @Param("waiterId") UUID waiterId);
+
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.deletedAt IS NULL " +
+           "AND (o.status = 'PAID' OR o.paymentStatus = 'PAID') " +
+           "ORDER BY COALESCE(o.paidAt, o.closedAt, o.openedAt) DESC")
+    List<Order> findHistoryOrders(@Param("tenantId") UUID tenantId);
 
     List<Order> findByTenantIdAndStatusInAndWaiterIdAndDeletedAtIsNullOrderByOpenedAtDesc(UUID tenantId, List<Order.OrderStatus> statuses, UUID waiterId);
 
-    default List<Order> findActiveOrdersByWaiter(UUID tenantId, UUID waiterId) {
-        return findByTenantIdAndStatusInAndWaiterIdAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, ACTIVE_STATUSES, waiterId);
-    }
-
-    default List<Order> findHistoryOrdersByWaiter(UUID tenantId, UUID waiterId) {
-        return findByTenantIdAndStatusInAndWaiterIdAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, HISTORY_STATUSES, waiterId);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.waiter.id = :waiterId AND o.deletedAt IS NULL " +
+           "AND (o.status = 'PAID' OR o.paymentStatus = 'PAID') " +
+           "ORDER BY COALESCE(o.paidAt, o.closedAt, o.openedAt) DESC")
+    List<Order> findHistoryOrdersByWaiter(@Param("tenantId") UUID tenantId, @Param("waiterId") UUID waiterId);
 
     org.springframework.data.domain.Page<Order> findByTenantIdAndStatusInAndDeletedAtIsNullOrderByOpenedAtDesc(
             UUID tenantId, List<Order.OrderStatus> statuses, org.springframework.data.domain.Pageable pageable);
@@ -64,21 +69,25 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     org.springframework.data.domain.Page<Order> findByTenantIdAndStatusInAndWaiterIdAndDeletedAtIsNullOrderByOpenedAtDesc(
             UUID tenantId, List<Order.OrderStatus> statuses, UUID waiterId, org.springframework.data.domain.Pageable pageable);
 
-    default org.springframework.data.domain.Page<Order> findActiveOrders(UUID tenantId, org.springframework.data.domain.Pageable pageable) {
-        return findByTenantIdAndStatusInAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, ACTIVE_STATUSES, pageable);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.deletedAt IS NULL " +
+           "AND ((o.status IN ('OPEN','IN_PROGRESS','READY')) OR (o.status = 'CLOSED' AND o.paymentStatus = 'UNPAID')) " +
+           "ORDER BY o.openedAt DESC")
+    org.springframework.data.domain.Page<Order> findActiveOrders(@Param("tenantId") UUID tenantId, org.springframework.data.domain.Pageable pageable);
 
-    default org.springframework.data.domain.Page<Order> findActiveOrdersByWaiter(UUID tenantId, UUID waiterId, org.springframework.data.domain.Pageable pageable) {
-        return findByTenantIdAndStatusInAndWaiterIdAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, ACTIVE_STATUSES, waiterId, pageable);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.waiter.id = :waiterId AND o.deletedAt IS NULL " +
+           "AND ((o.status IN ('OPEN','IN_PROGRESS','READY')) OR (o.status = 'CLOSED' AND o.paymentStatus = 'UNPAID')) " +
+           "ORDER BY o.openedAt DESC")
+    org.springframework.data.domain.Page<Order> findActiveOrdersByWaiter(@Param("tenantId") UUID tenantId, @Param("waiterId") UUID waiterId, org.springframework.data.domain.Pageable pageable);
 
-    default org.springframework.data.domain.Page<Order> findHistoryOrders(UUID tenantId, org.springframework.data.domain.Pageable pageable) {
-        return findByTenantIdAndStatusInAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, HISTORY_STATUSES, pageable);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.deletedAt IS NULL " +
+           "AND (o.status = 'PAID' OR o.paymentStatus = 'PAID') " +
+           "ORDER BY COALESCE(o.paidAt, o.closedAt, o.openedAt) DESC")
+    org.springframework.data.domain.Page<Order> findHistoryOrders(@Param("tenantId") UUID tenantId, org.springframework.data.domain.Pageable pageable);
 
-    default org.springframework.data.domain.Page<Order> findHistoryOrdersByWaiter(UUID tenantId, UUID waiterId, org.springframework.data.domain.Pageable pageable) {
-        return findByTenantIdAndStatusInAndWaiterIdAndDeletedAtIsNullOrderByOpenedAtDesc(tenantId, HISTORY_STATUSES, waiterId, pageable);
-    }
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.waiter.id = :waiterId AND o.deletedAt IS NULL " +
+           "AND (o.status = 'PAID' OR o.paymentStatus = 'PAID') " +
+           "ORDER BY COALESCE(o.paidAt, o.closedAt, o.openedAt) DESC")
+    org.springframework.data.domain.Page<Order> findHistoryOrdersByWaiter(@Param("tenantId") UUID tenantId, @Param("waiterId") UUID waiterId, org.springframework.data.domain.Pageable pageable);
 
     List<Order> findByTenantIdAndStatusAndPaidAtBetweenAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status, Instant from, Instant to);
 

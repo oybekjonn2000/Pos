@@ -34,6 +34,11 @@ export interface Order {
   orderNumber: string;
   orderType?: string;
   status: string;
+  paymentStatus?: string;
+  zoneId?: string;
+  zoneName?: string;
+  placePercentage?: number;
+  placeFee?: number;
   tableId?: string;
   tableNumber?: string;
   tableName?: string;
@@ -62,7 +67,6 @@ export interface Order {
   closedAt?: string;
   customerName?: string;
   customerPhone?: string;
-  deliveryAddress?: string;
   items: OrderItem[];
 }
 
@@ -189,5 +193,9 @@ export class OrderService {
 
   updateStatus(orderId: string, status: string): Observable<ApiResponse<Order>> {
     return this.http.put<ApiResponse<Order>>(`${this.API}/${orderId}/status`, { status });
+  }
+
+  closeOrder(orderId: string): Observable<ApiResponse<Order>> {
+    return this.http.post<ApiResponse<Order>>(`${this.API}/${orderId}/close`, {});
   }
 }

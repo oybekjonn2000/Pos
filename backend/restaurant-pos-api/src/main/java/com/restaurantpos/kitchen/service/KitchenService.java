@@ -761,6 +761,116 @@ public class KitchenService {
     }
 
     @Transactional
+    public List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response> updateTableKitchenStatus(
+            UUID tableId, UUID orderId, UUID kitchenId, UUID tenantId, String statusStr, Set<UUID> allowedKitchenIds) {
+
+        List<com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus> activeStatuses = List.of(
+                com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.NEW,
+                com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.ACCEPTED,
+                com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.COOKING,
+                com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.PREPARING,
+                com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.READY
+        );
+
+        List<com.restaurantpos.kitchen.entity.KitchenOrderBatch> batches;
+        if (tableId != null) {
+            batches = kitchenOrderBatchRepository.findByTableIdAndStatuses(tenantId, tableId, activeStatuses);
+        } else if (orderId != null) {
+            batches = kitchenOrderBatchRepository.findByOrderIdAndStatuses(tenantId, orderId, activeStatuses);
+        } else {
+            return Collections.emptyList();
+        }
+
+        if (kitchenId != null) {
+            batches = batches.stream()
+                    .filter(b -> b.getKitchen() != null && b.getKitchen().getId().equals(kitchenId))
+                    .collect(Collectors.toList());
+        }
+        if (allowedKitchenIds != null && !allowedKitchenIds.isEmpty()) {
+            batches = batches.stream()
+                    .filter(b -> b.getKitchen() != null && allowedKitchenIds.contains(b.getKitchen().getId()))
+                    .collect(Collectors.toList());
+        }
+
+        String normalizedTarget = statusStr.toUpperCase();
+        Instant now = Instant.now();
+        List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response> updatedResponses = new java.util.ArrayList<>();
+
+        for (com.restaurantpos.kitchen.entity.KitchenOrderBatch batch : batches) {
+            boolean batchChanged = false;
+
+            if ("ACCEPTED".equals(normalizedTarget)) {
+                if (batch.getStatus() == com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.NEW) {
+                    batch.setStatus(com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.ACCEPTED);
+                    batchChanged = true;
+                }
+                if (batch.getItems() != null) {
+                    for (com.restaurantpos.kitchen.entity.KitchenOrderBatchItem item : batch.getItems()) {
+                        if (item.getStatus() == com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.NEW) {
+                            item.setStatus(com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.ACCEPTED);
+                            batchChanged = true;
+                        }
+                    }
+                }
+            } else if ("READY".equals(normalizedTarget)) {
+                if (batch.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.READY &&
+                    batch.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.SERVED &&
+                    batch.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.CANCELLED) {
+                    batch.setStatus(com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.READY);
+                    batch.setReadyAt(now);
+                    batchChanged = true;
+                }
+                if (batch.getItems() != null) {
+                    for (com.restaurantpos.kitchen.entity.KitchenOrderBatchItem item : batch.getItems()) {
+                        if (item.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.READY &&
+                            item.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.SERVED &&
+                            item.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.CANCELLED) {
+                            item.setStatus(com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.READY);
+                            item.setReadyAt(now);
+                            batchChanged = true;
+                        }
+                    }
+                }
+            } else if ("SERVED".equals(normalizedTarget) || "DISTRIBUTED".equals(normalizedTarget)) {
+                if (batch.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.SERVED &&
+                    batch.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.CANCELLED) {
+                    batch.setStatus(com.restaurantpos.kitchen.entity.KitchenOrderBatch.BatchStatus.SERVED);
+                    batch.setServedAt(now);
+                    batchChanged = true;
+                }
+                if (batch.getItems() != null) {
+                    for (com.restaurantpos.kitchen.entity.KitchenOrderBatchItem item : batch.getItems()) {
+                        if (item.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.SERVED &&
+                            item.getStatus() != com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.CANCELLED) {
+                            item.setStatus(com.restaurantpos.kitchen.entity.KitchenOrderBatchItem.ItemStatus.SERVED);
+                            item.setServedAt(now);
+                            batchChanged = true;
+                        }
+                    }
+                }
+            }
+
+            if (batchChanged) {
+                com.restaurantpos.kitchen.entity.KitchenOrderBatch saved = kitchenOrderBatchRepository.save(batch);
+                com.restaurantpos.kitchen.dto.KitchenBatchDto.Response response = toBatchResponse(saved);
+                updatedResponses.add(response);
+
+                if (saved.getKitchen() != null) {
+                    wsNotification.notifyKitchenBatchUpdated(saved.getKitchen().getId(), response);
+                }
+                if (saved.getOrder() != null) {
+                    wsNotification.notifyOrderStatusChanged(tenantId, orderService.toResponse(saved.getOrder()));
+                    if (saved.getOrder().getTable() != null) {
+                        wsNotification.notifyTableUpdated(tenantId, orderService.toTableResponse(saved.getOrder().getTable(), saved.getOrder()));
+                    }
+                }
+            }
+        }
+
+        return updatedResponses;
+    }
+
+    @Transactional
     public com.restaurantpos.kitchen.dto.KitchenBatchDto.ItemResponse updateBatchItemStatus(UUID batchItemId, UUID tenantId, String statusStr, Set<UUID> allowedKitchenIds) {
         com.restaurantpos.kitchen.entity.KitchenOrderBatchItem item = kitchenOrderBatchItemRepository.findByIdAndTenantId(batchItemId, tenantId)
                 .orElseThrow(() -> PosException.notFound("Kitchen batch item topilmadi: " + batchItemId));
@@ -829,11 +939,10 @@ public class KitchenService {
                 .orderType(o.getOrderType() != null ? o.getOrderType().name() : "DINE_IN")
                 .tableId(o.getTable() != null ? o.getTable().getId() : null)
                 .tableNumber(o.getTable() != null ? o.getTable().getTableNumber() : null)
-                .tableName(o.getTable() != null ? o.getTable().getName() : (o.getOrderType() == Order.OrderType.DELIVERY ? "DELIVERY" : "Olib ketish"))
+                .tableName(o.getTable() != null ? o.getTable().getName() : "Olib ketish")
                 .waiterName(b.getCreatedBy() != null ? b.getCreatedBy().getFullName() : (o.getWaiter() != null ? o.getWaiter().getFullName() : "Kassir"))
                 .customerName(o.getCustomer() != null ? o.getCustomer().getFullName() : null)
-                .customerPhone(o.getDeliveryPhone() != null ? o.getDeliveryPhone() : (o.getCustomer() != null ? o.getCustomer().getPhone() : null))
-                .deliveryAddress(o.getDeliveryAddress())
+                .customerPhone(o.getCustomer() != null ? o.getCustomer().getPhone() : null)
                 .kitchenId(b.getKitchen() != null ? b.getKitchen().getId() : null)
                 .kitchenName(b.getKitchen() != null ? b.getKitchen().getName() : null)
                 .kitchenCode(b.getKitchen() != null ? b.getKitchen().getCode() : null)

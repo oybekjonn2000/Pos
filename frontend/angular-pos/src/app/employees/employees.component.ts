@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { UserService, Employee, Role, CreateEmployeeRequest, UpdateEmployeeRequest } from '../core/services/user.service';
 import { KitchenService, KitchenStation } from '../core/services/kitchen.service';
+import { NotificationService } from '../core/services/notification.service';
 
 @Component({
   selector: 'app-employees',
@@ -775,6 +776,7 @@ export class EmployeesComponent implements OnInit {
   constructor(
     private userService: UserService,
     private kitchenService: KitchenService,
+    private notify: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -922,7 +924,7 @@ export class EmployeesComponent implements OnInit {
       if (this.createData.kitchenIds.length === 0) {
         this.createKitchenError = true;
         this.cdr.markForCheck();
-        alert('Oshpaz kamida bitta oshxonaga biriktirilishi kerak.');
+        this.notify.warning('Oshpaz kamida bitta oshxonaga biriktirilishi kerak.');
         return;
       }
     } else {
@@ -934,13 +936,14 @@ export class EmployeesComponent implements OnInit {
     this.userService.createUser(this.createData).subscribe({
       next: () => {
         this.saving = false;
+        this.notify.success('Yangi xodim muvaffaqiyatli qo‘shildi!');
         this.closeModals();
         this.loadEmployees();
       },
       error: (err) => {
         this.saving = false;
         this.cdr.markForCheck();
-        alert('Xatolik: ' + (err.error?.message || err.message));
+        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -952,7 +955,7 @@ export class EmployeesComponent implements OnInit {
       if (this.editData.kitchenIds.length === 0) {
         this.editKitchenError = true;
         this.cdr.markForCheck();
-        alert('Oshpaz kamida bitta oshxonaga biriktirilishi kerak.');
+        this.notify.warning('Oshpaz kamida bitta oshxonaga biriktirilishi kerak.');
         return;
       }
     } else {
@@ -964,13 +967,14 @@ export class EmployeesComponent implements OnInit {
     this.userService.updateUser(this.selectedEmp.id, this.editData).subscribe({
       next: () => {
         this.saving = false;
+        this.notify.success('Xodim ma‘lumotlari yangilandi!');
         this.closeModals();
         this.loadEmployees();
       },
       error: (err) => {
         this.saving = false;
         this.cdr.markForCheck();
-        alert('Xatolik: ' + (err.error?.message || err.message));
+        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -982,13 +986,13 @@ export class EmployeesComponent implements OnInit {
     this.userService.resetPassword(this.selectedEmp.id, this.newPassword).subscribe({
       next: () => {
         this.saving = false;
-        alert('Parol muvaffaqiyatli almashtirildi!');
+        this.notify.success('Parol muvaffaqiyatli almashtirildi!');
         this.closeModals();
       },
       error: (err) => {
         this.saving = false;
         this.cdr.markForCheck();
-        alert('Xatolik: ' + (err.error?.message || err.message));
+        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
       }
     });
   }
@@ -1006,11 +1010,12 @@ export class EmployeesComponent implements OnInit {
     this.userService.updateUser(emp.id, req).subscribe({
       next: () => {
         emp.active = updatedStatus;
+        this.notify.success(`"${emp.firstName}" statusi ${updatedStatus ? 'faol' : 'nofaol'} qilindi`);
         this.cdr.markForCheck();
       },
       error: (err) => {
         this.cdr.markForCheck();
-        alert('Statusni o‘zgartirishda xatolik: ' + (err.error?.message || err.message));
+        this.notify.error('Statusni o‘zgartirishda xatolik: ' + (err.error?.message || err.message));
       }
     });
   }

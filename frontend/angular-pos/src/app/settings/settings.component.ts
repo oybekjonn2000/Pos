@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SettingsService, AllSettingsResponse, RestaurantSettings, GeneralSettings, ReceiptSettings, PaymentSettings, TaxServiceSettings, OrderSettings, KitchenSettings, NotificationSettings, SecuritySettings, BackupSettings, SystemInfoDto, AuditLogEntry } from '../core/services/settings.service';
 import { PrinterService, Printer, CreatePrinterRequest, UpdatePrinterRequest, TestPrintResult, ExtendedKitchenStation, AvailablePrinter } from '../core/services/printer.service';
 import { AuthService } from '../core/services/auth.service';
+import { ThemeService } from '../core/services/theme.service';
 
 type SettingsCategory = 
   | 'RESTAURANT'
@@ -220,9 +221,9 @@ type SettingsCategory =
                   </div>
                   <div class="form-group">
                     <label>Tizim mavzusi (Theme)</label>
-                    <select class="pos-select" [(ngModel)]="general.theme">
+                    <select class="pos-select" [ngModel]="themeService.currentTheme()" (ngModelChange)="onThemeChange($event)">
+                      <option value="light">☀️ Light Mode (Kunduzgi rejim - Standart)</option>
                       <option value="dark">🌙 Dark Mode (Tungi rejim)</option>
-                      <option value="light">☀️ Light Mode (Kunduzgi rejim)</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -2203,8 +2204,14 @@ export class SettingsComponent implements OnInit {
   constructor(
     private settingsService: SettingsService,
     private printerService: PrinterService,
-    public auth: AuthService
+    public auth: AuthService,
+    public themeService: ThemeService
   ) {}
+
+  onThemeChange(theme: 'light' | 'dark'): void {
+    this.general.theme = theme;
+    this.themeService.setTheme(theme);
+  }
 
   ngOnInit(): void {
     this.loadAllData();

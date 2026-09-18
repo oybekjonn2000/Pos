@@ -42,6 +42,27 @@ public class TableController {
         return ResponseEntity.ok(ApiResponse.success(created, "Zona muvaffaqiyatli yaratildi"));
     }
 
+    @PutMapping("/zones/{id}")
+    @PreAuthorize("hasAuthority('MANAGE_TABLES')")
+    @Operation(summary = "Update dining zone (name, percentage, description)")
+    public ResponseEntity<ApiResponse<TableDto.ZoneResponse>> updateZone(
+            @PathVariable UUID id,
+            @Valid @RequestBody TableDto.UpdateZoneRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        TableDto.ZoneResponse updated = tableService.updateZone(user.getTenantId(), id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Zona muvaffaqiyatli yangilandi"));
+    }
+
+    @DeleteMapping("/zones/{id}")
+    @PreAuthorize("hasAuthority('MANAGE_TABLES')")
+    @Operation(summary = "Delete dining zone")
+    public ResponseEntity<ApiResponse<Void>> deleteZone(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        tableService.deleteZone(user.getTenantId(), id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Zona muvaffaqiyatli o'chirildi"));
+    }
+
     @GetMapping
     @Operation(summary = "Get all tables or filter by zone")
     public ResponseEntity<ApiResponse<List<TableDto.Response>>> getTables(

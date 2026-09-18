@@ -6,6 +6,7 @@ import { ProductService, Product, CreateProductRequest } from '../core/services/
 import { CategoryService, Category } from '../core/services/category.service';
 import { KitchenService, KitchenStation } from '../core/services/kitchen.service';
 import { getProductImageUrl, handleImageError } from '../core/utils/product-image.util';
+import { NotificationService } from '../core/services/notification.service';
 
 @Component({
   selector: 'app-products',
@@ -758,7 +759,7 @@ import { getProductImageUrl, handleImageError } from '../core/utils/product-imag
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid var(--border);
-      background: #111;
+      background: var(--bg-tertiary);
       flex-shrink: 0;
     }
 
@@ -910,6 +911,7 @@ export class ProductsComponent implements OnInit {
     private productService: ProductService,
     private categoryService: CategoryService,
     private kitchenService: KitchenService,
+    private notify: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -1221,11 +1223,11 @@ export class ProductsComponent implements OnInit {
 
   saveProduct(): void {
     if (!this.formData.name || !this.formData.salePrice) {
-      alert('Iltimos, mahsulot nomi va sotish narxini kiriting!');
+      this.notify.warning('Iltimos, mahsulot nomi va sotish narxini kiriting!');
       return;
     }
     if (!this.formData.categoryId) {
-      alert('Iltimos, mahsulot uchun kategoriyani tanlang! Mahsulot qat\'iy kategoriya orqali oshxonaga bog\'lanadi.');
+      this.notify.warning('Iltimos, mahsulot uchun kategoriyani tanlang! Mahsulot qat\'iy kategoriya orqali oshxonaga bog\'lanadi.');
       return;
     }
 
@@ -1235,24 +1237,26 @@ export class ProductsComponent implements OnInit {
       this.productService.updateProduct(this.editingId, this.formData).subscribe({
         next: () => {
           this.saving = false;
+          this.notify.success('Mahsulot muvaffaqiyatli yangilandi!');
           this.closeModal();
           this.loadCategoriesAndProducts();
         },
         error: (err) => {
           this.saving = false;
-          alert('Xatolik: ' + (err.error?.message || err.message));
+          this.notify.error('Xatolik: ' + (err.error?.message || err.message));
         }
       });
     } else {
       this.productService.createProduct(this.formData).subscribe({
         next: () => {
           this.saving = false;
+          this.notify.success('Yangi mahsulot muvaffaqiyatli yaratildi!');
           this.closeModal();
           this.loadCategoriesAndProducts();
         },
         error: (err) => {
           this.saving = false;
-          alert('Xatolik: ' + (err.error?.message || err.message));
+          this.notify.error('Xatolik: ' + (err.error?.message || err.message));
         }
       });
     }
@@ -1269,8 +1273,9 @@ export class ProductsComponent implements OnInit {
           this.pageIndex = Math.max(0, this.pageIndex - 1);
         }
         this.loadCategoriesAndProducts();
+        this.notify.success(`"${p.name}" mahsuloti muvaffaqiyatli o‘chirildi`);
       },
-      error: (err) => alert('O‘chirishda xatolik: ' + (err.error?.message || err.message))
+      error: (err) => this.notify.error('O‘chirishda xatolik: ' + (err.error?.message || err.message))
     });
   }
 }

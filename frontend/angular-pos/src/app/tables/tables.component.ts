@@ -25,6 +25,9 @@ import { WebsocketService } from '../core/services/websocket.service';
               <span>🔄</span> Yangilash
             </button>
             @if (canManageTables()) {
+              <button class="btn btn--secondary" (click)="openAddZoneModal()">
+                <span>🏛️</span> + Yangi Joy
+              </button>
               <button class="btn btn--primary" (click)="openAddModal()">
                 <span>➕</span> Stol Qo'shish
               </button>
@@ -51,19 +54,44 @@ import { WebsocketService } from '../core/services/websocket.service';
         </div>
       }
 
-      <!-- Zone Filter Tabs -->
+      <!-- Zone Filter Tabs & Actions -->
       <div class="zone-filter-bar">
-        <span class="zone-filter-title">Joylashuv (Zona):</span>
-        <div class="zone-tabs">
-          <button class="zone-tab" [class.active]="selectedZoneId() === null" (click)="selectZone(null)">
-            🌐 Barchasi ({{ tables().length }})
-          </button>
-          @for (zone of zones(); track zone.id) {
-            <button class="zone-tab" [class.active]="selectedZoneId() === zone.id" (click)="selectZone(zone.id)">
-              {{ getZoneIcon(zone.name) }} {{ zone.name }} ({{ countByZone(zone.id) }})
+        <div class="zone-tabs-wrap">
+          <div class="zone-filter-header">
+            <span class="zone-filter-icon">📍</span>
+            <span class="zone-filter-title">Joylashuv (Zona):</span>
+          </div>
+          <div class="zone-tabs">
+            <button class="zone-tab" [class.active]="selectedZoneId() === null" (click)="selectZone(null)">
+              <span class="zone-tab-icon">🌐</span>
+              <span class="zone-tab-name">Barchasi</span>
+              <span class="zone-tab-count">{{ tables().length }}</span>
             </button>
-          }
+            @for (zone of zones(); track zone.id) {
+              <button class="zone-tab" [class.active]="selectedZoneId() === zone.id" (click)="selectZone(zone.id)">
+                <span class="zone-tab-icon">{{ getZoneIcon(zone.name) }}</span>
+                <span class="zone-tab-name">{{ zone.name }}</span>
+                @if (zone.percentage && zone.percentage > 0) {
+                  <span class="zone-tab-pct">+{{ zone.percentage }}%</span>
+                } @else {
+                  <span class="zone-tab-pct zone-tab-pct--zero">0%</span>
+                }
+                <span class="zone-tab-count">{{ countByZone(zone.id) }}</span>
+              </button>
+            }
+          </div>
         </div>
+
+        @if (canManageTables() && selectedZone()) {
+          <div class="zone-action-buttons">
+            <button class="btn-zone-action" (click)="openEditZoneModal(selectedZone()!)" title="Joyni tahrirlash">
+              ✏️ Tahrirlash
+            </button>
+            <button class="btn-zone-action btn-zone-action--danger" (click)="deleteCurrentZone(selectedZone()!)" title="Joyni o'chirish">
+              🗑️ O'chirish
+            </button>
+          </div>
+        }
       </div>
 
       <!-- Tables Grid -->
@@ -238,6 +266,50 @@ import { WebsocketService } from '../core/services/websocket.service';
           </div>
         </div>
       }
+
+      <!-- Zone Add/Edit Modal -->
+      @if (showZoneModal() && canManageTables()) {
+        <div class="modal-backdrop" (click)="closeZoneModal()">
+          <div class="modal-card" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <div>
+                <h3 class="modal-title">{{ editingZoneId ? 'Joyni Tahrirlash' : 'Yangi Joy Qo\'shish' }}</h3>
+                <p class="modal-sub">Joy nomi va ushbu joy uchun foizni belgilang</p>
+              </div>
+              <button class="modal-close" (click)="closeZoneModal()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="required-label">Joy Nomi *</label>
+                <input type="text" [(ngModel)]="zoneForm.name" placeholder="Masalan: Zal, Premium, Olib ketish, VIP..." class="pos-input" />
+              </div>
+
+              <div class="form-group">
+                <label class="required-label">
+                  Stol / Joy Foizi (%) *
+                  <span class="label-hint">(Buyurtma hisobiga avtomatik qo'shiladi)</span>
+                </label>
+                <div class="percentage-input-wrap">
+                  <input type="number" [(ngModel)]="zoneForm.percentage" min="0" max="100" step="0.5" placeholder="0" class="pos-input" />
+                  <span class="percentage-symbol">%</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Tavsif (ixtiyoriy)</label>
+                <input type="text" [(ngModel)]="zoneForm.description" placeholder="Qo'shimcha izoh..." class="pos-input" />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn--secondary" (click)="closeZoneModal()">Bekor qilish</button>
+              <button class="btn btn--primary" (click)="saveZone()" [disabled]="!zoneForm.name.trim() || zoneForm.percentage === null || zoneForm.percentage < 0">
+                <span>💾</span> Saqlash
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -295,51 +367,197 @@ import { WebsocketService } from '../core/services/websocket.service';
       color: var(--text-primary);
     }
 
-    /* Zone Filter Tabs */
+    /* Zone Filter Tabs - Classic, Prominent & High Contrast */
     .zone-filter-bar {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 16px;
       margin-bottom: 24px;
       flex-wrap: wrap;
       background: var(--bg-card);
-      padding: 12px 16px;
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
+      padding: 16px 20px;
+      border-radius: var(--radius-lg, 12px);
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
     }
+
+    .zone-tabs-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .zone-filter-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .zone-filter-icon {
+      font-size: 16px;
+    }
+
     .zone-filter-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-primary);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
+
     .zone-tabs {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
+      align-items: center;
     }
+
     .zone-tab {
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--bg-main);
-      color: var(--text-secondary);
-      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 18px;
+      min-height: 44px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--bg-main, #f8fafc);
+      color: var(--text-primary, #1e293b);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .zone-tab-icon {
+        font-size: 17px;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .zone-tab-name {
+        font-weight: 700;
+        letter-spacing: -0.2px;
+      }
+
+      .zone-tab-pct {
+        font-size: 11.5px;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 6px;
+        background: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        line-height: 1.2;
+
+        &--zero {
+          background: rgba(148, 163, 184, 0.12);
+          color: var(--text-muted, #64748b);
+          border-color: rgba(148, 163, 184, 0.25);
+          font-weight: 600;
+        }
+      }
+
+      .zone-tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 6px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 800;
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text-primary);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+      }
 
       &:hover {
         border-color: var(--primary);
-        color: var(--text-primary);
+        background: var(--bg-card);
+        color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+        .zone-tab-count {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
       }
 
       &.active {
         background: var(--primary);
-        color: white;
+        color: #ffffff;
         border-color: var(--primary);
-        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        transform: translateY(-1px);
+
+        .zone-tab-icon {
+          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+        }
+
+        .zone-tab-pct {
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+          border-color: rgba(255, 255, 255, 0.4);
+
+          &--zero {
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.85);
+            border-color: rgba(255, 255, 255, 0.25);
+          }
+        }
+
+        .zone-tab-count {
+          background: #ffffff;
+          color: var(--primary);
+          border-color: #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+
+    .zone-action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-zone-action {
+      padding: 8px 14px;
+      min-height: 40px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: var(--primary);
+        color: var(--primary);
+        transform: translateY(-1px);
+      }
+      &--danger {
+        border-color: rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.08);
+        color: #ef4444;
+        &:hover {
+          background: #ef4444;
+          color: white;
+          border-color: #ef4444;
+        }
       }
     }
 
@@ -408,7 +626,7 @@ import { WebsocketService } from '../core/services/websocket.service';
           font-size: 11px;
           font-weight: 600;
           color: var(--text-muted);
-          background: rgba(255, 255, 255, 0.06);
+          background: var(--bg-tertiary);
           padding: 2px 8px;
           border-radius: 6px;
           border: 1px solid var(--border);
@@ -685,6 +903,19 @@ import { WebsocketService } from '../core/services/websocket.service';
       border-radius: var(--radius-md);
       border: 1px dashed var(--primary);
     }
+
+    .percentage-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .percentage-symbol {
+      position: absolute;
+      right: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      pointer-events: none;
+    }
     .field-validation-error {
       display: block;
       color: #ef4444;
@@ -718,6 +949,255 @@ import { WebsocketService } from '../core/services/websocket.service';
     }
     .mt-4 { margin-top: 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 1023px) {
+      .tables-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .tables-page {
+        gap: 10px;
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+
+        .header-actions {
+          width: 100%;
+          justify-content: flex-start;
+          flex-wrap: wrap;
+
+          .btn {
+            flex: 1;
+            min-height: 44px;
+            justify-content: center;
+          }
+        }
+      }
+
+      .tables-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+
+        .stat-pill {
+          padding: 8px 6px;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          gap: 2px;
+
+          .stat-label {
+            font-size: 10.5px;
+          }
+
+          .stat-value {
+            font-size: 14px;
+          }
+        }
+      }
+
+      .zone-filter-bar {
+        padding: 8px 10px;
+        margin-bottom: 8px;
+      }
+
+      .zone-tabs-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .zone-filter-header {
+        display: none;
+      }
+
+      .zone-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        width: 100%;
+        padding-bottom: 6px;
+
+        &::-webkit-scrollbar {
+          height: 3px;
+        }
+      }
+
+      .zone-tab {
+        padding: 7px 12px;
+        min-height: 42px;
+        font-size: 13px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        gap: 6px;
+
+        .zone-tab-icon {
+          font-size: 15px;
+        }
+
+        .zone-tab-name {
+          font-size: 12.5px;
+        }
+
+        .zone-tab-pct {
+          font-size: 10.5px;
+          padding: 1px 5px;
+        }
+
+        .zone-tab-count {
+          min-width: 20px;
+          height: 20px;
+          font-size: 11px;
+        }
+      }
+
+      .zone-action-buttons {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+
+        .btn-zone-action {
+          flex: 1;
+          justify-content: center;
+          min-height: 40px;
+        }
+      }
+
+      /* 2 COLUMNS ON MOBILE (Section 4 requirement) */
+      .tables-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .table-card {
+        padding: 10px 8px;
+        border-radius: 12px;
+
+        &__header {
+          margin-bottom: 4px;
+        }
+
+        &__number {
+          font-size: 15px;
+        }
+
+        .table-status-badge {
+          font-size: 9.5px;
+          padding: 2px 5px;
+        }
+
+        &__zone-badge {
+          margin-bottom: 4px;
+          span {
+            font-size: 9.5px;
+            padding: 1px 5px;
+          }
+        }
+
+        &__body {
+          padding: 4px 0;
+        }
+
+        &__icon {
+          font-size: 22px;
+          margin-bottom: 2px;
+        }
+
+        &__name {
+          font-size: 13px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        &__capacity {
+          font-size: 11px;
+        }
+
+        &__other-waiter-info {
+          .other-waiter-badge {
+            font-size: 10px;
+          }
+          .other-waiter-hint {
+            display: none;
+          }
+        }
+
+        &__active-order {
+          .table-card__item-count {
+            font-size: 11px;
+          }
+          .table-card__amount {
+            font-size: 12.5px;
+          }
+        }
+
+        &__footer {
+          margin-top: 6px;
+        }
+
+        .btn-action {
+          min-height: 42px;
+          font-size: 12px;
+          padding: 6px 8px;
+          border-radius: 8px;
+          width: 100%;
+        }
+
+        .table-card__btn-group {
+          display: flex;
+          gap: 4px;
+
+          .btn-action--view {
+            flex: 2;
+          }
+
+          .btn-action--release {
+            flex: 1;
+            padding: 6px 4px;
+            font-size: 11px;
+          }
+        }
+      }
+    }
+
+    /* Small screens <= 359px */
+    @media (max-width: 359px) {
+      .tables-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+
+      .table-card {
+        padding: 8px 6px;
+
+        &__number {
+          font-size: 13.5px;
+        }
+
+        &__name {
+          font-size: 12px;
+        }
+
+        .btn-action {
+          min-height: 38px;
+          font-size: 11px;
+          padding: 4px;
+        }
+      }
+    }
   `]
 })
 export class TablesComponent implements OnInit, OnDestroy {
@@ -728,6 +1208,13 @@ export class TablesComponent implements OnInit, OnDestroy {
   showAddModal = signal(false);
   showCustomZone = signal(false);
   customZoneName = '';
+  showZoneModal = signal(false);
+  editingZoneId: string | null = null;
+  zoneForm = {
+    name: '',
+    percentage: 5,
+    description: ''
+  };
   private wsUnsub?: () => void;
 
   newTable: CreateTableRequest = {
@@ -741,6 +1228,12 @@ export class TablesComponent implements OnInit, OnDestroy {
   occupiedCount = () => this.tables().filter(t => t.status === 'OCCUPIED').length;
 
   isWaiter = computed(() => this.auth.isWaiter());
+
+  selectedZone = computed(() => {
+    const id = this.selectedZoneId();
+    if (!id) return null;
+    return this.zones().find(z => z.id === id) || null;
+  });
 
   filteredTables = computed(() => {
     const zoneId = this.selectedZoneId();
@@ -961,6 +1454,85 @@ export class TablesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.notify.error(err.error?.message || "Stol qo'shishda xatolik yuz berdi");
+      }
+    });
+  }
+
+  openAddZoneModal(): void {
+    if (this.isWaiter()) return;
+    this.editingZoneId = null;
+    this.zoneForm = { name: '', percentage: 5, description: '' };
+    this.showZoneModal.set(true);
+  }
+
+  openEditZoneModal(zone: TableZone): void {
+    if (this.isWaiter()) return;
+    this.editingZoneId = zone.id;
+    this.zoneForm = {
+      name: zone.name,
+      percentage: zone.percentage ?? 0,
+      description: zone.description || ''
+    };
+    this.showZoneModal.set(true);
+  }
+
+  closeZoneModal(): void {
+    this.showZoneModal.set(false);
+    this.editingZoneId = null;
+  }
+
+  saveZone(): void {
+    if (!this.zoneForm.name.trim()) return;
+
+    if (this.editingZoneId) {
+      this.tableService.updateZone(this.editingZoneId, {
+        name: this.zoneForm.name.trim(),
+        percentage: Number(this.zoneForm.percentage) || 0,
+        description: this.zoneForm.description.trim()
+      }).subscribe({
+        next: (res) => {
+          if (res.success) {
+            this.notify.success(`"${res.data.name}" joyi muvaffaqiyatli yangilandi!`);
+            this.closeZoneModal();
+            this.loadZones();
+          }
+        },
+        error: (err) => {
+          this.notify.error(err.error?.message || 'Joyni yangilashda xatolik');
+        }
+      });
+    } else {
+      this.tableService.createZone({
+        name: this.zoneForm.name.trim(),
+        percentage: Number(this.zoneForm.percentage) || 0,
+        description: this.zoneForm.description.trim()
+      }).subscribe({
+        next: (res) => {
+          if (res.success) {
+            this.notify.success(`"${res.data.name}" joyi muvaffaqiyatli yaratildi!`);
+            this.closeZoneModal();
+            this.loadZones();
+          }
+        },
+        error: (err) => {
+          this.notify.error(err.error?.message || 'Joy yaratishda xatolik');
+        }
+      });
+    }
+  }
+
+  deleteCurrentZone(zone: TableZone): void {
+    if (!confirm(`"${zone.name}" joyini rostdan ham o'chirmoqchimisiz?`)) return;
+
+    this.tableService.deleteZone(zone.id).subscribe({
+      next: () => {
+        this.notify.success(`"${zone.name}" joyi o'chirildi!`);
+        this.selectedZoneId.set(null);
+        this.loadZones();
+        this.loadTables();
+      },
+      error: (err) => {
+        this.notify.error(err.error?.message || 'Joyni o\'chirishda xatolik');
       }
     });
   }

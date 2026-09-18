@@ -24,6 +24,18 @@ public interface KitchenOrderBatchRepository extends JpaRepository<KitchenOrderB
 
     List<KitchenOrderBatch> findByTenantIdAndOrderIdOrderByBatchNumberAsc(UUID tenantId, UUID orderId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT b FROM KitchenOrderBatch b WHERE b.tenant.id = :tenantId AND b.order.table.id = :tableId AND b.status IN :statuses ORDER BY b.createdAt ASC")
+    List<KitchenOrderBatch> findByTableIdAndStatuses(
+            @org.springframework.data.repository.query.Param("tenantId") UUID tenantId,
+            @org.springframework.data.repository.query.Param("tableId") UUID tableId,
+            @org.springframework.data.repository.query.Param("statuses") Collection<KitchenOrderBatch.BatchStatus> statuses);
+
+    @org.springframework.data.jpa.repository.Query("SELECT b FROM KitchenOrderBatch b WHERE b.tenant.id = :tenantId AND b.order.id = :orderId AND b.status IN :statuses ORDER BY b.createdAt ASC")
+    List<KitchenOrderBatch> findByOrderIdAndStatuses(
+            @org.springframework.data.repository.query.Param("tenantId") UUID tenantId,
+            @org.springframework.data.repository.query.Param("orderId") UUID orderId,
+            @org.springframework.data.repository.query.Param("statuses") Collection<KitchenOrderBatch.BatchStatus> statuses);
+
     Optional<KitchenOrderBatch> findTopByOrderIdOrderByBatchNumberDesc(UUID orderId);
 
     Optional<KitchenOrderBatch> findByIdAndTenantId(UUID id, UUID tenantId);

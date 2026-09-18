@@ -5,6 +5,7 @@ import com.restaurantpos.customers.entity.Customer;
 import com.restaurantpos.devices.entity.Device;
 import com.restaurantpos.shifts.entity.Shift;
 import com.restaurantpos.tables.entity.RestaurantTable;
+import com.restaurantpos.tables.entity.TableZone;
 import com.restaurantpos.tenants.entity.Tenant;
 import com.restaurantpos.users.entity.User;
 import jakarta.persistence.*;
@@ -12,13 +13,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Order entity — core business entity of the POS system.
- * Supports DINE_IN, TAKEAWAY, and DELIVERY order types.
+ * Supports DINE_IN and TAKEAWAY order types.
  */
 @Entity
 @Table(name = "orders")
@@ -43,6 +45,10 @@ public class Order extends BaseEntity {
     private RestaurantTable table;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private TableZone zone;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
@@ -65,6 +71,20 @@ public class Order extends BaseEntity {
     @Column(name = "status", nullable = false, length = 30)
     private OrderStatus status = OrderStatus.OPEN;
 
+    public enum PaymentStatus {
+        UNPAID, PAID, PARTIALLY_PAID
+    }
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false, length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.UNPAID;
+
+    @Column(name = "place_percentage", nullable = false, precision = 5, scale = 2)
+    private BigDecimal placePercentage = BigDecimal.ZERO;
+
+    @Column(name = "place_fee", nullable = false, precision = 15, scale = 2)
+    private BigDecimal placeFee = BigDecimal.ZERO;
+
     @Column(name = "subtotal", nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
 
@@ -79,20 +99,6 @@ public class Order extends BaseEntity {
 
     @Column(name = "total", nullable = false, precision = 15, scale = 2)
     private BigDecimal total = BigDecimal.ZERO;
-
-    // Delivery fields
-    @Column(name = "delivery_address")
-    private String deliveryAddress;
-
-    @Column(name = "delivery_phone", length = 50)
-    private String deliveryPhone;
-
-    @Column(name = "delivery_notes")
-    private String deliveryNotes;
-
-    @Column(name = "delivery_fee", precision = 15, scale = 2)
-    private BigDecimal deliveryFee = BigDecimal.ZERO;
-
     @Column(name = "notes")
     private String notes;
 
@@ -136,25 +142,34 @@ public class Order extends BaseEntity {
 
         // Apply discount
         if (discountPercent != null && discountPercent.compareTo(BigDecimal.ZERO) > 0) {
-            this.discountAmount = subtotal.multiply(discountPercent).divide(BigDecimal.valueOf(100));
+            this.discountAmount = subtotal.multiply(discountPercent).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        } else {
+            this.discountAmount = BigDecimal.ZERO;
         }
 
-        BigDecimal taxableAmount = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+        BigDecimal netSubtotal = subtotal.subtract(discountAmount).max(BigDecimal.ZERO);
+
+        // Place fee calculation (snapshot from placePercentage)
+        if (placePercentage != null && placePercentage.compareTo(BigDecimal.ZERO) > 0) {
+            this.placeFee = netSubtotal.multiply(placePercentage).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        } else {
+            this.placeFee = BigDecimal.ZERO;
+        }
+
         this.taxAmount = items.stream()
                 .filter(item -> !item.isVoided())
-                .map(item -> item.getTaxAmount())
+                .map(OrderItem::getTaxAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        this.total = taxableAmount.add(taxAmount).add(
-                deliveryFee != null ? deliveryFee : BigDecimal.ZERO).max(BigDecimal.ZERO);
+        this.total = netSubtotal.add(placeFee).add(taxAmount).max(BigDecimal.ZERO);
     }
 
     public enum OrderType {
-        DINE_IN, TAKEAWAY, DELIVERY
+        DINE_IN, TAKEAWAY
     }
 
     public enum OrderStatus {
-        OPEN, IN_PROGRESS, READY, PAID, CANCELLED, REFUNDED
+        OPEN, IN_PROGRESS, READY, CLOSED, PAID, CANCELLED, REFUNDED
     }
 
     public enum ReceiptPrintStatus {

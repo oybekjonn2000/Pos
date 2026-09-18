@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
- * Customer entity for CRM and delivery.
+ * Customer entity for CRM.
  */
 @Entity
 @Table(name = "customers")

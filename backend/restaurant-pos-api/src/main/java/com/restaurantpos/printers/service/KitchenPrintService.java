@@ -68,10 +68,7 @@ public class KitchenPrintService {
             sb.append(doubleDivider);
         }
 
-        if (order.getOrderType() == Order.OrderType.DELIVERY) {
-            sb.append(centerText("🚚 DELIVERY ORDER", maxChars)).append("\n");
-            sb.append(doubleDivider);
-        } else if (order.getOrderType() == Order.OrderType.TAKEAWAY) {
+        if (order.getOrderType() == Order.OrderType.TAKEAWAY) {
             sb.append(centerText("🛍 OLIB KETISH", maxChars)).append("\n");
             sb.append(doubleDivider);
         }
@@ -81,20 +78,8 @@ public class KitchenPrintService {
         sb.append(String.format("BUYURTMA: %s\n", order.getOrderNumber()));
         sb.append(String.format("PARTIYA:  #%d (%s)\n", batch.getBatchNumber() != null ? batch.getBatchNumber() : 1, isAddon ? "QO‘SHIMCHA" : "ASOSIY"));
 
-        if (order.getOrderType() == Order.OrderType.DELIVERY) {
-            if (order.getCustomer() != null && order.getCustomer().getFullName() != null) {
-                sb.append(String.format("MIJOZ:    %s\n", truncate(order.getCustomer().getFullName(), maxChars - 10)));
-            }
-            if (order.getDeliveryPhone() != null && !order.getDeliveryPhone().isBlank()) {
-                sb.append(String.format("TEL:      %s\n", order.getDeliveryPhone()));
-            }
-            if (order.getDeliveryAddress() != null && !order.getDeliveryAddress().isBlank()) {
-                sb.append(String.format("MANZIL:   %s\n", truncate(order.getDeliveryAddress(), maxChars - 10)));
-            }
-        } else {
-            sb.append(String.format("STOL:     %s\n", tableName));
-            sb.append(String.format("XODIM:    %s\n", waiterName));
-        }
+        sb.append(String.format("STOL:     %s\n", tableName));
+        sb.append(String.format("XODIM:    %s\n", waiterName));
         sb.append(String.format("VAQT:     %s\n", timeStr));
         sb.append(divider);
 
@@ -193,28 +178,16 @@ public class KitchenPrintService {
             sb.append(doubleDivider);
         }
 
-        if (order.getOrderType() == Order.OrderType.DELIVERY) {
-            sb.append(centerText("🚚 DELIVERY ORDER", maxChars)).append("\n");
+        if (order.getOrderType() == Order.OrderType.TAKEAWAY) {
+            sb.append(centerText("🛍 OLIB KETISH", maxChars)).append("\n");
             sb.append(doubleDivider);
         }
 
         sb.append(centerText("OSHXONA: " + kitchen.getName().toUpperCase(), maxChars)).append("\n");
         sb.append(doubleDivider);
         sb.append(String.format("BUYURTMA: %s\n", order.getOrderNumber()));
-        if (order.getOrderType() == Order.OrderType.DELIVERY) {
-            if (order.getCustomer() != null && order.getCustomer().getFullName() != null) {
-                sb.append(String.format("MIJOZ:    %s\n", truncate(order.getCustomer().getFullName(), maxChars - 10)));
-            }
-            if (order.getDeliveryPhone() != null && !order.getDeliveryPhone().isBlank()) {
-                sb.append(String.format("TEL:      %s\n", order.getDeliveryPhone()));
-            }
-            if (order.getDeliveryAddress() != null && !order.getDeliveryAddress().isBlank()) {
-                sb.append(String.format("MANZIL:   %s\n", truncate(order.getDeliveryAddress(), maxChars - 10)));
-            }
-        } else {
-            sb.append(String.format("STOL:     %s\n", tableName));
-            sb.append(String.format("XODIM:    %s\n", waiterName));
-        }
+        sb.append(String.format("STOL:     %s\n", tableName));
+        sb.append(String.format("XODIM:    %s\n", waiterName));
         sb.append(String.format("VAQT:     %s\n", timeStr));
         sb.append(divider);
 

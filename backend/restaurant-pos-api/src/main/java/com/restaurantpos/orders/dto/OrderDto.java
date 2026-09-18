@@ -28,6 +28,11 @@ public class OrderDto {
         private String orderNumber;
         private String orderType;
         private String status;
+        private String paymentStatus;
+        private UUID zoneId;
+        private String zoneName;
+        private BigDecimal placePercentage;
+        private BigDecimal placeFee;
         private UUID tableId;
         private String tableNumber;
         private String tableName;
@@ -107,7 +112,7 @@ public class OrderDto {
     public static class CreateRequest {
         private UUID tableId;
         private UUID customerId;
-        private String orderType = "DINE_IN"; // DINE_IN, TAKEAWAY, DELIVERY
+        private String orderType = "DINE_IN"; // DINE_IN, TAKEAWAY
         private int guestCount = 1;
         private String notes;
         private String kitchenNotes;

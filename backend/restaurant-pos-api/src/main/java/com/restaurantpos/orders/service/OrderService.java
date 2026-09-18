@@ -174,7 +174,7 @@ public class OrderService {
         Integer itemCount = 0;
         BigDecimal totalAmount = BigDecimal.ZERO;
 
-        if (activeOrder != null && activeOrder.getStatus() != Order.OrderStatus.PAID && activeOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+        if (activeOrder != null && activeOrder.getStatus() != Order.OrderStatus.PAID && activeOrder.getStatus() != Order.OrderStatus.CANCELLED && activeOrder.getStatus() != Order.OrderStatus.CLOSED) {
             activeOrderNumber = activeOrder.getOrderNumber();
             itemCount = activeOrder.getItems() != null
                     ? activeOrder.getItems().stream()
@@ -250,7 +250,7 @@ public class OrderService {
             Optional<Order> existingOrderOpt = orderRepository.findByIdAndTenantIdAndDeletedAtIsNull(table.getCurrentOrderId(), tenantId);
             if (existingOrderOpt.isPresent()) {
                 Order existingOrder = existingOrderOpt.get();
-                if (existingOrder.getStatus() != Order.OrderStatus.PAID && existingOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                if (existingOrder.getStatus() != Order.OrderStatus.PAID && existingOrder.getStatus() != Order.OrderStatus.CANCELLED && existingOrder.getStatus() != Order.OrderStatus.CLOSED) {
                     log.info("Table '{}' already has active order '{}'. Merging items into existing order.", table.getName(), existingOrder.getOrderNumber());
                     if (request.getItems() != null) {
                         for (OrderDto.ItemRequest itemReq : request.getItems()) {
@@ -282,6 +282,11 @@ public class OrderService {
         order.setShift(currentShift);
         order.setOrderType(parseOrderType(request.getOrderType()));
         order.setStatus(Order.OrderStatus.OPEN);
+        order.setPaymentStatus(Order.PaymentStatus.UNPAID);
+        if (table != null && table.getZone() != null) {
+            order.setZone(table.getZone());
+            order.setPlacePercentage(table.getZone().getPercentage() != null ? table.getZone().getPercentage() : BigDecimal.ZERO);
+        }
         order.setNotes(request.getNotes());
         order.setKitchenNotes(request.getKitchenNotes());
 
@@ -529,6 +534,57 @@ public class OrderService {
         }
     }
 
+    @Transactional
+    public OrderDto.Response closeOrder(UUID orderId, UUID tenantId, com.restaurantpos.auth.security.UserPrincipal user) {
+        Order order = orderRepository.findByIdWithLock(orderId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Buyurtma topilmadi: " + orderId));
+
+        validateOrderOwnership(order, user);
+
+        if (order.getStatus() == Order.OrderStatus.CLOSED) {
+            throw PosException.badRequest("Buyurtma allaqachon yopilgan!");
+        }
+        if (order.getStatus() == Order.OrderStatus.CANCELLED) {
+            throw PosException.badRequest("Bekor qilingan buyurtma hisobini yopib bo'lmaydi!");
+        }
+
+        order.setStatus(Order.OrderStatus.CLOSED);
+        order.setClosedAt(Instant.now());
+        if (order.getPaymentStatus() == null) {
+            order.setPaymentStatus(Order.PaymentStatus.UNPAID);
+        }
+
+        // Snapshot zone & place percentage if not yet snapshotted
+        if (order.getTable() != null && order.getTable().getZone() != null &&
+                (order.getPlacePercentage() == null || order.getPlacePercentage().compareTo(BigDecimal.ZERO) == 0)) {
+            order.setZone(order.getTable().getZone());
+            order.setPlacePercentage(order.getTable().getZone().getPercentage() != null ? order.getTable().getZone().getPercentage() : BigDecimal.ZERO);
+        }
+
+        order.recalculateTotals();
+        Order savedOrder = orderRepository.save(order);
+
+        // Free the table
+        if (order.getTable() != null) {
+            RestaurantTable table = order.getTable();
+            table.setStatus(RestaurantTable.TableStatus.FREE);
+            table.setCurrentOrderId(null);
+            table.setWaiter(null);
+            RestaurantTable savedTable = tableRepository.save(table);
+            wsNotification.notifyTableUpdated(tenantId, toTableResponse(savedTable, null));
+        }
+
+        // Event: ACCOUNT_CLOSED -> Immediately print Hisob Cheki (Bill receipt)
+        try {
+            savedOrder = printRoutingService.routeAndPrintBill(savedOrder);
+        } catch (Exception ex) {
+            log.warn("Hisob cheki chiqarishda xatolik yuz berdi (orderId: {}): {}", savedOrder.getId(), ex.getMessage());
+        }
+
+        wsNotification.notifyOrderStatusChanged(tenantId, toResponse(savedOrder));
+        return toResponse(savedOrder);
+    }
+
     public OrderDto.Response toResponse(Order order) {
         List<OrderDto.ItemResponse> items = Collections.emptyList();
         if (order.getItems() != null) {
@@ -543,7 +599,7 @@ public class OrderService {
         BigDecimal paidAmount = null;
         BigDecimal changeAmount = null;
 
-        if (order.getStatus() == Order.OrderStatus.PAID) {
+        if (order.getStatus() == Order.OrderStatus.PAID || order.getPaymentStatus() == Order.PaymentStatus.PAID) {
             List<Payment> payments = paymentRepository.findByOrderId(order.getId());
             if (!payments.isEmpty()) {
                 Payment p = payments.get(0);
@@ -562,6 +618,11 @@ public class OrderService {
                 .orderNumber(order.getOrderNumber())
                 .orderType(order.getOrderType().name())
                 .status(order.getStatus().name())
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : (order.getStatus() == Order.OrderStatus.PAID ? "PAID" : "UNPAID"))
+                .zoneId(order.getZone() != null ? order.getZone().getId() : (order.getTable() != null && order.getTable().getZone() != null ? order.getTable().getZone().getId() : null))
+                .zoneName(order.getZone() != null ? order.getZone().getName() : (order.getTable() != null && order.getTable().getZone() != null ? order.getTable().getZone().getName() : null))
+                .placePercentage(order.getPlacePercentage() != null ? order.getPlacePercentage() : BigDecimal.ZERO)
+                .placeFee(order.getPlaceFee() != null ? order.getPlaceFee() : BigDecimal.ZERO)
                 .tableId(order.getTable() != null ? order.getTable().getId() : null)
                 .tableNumber(order.getTable() != null ? order.getTable().getTableNumber() : null)
                 .tableName(order.getTable() != null ? order.getTable().getName() : null)
@@ -787,11 +848,10 @@ public class OrderService {
                 .orderType(o.getOrderType() != null ? o.getOrderType().name() : "DINE_IN")
                 .tableId(o.getTable() != null ? o.getTable().getId() : null)
                 .tableNumber(o.getTable() != null ? o.getTable().getTableNumber() : null)
-                .tableName(o.getTable() != null ? o.getTable().getName() : (o.getOrderType() == Order.OrderType.DELIVERY ? "DELIVERY" : "Olib ketish"))
+                .tableName(o.getTable() != null ? o.getTable().getName() : "Olib ketish")
                 .waiterName(b.getCreatedBy() != null ? b.getCreatedBy().getFullName() : (o.getWaiter() != null ? o.getWaiter().getFullName() : "Kassir"))
                 .customerName(o.getCustomer() != null ? o.getCustomer().getFullName() : null)
-                .customerPhone(o.getDeliveryPhone() != null ? o.getDeliveryPhone() : (o.getCustomer() != null ? o.getCustomer().getPhone() : null))
-                .deliveryAddress(o.getDeliveryAddress())
+                .customerPhone(o.getCustomer() != null ? o.getCustomer().getPhone() : null)
                 .kitchenId(b.getKitchen() != null ? b.getKitchen().getId() : null)
                 .kitchenName(b.getKitchen() != null ? b.getKitchen().getName() : null)
                 .kitchenCode(b.getKitchen() != null ? b.getKitchen().getCode() : null)

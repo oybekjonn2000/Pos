@@ -46,6 +46,7 @@ public class TableService {
                         .id(z.getId())
                         .name(z.getName())
                         .description(z.getDescription())
+                        .percentage(z.getPercentage() != null ? z.getPercentage() : BigDecimal.ZERO)
                         .sortOrder(z.getSortOrder())
                         .active(z.isActive())
                         .build()
@@ -67,6 +68,7 @@ public class TableService {
         zone.setTenant(tenant);
         zone.setName(zoneName);
         zone.setDescription(request.getDescription());
+        zone.setPercentage(request.getPercentage() != null ? request.getPercentage() : BigDecimal.ZERO);
         zone.setSortOrder(request.getSortOrder());
         zone.setActive(true);
 
@@ -75,9 +77,65 @@ public class TableService {
                 .id(saved.getId())
                 .name(saved.getName())
                 .description(saved.getDescription())
+                .percentage(saved.getPercentage())
                 .sortOrder(saved.getSortOrder())
                 .active(saved.isActive())
                 .build();
+    }
+
+    @Transactional
+    public TableDto.ZoneResponse updateZone(UUID tenantId, UUID zoneId, TableDto.UpdateZoneRequest request) {
+        TableZone zone = zoneRepository.findByIdAndTenantIdAndDeletedAtIsNull(zoneId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Zona topilmadi"));
+
+        String zoneName = request.getName().trim();
+        zoneRepository.findByTenantIdAndNameIgnoreCaseAndDeletedAtIsNull(tenantId, zoneName)
+                .ifPresent(existing -> {
+                    if (!existing.getId().equals(zoneId)) {
+                        throw PosException.badRequest("Bu nomdagi zona allaqachon mavjud: " + zoneName);
+                    }
+                });
+
+        zone.setName(zoneName);
+        if (request.getDescription() != null) {
+            zone.setDescription(request.getDescription());
+        }
+        if (request.getPercentage() != null) {
+            zone.setPercentage(request.getPercentage());
+        }
+        if (request.getSortOrder() != null) {
+            zone.setSortOrder(request.getSortOrder());
+        }
+        if (request.getActive() != null) {
+            zone.setActive(request.getActive());
+        }
+        zone.setUpdatedAt(Instant.now());
+
+        TableZone saved = zoneRepository.save(zone);
+        return TableDto.ZoneResponse.builder()
+                .id(saved.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .percentage(saved.getPercentage())
+                .sortOrder(saved.getSortOrder())
+                .active(saved.isActive())
+                .build();
+    }
+
+    @Transactional
+    public void deleteZone(UUID tenantId, UUID zoneId) {
+        TableZone zone = zoneRepository.findByIdAndTenantIdAndDeletedAtIsNull(zoneId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Zona topilmadi"));
+
+        List<RestaurantTable> tables = tableRepository.findByTenantIdAndZoneIdAndDeletedAtIsNullOrderByTableNumberAsc(tenantId, zoneId);
+        boolean hasOccupied = tables.stream().anyMatch(t -> t.getStatus() == RestaurantTable.TableStatus.OCCUPIED);
+        if (hasOccupied) {
+            throw PosException.badRequest("Ushbu zonada band stollar mavjud. Avval stollarni bo'shating yoki buyurtmalarni yoping!");
+        }
+
+        zone.setDeletedAt(Instant.now());
+        zone.setActive(false);
+        zoneRepository.save(zone);
     }
 
     @Transactional
@@ -420,6 +478,7 @@ public class TableService {
                 .id(table.getId())
                 .zoneId(table.getZone() != null ? table.getZone().getId() : null)
                 .zoneName(table.getZone() != null ? table.getZone().getName() : null)
+                .zonePercentage(table.getZone() != null ? table.getZone().getPercentage() : BigDecimal.ZERO)
                 .tableNumber(table.getTableNumber())
                 .name(table.getName())
                 .capacity(table.getCapacity())
