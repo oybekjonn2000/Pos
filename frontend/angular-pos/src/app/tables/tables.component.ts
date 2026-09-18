@@ -1522,17 +1522,30 @@ export class TablesComponent implements OnInit, OnDestroy {
   }
 
   deleteCurrentZone(zone: TableZone): void {
-    if (!confirm(`"${zone.name}" joyini rostdan ham o'chirmoqchimisiz?`)) return;
+    const tableCount = this.countByZone(zone.id);
+    const tableWord = tableCount === 1 ? 'stol' : 'stol';
+    const confirmMessage = tableCount > 0
+      ? `"${zone.name}" joyini o'chirmoqchimisiz?\n\nBu amaliyot ushbu joyga tegishli ${tableCount} ta ${tableWord}ni ham o'chiradi.\n\nDavom etish uchun OK bosing.`
+      : `"${zone.name}" joyini o'chirmoqchimisiz?\n\nDavom etish uchun OK bosing.`;
+
+    if (!confirm(confirmMessage)) return;
 
     this.tableService.deleteZone(zone.id).subscribe({
       next: () => {
-        this.notify.success(`"${zone.name}" joyi o'chirildi!`);
+        const msg = tableCount > 0
+          ? `"${zone.name}" joyi va ${tableCount} ta stol o'chirildi!`
+          : `"${zone.name}" joyi o'chirildi!`;
+        this.notify.success(msg);
+        // Reset zone filter so deleted zone's tables won't remain visible
         this.selectedZoneId.set(null);
+        // Refresh both zones and tables to reflect deletion
         this.loadZones();
         this.loadTables();
       },
       error: (err) => {
-        this.notify.error(err.error?.message || 'Joyni o\'chirishda xatolik');
+        // Backend returns Uzbek error message for active orders — show it directly
+        const backendMsg: string = err?.error?.message || err?.error?.error || '';
+        this.notify.error(backendMsg || 'Joyni o\'chirishda xatolik yuz berdi');
       }
     });
   }

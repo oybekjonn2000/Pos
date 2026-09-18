@@ -1402,6 +1402,252 @@ export interface KitchenTableCard {
         background: rgba(255, 255, 255, 0.4);
       }
     }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 1023px) {
+      .kds-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .kds-container {
+        gap: 10px;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .kds-header {
+        padding: 10px 12px;
+        gap: 10px;
+        flex-direction: column;
+        align-items: stretch;
+
+        .title-with-badge {
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .kds-title {
+          font-size: 16px;
+        }
+
+        .pulse-indicator {
+          font-size: 11px;
+          padding: 2px 8px;
+        }
+
+        .realtime-status-pill {
+          font-size: 10.5px;
+          padding: 2px 8px;
+        }
+
+        .kds-subtitle {
+          font-size: 11px;
+          margin-top: 4px;
+        }
+
+        .kds-actions {
+          width: 100%;
+        }
+
+        .kds-filters {
+          width: 100%;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          padding: 3px;
+
+          &::-webkit-scrollbar {
+            height: 3px;
+          }
+
+          .filter-tab {
+            padding: 6px 12px;
+            font-size: 12px;
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+        }
+      }
+
+      /* Stations Bar Mobile */
+      .stations-bar {
+        padding: 8px 10px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: flex-start;
+
+        .stations-label {
+          display: none;
+        }
+
+        .stations-strip {
+          width: 100%;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 4px;
+
+          &::-webkit-scrollbar {
+            height: 3px;
+          }
+        }
+
+        .station-tab {
+          padding: 6px 12px;
+          font-size: 13px;
+          white-space: nowrap;
+          flex-shrink: 0;
+
+          .station-code {
+            display: none;
+          }
+        }
+      }
+
+      /* Time Filter Bar Mobile */
+      .time-filter-bar {
+        padding: 8px 10px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
+
+        .time-filter-left {
+          width: 100%;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 6px;
+        }
+
+        .time-filter-label {
+          font-size: 12px;
+        }
+
+        .time-presets-strip {
+          width: 100%;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 4px;
+
+          &::-webkit-scrollbar {
+            height: 3px;
+          }
+        }
+
+        .time-tab {
+          padding: 5px 10px;
+          font-size: 12px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .time-filter-right {
+          width: 100%;
+          overflow-x: auto;
+        }
+
+        .shift-pills {
+          width: 100%;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .shift-pill {
+          padding: 4px 8px;
+          font-size: 11px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+      }
+
+      .current-station-banner {
+        padding: 8px 12px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+
+        .banner-meta {
+          font-size: 10px;
+        }
+      }
+
+      /* STRICT 1 COLUMN ON MOBILE (Section 14 requirement) */
+      .kds-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px;
+        width: 100%;
+      }
+
+      .kds-card {
+        width: 100%;
+        border-radius: 12px;
+
+        .kds-card-header {
+          padding: 10px 12px;
+        }
+
+        .table-badge {
+          font-size: 15px;
+          padding: 4px 10px;
+        }
+
+        .order-num {
+          font-size: 13px;
+        }
+
+        .timer-badge {
+          font-size: 12px;
+          padding: 3px 8px;
+        }
+
+        .waiter-meta {
+          padding: 6px 12px;
+          font-size: 12px;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .kds-items-list {
+          padding: 8px 12px;
+        }
+
+        .product-main-row {
+          .product-qty {
+            font-size: 16px;
+            min-width: 30px;
+          }
+
+          .product-name {
+            font-size: 14px;
+          }
+
+          .product-status-chip {
+            font-size: 11px;
+            padding: 3px 8px;
+          }
+        }
+
+        /* Large touch-friendly action button (Section 17 requirement: >= 48px) */
+        .kds-card-footer {
+          padding: 10px 12px;
+          min-height: 64px;
+
+          .kds-main-action-btn {
+            min-height: 50px;
+            font-size: 16px;
+            font-weight: 800;
+            border-radius: 10px;
+            width: 100%;
+          }
+        }
+      }
+    }
   `]
 })
 export class KitchenComponent implements OnInit, OnDestroy {

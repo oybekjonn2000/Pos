@@ -43,7 +43,7 @@ Name: "{commonappdata}\RestaurantPOS\logs"; Permissions: users-full
 
 [Files]
 ; 1. Electron Desktop Shell & Angular Frontend Only
-Source: "..\dist\desktop\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\desktop\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "backend,backend\*"
 
 ; 2. Client Mode Configuration Template
 Source: "config\app-mode-client.json"; DestDir: "{commonappdata}\RestaurantPOS\config"; DestName: "app-mode.json"; Flags: onlyifdoesntexist uninsneveruninstall

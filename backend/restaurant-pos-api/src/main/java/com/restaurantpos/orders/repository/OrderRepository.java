@@ -102,5 +102,16 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     long countByTenantIdAndStatusAndOpenedAtBetweenAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status, Instant from, Instant to);
 
     long countByTenantIdAndStatusAndClosedAtBetweenAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status, Instant from, Instant to);
+
+    /**
+     * Finds active (not closed/paid/cancelled) orders for any table belonging to a given zone.
+     * Used in zone-deletion validation to block deletion if active orders exist.
+     */
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId " +
+           "AND (o.table.zone.id = :zoneId OR o.zone.id = :zoneId) " +
+           "AND o.deletedAt IS NULL " +
+           "AND (o.status NOT IN ('PAID', 'CANCELLED', 'REFUNDED') " +
+           "     OR (o.status = 'CLOSED' AND (o.paymentStatus IS NULL OR o.paymentStatus <> 'PAID')))")
+    List<Order> findActiveOrdersByZoneId(@Param("tenantId") UUID tenantId, @Param("zoneId") UUID zoneId);
 }
 

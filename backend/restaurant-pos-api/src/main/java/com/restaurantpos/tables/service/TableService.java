@@ -12,6 +12,9 @@ import com.restaurantpos.tables.repository.TableZoneRepository;
 import com.restaurantpos.tenants.entity.Tenant;
 import com.restaurantpos.tenants.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TableService {
@@ -124,18 +128,73 @@ public class TableService {
 
     @Transactional
     public void deleteZone(UUID tenantId, UUID zoneId) {
+        // 1. Zone mavjudligini tekshirish
         TableZone zone = zoneRepository.findByIdAndTenantIdAndDeletedAtIsNull(zoneId, tenantId)
                 .orElseThrow(() -> PosException.notFound("Zona topilmadi"));
 
-        List<RestaurantTable> tables = tableRepository.findByTenantIdAndZoneIdAndDeletedAtIsNullOrderByTableNumberAsc(tenantId, zoneId);
-        boolean hasOccupied = tables.stream().anyMatch(t -> t.getStatus() == RestaurantTable.TableStatus.OCCUPIED);
-        if (hasOccupied) {
-            throw PosException.badRequest("Ushbu zonada band stollar mavjud. Avval stollarni bo'shating yoki buyurtmalarni yoping!");
+        // 2. Ushbu zonaga tegishli stollar ro'yxatini olish
+        List<RestaurantTable> tables =
+                tableRepository.findByTenantIdAndZoneIdAndDeletedAtIsNullOrderByTableNumberAsc(tenantId, zoneId);
+
+        // 3. AKTIV BUYURTMALARNI TEKSHIRISH — agar birorta stolda faol buyurtma bo'lsa, rad etish
+        //    (occupied, active order, unpaid order, kitchen pending, processing)
+        if (!tables.isEmpty()) {
+            List<Order> activeOrders = orderRepository.findActiveOrdersByZoneId(tenantId, zoneId);
+            if (!activeOrders.isEmpty()) {
+                throw PosException.badRequest("Bu bo‘limda faol buyurtmaga ega stollar mavjud. Avval buyurtmalarni yakunlang.");
+            }
+
+            boolean hasOccupiedTable = tables.stream().anyMatch(t ->
+                    t.getStatus() == RestaurantTable.TableStatus.OCCUPIED || t.getCurrentOrderId() != null
+            );
+            if (hasOccupiedTable) {
+                throw PosException.badRequest("Bu bo‘limda faol buyurtmaga ega stollar mavjud. Avval buyurtmalarni yakunlang.");
+            }
         }
 
-        zone.setDeletedAt(Instant.now());
+        // 4. Ushbu zonaning barcha stollarini bitta batch-UPDATE bilan soft-delete qilish
+        //    (TRANSACTION ichida — agar xatolik bo'lsa avtomatik ROLLBACK)
+        Instant now = Instant.now();
+        int deletedTableCount = tableRepository.softDeleteByZoneId(zoneId, tenantId, now);
+
+        // 5. Zonani soft-delete qilish
+        zone.setDeletedAt(now);
         zone.setActive(false);
+        zone.setUpdatedAt(now);
         zoneRepository.save(zone);
+
+        if (deletedTableCount > 0) {
+            log.info("[Zone Delete] Zone '{}' (id={}) o'chirildi. {} ta stol ham o'chirildi.",
+                    zone.getName(), zoneId, deletedTableCount);
+        }
+    }
+
+    /**
+     * Tizim ishga tushganda o'chirilgan zonalarga tegishli qolib ketgan yetim (orphan) stollarni avtomatik tozalash.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void cleanupOrphanTablesOnStartup() {
+        try {
+            int repaired = tableRepository.softDeleteAllOrphanTables(Instant.now());
+            if (repaired > 0) {
+                log.info("[Startup Self-Heal] {} ta yetim (orphan) stol muvaffaqiyatli tozalandi.", repaired);
+            }
+        } catch (Exception e) {
+            log.warn("[Startup Self-Heal] Orphan stollarni tozalashda ogohlantirish: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Yetim (orphan) stollarni tuzatish — zone o'chirilgan lekin stol qolgan holatlar.
+     * Admin buyurtishi yoki qo'lda chaqirish mumkin.
+     */
+    @Transactional
+    public int repairOrphanTables(UUID tenantId) {
+        Instant now = Instant.now();
+        int fixed = tableRepository.softDeleteAllOrphanTables(now);
+        log.info("[Orphan Repair] {} ta yetim stol tuzatildi (tenant={})", fixed, tenantId);
+        return fixed;
     }
 
     @Transactional

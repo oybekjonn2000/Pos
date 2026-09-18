@@ -55,12 +55,21 @@ public class TableController {
 
     @DeleteMapping("/zones/{id}")
     @PreAuthorize("hasAuthority('MANAGE_TABLES')")
-    @Operation(summary = "Delete dining zone")
+    @Operation(summary = "Delete dining zone — also soft-deletes all tables in zone. Blocked if active orders exist.")
     public ResponseEntity<ApiResponse<Void>> deleteZone(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal user) {
         tableService.deleteZone(user.getTenantId(), id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Zona muvaffaqiyatli o'chirildi"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Zona va unga tegishli stollar muvaffaqiyatli o'chirildi"));
+    }
+
+    @PostMapping("/zones/repair-orphans")
+    @PreAuthorize("hasAuthority('MANAGE_TABLES')")
+    @Operation(summary = "Repair orphan tables — soft-deletes tables whose zone is already deleted")
+    public ResponseEntity<ApiResponse<Integer>> repairOrphanTables(
+            @AuthenticationPrincipal UserPrincipal user) {
+        int count = tableService.repairOrphanTables(user.getTenantId());
+        return ResponseEntity.ok(ApiResponse.success(count, count + " ta yetim stol tuzatildi"));
     }
 
     @GetMapping

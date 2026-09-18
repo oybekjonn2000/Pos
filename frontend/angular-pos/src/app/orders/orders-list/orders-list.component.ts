@@ -2282,6 +2282,124 @@ import { NotificationService } from '../../core/services/notification.service';
         box-shadow: none !important;
       }
     }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 767px) {
+      .orders-page {
+        gap: 10px;
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+
+        .header-actions {
+          flex-direction: column;
+          width: 100%;
+          gap: 8px;
+
+          .search-box {
+            width: 100%;
+          }
+
+          .pos-btn {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
+          }
+        }
+      }
+
+      .filter-strip {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+
+        .tabs-group {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          width: 100%;
+          padding-bottom: 4px;
+
+          &::-webkit-scrollbar {
+            height: 3px;
+          }
+
+          .tab-btn {
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding: 7px 12px;
+            font-size: 12px;
+          }
+        }
+
+        .revenue-badges-group {
+          flex-wrap: wrap;
+          width: 100%;
+
+          .revenue-pill {
+            flex: 1;
+            font-size: 11px;
+            justify-content: center;
+          }
+        }
+      }
+
+      .history-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 12px;
+
+        .filter-group {
+          flex-direction: column;
+          align-items: flex-start;
+          width: 100%;
+
+          .pill-group {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+
+            .pill-btn {
+              white-space: nowrap;
+              flex-shrink: 0;
+            }
+          }
+
+          .pos-select-sm {
+            width: 100%;
+          }
+        }
+      }
+
+      .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .pos-table {
+        th, td {
+          padding: 8px 10px;
+          font-size: 12px;
+          white-space: nowrap;
+        }
+      }
+
+      .modal-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 90vh !important;
+      }
+    }
   `]
 })
 export class OrdersListComponent implements OnInit {

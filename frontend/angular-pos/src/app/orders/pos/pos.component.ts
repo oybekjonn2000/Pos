@@ -123,9 +123,19 @@ export interface PosCartItem {
                     <div class="product-card__name" [title]="prod.name">{{ prod.name }}</div>
                     <div class="product-card__bottom-row">
                       <div class="product-card__price">{{ formatPrice(prod.salePrice || prod.price || 0) }}</div>
-                      <button class="product-card__add" (click)="$event.stopPropagation(); addToCart(prod)" title="Buyurtmaga qo'shish">
-                        ➕
-                      </button>
+                      
+                      <!-- Stepper on card: If in cart, show [ - ] 2x [ + ], else [ + ] -->
+                      @if (getItemQuantity(prod.id) > 0) {
+                        <div class="product-card__stepper" (click)="$event.stopPropagation()">
+                          <button type="button" class="btn-stepper btn-stepper--minus" (click)="decrementProduct(prod)" title="Kamaytirish">−</button>
+                          <span class="stepper-qty">{{ getItemQuantity(prod.id) }}x</span>
+                          <button type="button" class="btn-stepper btn-stepper--plus" (click)="addToCart(prod)" title="Oshirish">+</button>
+                        </div>
+                      } @else {
+                        <button class="product-card__add" (click)="$event.stopPropagation(); addToCart(prod)" title="Buyurtmaga qo'shish">
+                          ➕
+                        </button>
+                      }
                     </div>
                   </div>
                 </div>
@@ -135,8 +145,40 @@ export interface PosCartItem {
         </div>
       </div>
 
-      <!-- Right: Order Cart -->
-      <div class="pos-cart">
+      <!-- Mobile Sticky Cart Summary Bar (visible on screen < 1024px) -->
+      @if (totalCartItemsCount() > 0 || currentOrderId()) {
+        <div class="mobile-cart-bar" (click)="toggleMobileCart(true)">
+          <div class="mobile-cart-bar__info">
+            <div class="mobile-cart-bar__count">
+              🛒 {{ totalCartItemsCount() }} ta taom
+              @if (newItemsCount() > 0) {
+                <span class="new-badge">+{{ newItemsCount() }} yangi</span>
+              }
+            </div>
+            <div class="mobile-cart-bar__total">
+              {{ formatPrice(total()) }}
+            </div>
+          </div>
+          <button type="button" class="mobile-cart-bar__btn" (click)="$event.stopPropagation(); toggleMobileCart(true)">
+            <span>Savatcha</span>
+            <span class="arrow">▲</span>
+          </button>
+        </div>
+      }
+
+      <!-- Mobile Cart Backdrop -->
+      @if (showMobileCart()) {
+        <div class="mobile-cart-backdrop" (click)="toggleMobileCart(false)"></div>
+      }
+
+      <!-- Right: Order Cart (Desktop column, or Mobile bottom-sheet drawer) -->
+      <div class="pos-cart" [class.mobile-cart--open]="showMobileCart()">
+        <!-- Mobile Drawer Top Bar -->
+        <div class="mobile-drawer-handle-bar">
+          <div class="drawer-drag-line"></div>
+          <button type="button" class="btn-close-mobile-cart" (click)="toggleMobileCart(false)">✕ Yopish</button>
+        </div>
+
         <div class="cart-header">
           <div class="cart-title">
             @if (orderType() === 'TAKEAWAY') {
@@ -1435,6 +1477,333 @@ export interface PosCartItem {
       font-size: 11px;
       color: var(--text-muted);
     }
+
+    /* ============================================================
+     * MOBILE & TABLET RESPONSIVE STYLES
+     * ============================================================ */
+    .mobile-cart-backdrop {
+      display: none;
+    }
+    .mobile-drawer-handle-bar {
+      display: none;
+    }
+    .mobile-cart-bar {
+      display: none;
+    }
+
+    /* Product Card Stepper */
+    .product-card__stepper {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-tertiary);
+      border: 1.5px solid var(--primary);
+      border-radius: 8px;
+      overflow: hidden;
+
+      .btn-stepper {
+        border: none;
+        background: transparent;
+        color: var(--primary);
+        font-weight: 800;
+        font-size: 16px;
+        min-width: 32px;
+        height: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+
+        &:active {
+          background: var(--primary);
+          color: white;
+        }
+
+        &--minus {
+          color: var(--danger);
+        }
+        &--plus {
+          color: var(--success);
+        }
+      }
+
+      .stepper-qty {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-primary);
+        padding: 0 4px;
+        min-width: 22px;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 1023px) {
+      .pos-screen {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        border: none;
+        border-radius: 0;
+        position: relative;
+      }
+
+      .pos-menu {
+        border-right: none;
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: calc(70px + var(--safe-bottom));
+      }
+
+      /* Desktop cart hidden on mobile by default */
+      .pos-cart {
+        display: none !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100% !important;
+        height: 85vh;
+        max-height: 85vh;
+        background: var(--bg-card);
+        z-index: 1100;
+        border-radius: 20px 20px 0 0;
+        box-shadow: var(--shadow-lg);
+        border: none;
+        animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        flex-direction: column;
+
+        &.mobile-cart--open {
+          display: flex !important;
+        }
+      }
+
+      .mobile-cart-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1050;
+      }
+
+      .mobile-drawer-handle-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 16px 6px 16px;
+        border-bottom: 1px solid var(--border);
+
+        .drawer-drag-line {
+          width: 38px;
+          height: 4px;
+          background: var(--border-light);
+          border-radius: 100px;
+          margin: 0 auto;
+        }
+
+        .btn-close-mobile-cart {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border);
+          color: var(--text-secondary);
+          border-radius: 20px;
+          padding: 4px 12px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+      }
+
+      /* Sticky bottom bar */
+      .mobile-cart-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: calc(58px + var(--safe-bottom));
+        padding: 8px 16px calc(8px + var(--safe-bottom)) 16px;
+        background: var(--bg-secondary);
+        border-top: 1.5px solid var(--border);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+        z-index: 1000;
+        cursor: pointer;
+
+        &__info {
+          display: flex;
+          flex-direction: column;
+        }
+
+        &__count {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .new-badge {
+            font-size: 11px;
+            background: #10b981;
+            color: white;
+            padding: 1px 6px;
+            border-radius: 10px;
+          }
+        }
+
+        &__total {
+          font-size: 15px;
+          font-weight: 800;
+          color: var(--primary);
+        }
+
+        &__btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+          color: white;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+
+          .arrow {
+            font-size: 10px;
+          }
+        }
+      }
+    }
+
+    @media (max-width: 767px) {
+      .pos-toolbar {
+        padding: 8px 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+
+        .search-box {
+          width: 100%;
+        }
+      }
+
+      .kitchen-stations-strip, .categories-tabs {
+        padding: 6px 10px;
+        gap: 6px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+
+        &::-webkit-scrollbar {
+          height: 3px;
+        }
+      }
+
+      .station-chip, .cat-tab {
+        padding: 6px 12px;
+        font-size: 12.5px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* 2 COLUMNS ON MOBILE (Section 7 requirement) */
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .product-card {
+        padding: 8px;
+        border-radius: 12px;
+
+        &__image-box {
+          height: 95px;
+          border-radius: 8px;
+          margin-bottom: 6px;
+        }
+
+        &__name {
+          font-size: 13px;
+          line-height: 1.3;
+          height: 34px;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+
+        &__price {
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        &__add {
+          width: 36px;
+          height: 36px;
+          font-size: 16px;
+        }
+
+        .product-card__stepper {
+          .btn-stepper {
+            min-width: 28px;
+            height: 28px;
+            font-size: 15px;
+          }
+          .stepper-qty {
+            font-size: 12px;
+            min-width: 18px;
+          }
+        }
+      }
+
+      /* Actions inside Cart bottom sheet */
+      .cart-actions {
+        .btn-kitchen, .btn-close-bill {
+          min-height: 48px;
+          font-size: 14px;
+          font-weight: 800;
+        }
+      }
+    }
+
+    /* Small screens <= 359px */
+    @media (max-width: 359px) {
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        padding: 6px;
+      }
+
+      .product-card {
+        padding: 6px;
+
+        &__image-box {
+          height: 80px;
+        }
+
+        &__name {
+          font-size: 12px;
+          height: 30px;
+        }
+
+        &__price {
+          font-size: 12px;
+        }
+      }
+    }
+
+    @keyframes slideUpSheet {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
   `]
 })
 export class PosComponent implements OnInit {
@@ -1443,6 +1812,31 @@ export class PosComponent implements OnInit {
   products = signal<Product[]>([]);
   filteredProducts = signal<Product[]>([]);
   loadingProducts = signal(true);
+
+  showMobileCart = signal(false);
+
+  toggleMobileCart(open?: boolean): void {
+    this.showMobileCart.set(open !== undefined ? open : !this.showMobileCart());
+  }
+
+  totalCartItemsCount = computed(() =>
+    this.cart().filter(i => !i.voided).reduce((sum, i) => sum + i.quantity, 0)
+  );
+
+  getItemQuantity(productId: string): number {
+    return this.cart()
+      .filter(item => item.productId === productId && !item.voided)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  decrementProduct(prod: Product): void {
+    const existing = this.cart().find(
+      item => item.productId === prod.id && !item.voided
+    );
+    if (existing) {
+      this.decrementQty(existing);
+    }
+  }
 
   orderType = signal<'DINE_IN' | 'TAKEAWAY'>('DINE_IN');
   selectedKitchenId = signal<string | undefined>(undefined);
