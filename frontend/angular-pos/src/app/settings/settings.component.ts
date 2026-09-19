@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService, AllSettingsResponse, RestaurantSettings, GeneralSettings, ReceiptSettings, PaymentSettings, TaxServiceSettings, OrderSettings, KitchenSettings, NotificationSettings, SecuritySettings, BackupSettings, SystemInfoDto, AuditLogEntry } from '../core/services/settings.service';
 import { PrinterService, Printer, CreatePrinterRequest, UpdatePrinterRequest, TestPrintResult, ExtendedKitchenStation, AvailablePrinter } from '../core/services/printer.service';
+import { ResetService, OrdersResetResult, EntityResetResult, AllResetResult } from '../core/services/reset.service';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
 
@@ -22,7 +23,8 @@ type SettingsCategory =
   | 'NOTIFICATIONS'
   | 'SECURITY'
   | 'BACKUP'
-  | 'SYSTEM_INFO';
+  | 'SYSTEM_INFO'
+  | 'RESET';
 
 @Component({
   selector: 'app-settings',
@@ -135,6 +137,12 @@ type SettingsCategory =
             <span class="nav-icon">ℹ️</span>
             <span class="nav-label">Tizim holati & Audit</span>
           </button>
+          @if (!auth.isWaiter() && !auth.isKitchen()) {
+            <button class="nav-item nav-item--reset" [class.active]="activeCategory() === 'RESET'" (click)="setCategory('RESET')">
+              <span class="nav-icon">🗑️</span>
+              <span class="nav-label">Reset / Tozalash</span>
+            </button>
+          }
         </aside>
 
         <!-- RIGHT CONTENT VIEWPORT -->
@@ -1093,6 +1101,118 @@ type SettingsCategory =
               </div>
             }
 
+            <!-- 17. RESET / TOZALASH (DATA RESET CENTER) -->
+            @if (activeCategory() === 'RESET' && !auth.isWaiter() && !auth.isKitchen()) {
+              <div class="category-card reset-card fade-in">
+                <div class="card-header">
+                  <div class="header-with-badge">
+                    <h3>🧹 Ma'lumotlarni Tozalash (Reset Center)</h3>
+                    <span class="badge-dev">Faqat Test / Development uchun</span>
+                  </div>
+                  <p>Tizimga test davomida kiritilgan ma'lumotlarni xavfsiz tozalash. Barcha amallar tranzaksiya (ACID) ichida xavfsiz bajariladi.</p>
+                </div>
+
+                <!-- Info Alert -->
+                <div class="info-alert reset-info-banner">
+                  <span class="info-icon">💡</span>
+                  <div>
+                    <strong>Xavfsiz Tozalash Printsipi:</strong>
+                    Har bir operatsiya alohida va tranzaksiya ichida ishlaydi. Xodimlar (users), rollar (roles), tizim printerlari va sozlamalar o'chirilmaydi.
+                  </div>
+                </div>
+
+                <!-- Reset Cards Grid -->
+                <div class="reset-grid">
+                  <!-- 1. Orders -->
+                  <div class="reset-item-card">
+                    <div class="reset-item-icon">📋</div>
+                    <div class="reset-item-info">
+                      <h4>Buyurtmalar Tarixi</h4>
+                      <p>Barcha buyurtmalar, to'lovlar, oshxona buyurtmalari (KDS) va bekor qilish cheklari tozalanadi. Stollar bo'shatiladi. Mahsulotlar saqlanadi.</p>
+                    </div>
+                    <button class="pos-btn pos-btn-warning" [disabled]="resetting()" (click)="confirmReset('orders')">
+                      Buyurtmalarni tozalash
+                    </button>
+                  </div>
+
+                  <!-- 2. Products -->
+                  <div class="reset-item-card">
+                    <div class="reset-item-icon">🍔</div>
+                    <div class="reset-item-info">
+                      <h4>Mahsulotlar</h4>
+                      <p>Barcha test mahsulotlari o'chiriladi. (Eslatma: Agar buyurtmalar mavjud bo'lsa, avval buyurtmalar tarixini tozalash talab qilinadi).</p>
+                    </div>
+                    <button class="pos-btn pos-btn-warning" [disabled]="resetting()" (click)="confirmReset('products')">
+                      Mahsulotlarni tozalash
+                    </button>
+                  </div>
+
+                  <!-- 3. Categories -->
+                  <div class="reset-item-card">
+                    <div class="reset-item-icon">📑</div>
+                    <div class="reset-item-info">
+                      <h4>Kategoriyalar</h4>
+                      <p>Barcha toifalar tozalanadi. (Eslatma: Agar toifada mahsulotlar bo'lsa, avval mahsulotlarni tozalash talab qilinadi).</p>
+                    </div>
+                    <button class="pos-btn pos-btn-warning" [disabled]="resetting()" (click)="confirmReset('categories')">
+                      Kategoriyalarni tozalash
+                    </button>
+                  </div>
+
+                  <!-- 4. Kitchens -->
+                  <div class="reset-item-card">
+                    <div class="reset-item-icon">👨‍🍳</div>
+                    <div class="reset-item-info">
+                      <h4>Oshxonalar / Bo'limlar</h4>
+                      <p>Oshxona bo'limlari tozalanadi. Xodimlar (users) hisoblari saqlanib qoladi va bo'limdan ajratiladi.</p>
+                    </div>
+                    <button class="pos-btn pos-btn-warning" [disabled]="resetting()" (click)="confirmReset('kitchens')">
+                      Oshxonalarni tozalash
+                    </button>
+                  </div>
+
+                  <!-- 5. Tables -->
+                  <div class="reset-item-card">
+                    <div class="reset-item-icon">🪑</div>
+                    <div class="reset-item-info">
+                      <h4>Stollar</h4>
+                      <p>Barcha stollar tozalanadi. (Eslatma: Agar stollarda faol yoki tarixiy buyurtmalar bo'lsa, avval buyurtmalar tozalanadi).</p>
+                    </div>
+                    <button class="pos-btn pos-btn-warning" [disabled]="resetting()" (click)="confirmReset('tables')">
+                      Stollarni tozalash
+                    </button>
+                  </div>
+
+                  <!-- 6. Zones -->
+                  <div class="reset-item-card">
+                    <div class="reset-item-icon">🏷️</div>
+                    <div class="reset-item-info">
+                      <h4>Joylar / Zallar</h4>
+                      <p>Barcha zonalar va zallar tozalanadi. (Eslatma: Zonalarda stollar mavjud bo'lsa, avval stollarni tozalash talab qilinadi).</p>
+                    </div>
+                    <button class="pos-btn pos-btn-warning" [disabled]="resetting()" (click)="confirmReset('zones')">
+                      Joylarni tozalash
+                    </button>
+                  </div>
+                </div>
+
+                <!-- DANGER ZONE -->
+                <div class="danger-zone-card">
+                  <div class="danger-zone-header">
+                    <div class="danger-zone-title">
+                      <span class="danger-badge">⚠️ XAVFLI HUDUD</span>
+                      <h4>HAMMASINI TOZALASH (Full Environment Reset)</h4>
+                    </div>
+                    <p>Barcha test ma'lumotlari: buyurtmalar, mahsulotlar, kategoriyalar, oshxonalar, stollar va joylar to'liq tozalanadi. Xodimlar (users), rollar, printerlar va tizim sozlamalari saqlanib qoladi.</p>
+                  </div>
+                  <div class="danger-zone-actions">
+                    <button class="pos-btn pos-btn-danger pos-btn-lg" [disabled]="resetting()" (click)="openFullResetModal()">
+                      ⚠️ HAMMASINI TOZALASH
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
           }
         </main>
       </div>
@@ -1321,6 +1441,172 @@ type SettingsCategory =
             <div class="modal-footer">
               <button class="pos-btn pos-btn-secondary" (click)="closeKitchenModal()">Bekor qilish</button>
               <button class="pos-btn pos-btn-primary" (click)="saveKitchen()">Saqlash</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- RESET CONFIRMATION MODALS -->
+      <!-- 1. Single Entity Reset Confirm Modal -->
+      @if (activeResetModal() === 'CONFIRM_SINGLE') {
+        <div class="modal-backdrop">
+          <div class="pos-modal confirm-modal fade-in">
+            <div class="modal-header">
+              <h3>{{ getResetEntityTitle(pendingResetType) }}ni tozalash</h3>
+              <button class="modal-close" (click)="closeResetModal()">✕</button>
+            </div>
+            <div class="modal-body">
+              <p>Haqiqatan ham <strong>{{ getResetEntityTitle(pendingResetType) }}</strong> ma'lumotlarini tozalamoqchimisiz?</p>
+              <div class="warning-alert">
+                ⚠️ {{ getResetEntityWarning(pendingResetType) }}
+              </div>
+              <p class="muted-small mt-2">Bu amal qaytarib bo'lmaydi. Tranzaksiya ichida xavfsiz o'chiriladi.</p>
+            </div>
+            <div class="modal-footer">
+              <button class="pos-btn pos-btn-secondary" [disabled]="resetting()" (click)="closeResetModal()">Bekor qilish</button>
+              <button class="pos-btn pos-btn-danger" [disabled]="resetting()" (click)="executeSingleReset()">
+                @if (resetting()) {
+                  <span class="spinner"></span> Tozalanmoqda...
+                } @else {
+                  Ha, o'chirish
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 2. Full Reset Step 1 Modal -->
+      @if (activeResetModal() === 'FULL_RESET_STEP1') {
+        <div class="modal-backdrop">
+          <div class="pos-modal confirm-modal fade-in">
+            <div class="modal-header modal-header--danger">
+              <h3>⚠️ DIQQAT: Barcha test ma'lumotlarini tozalash</h3>
+              <button class="modal-close" (click)="closeResetModal()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="danger-alert">
+                <strong>1-BOSQICH TASDIQLASH:</strong>
+                Ushbu amal barcha test buyurtmalari, buyurtma tarixi, to'lovlar, oshxona ma'lumotlari, mahsulotlar, kategoriyalar, oshxonalar, stollar va joylarni tozalaydi.
+              </div>
+              <p class="mt-3">Xodimlar (foydalanuvchilar), rollar, printerlar va tizim sozlamalari saqlanib qoladi.</p>
+              <p><strong>Davom etishni xohlaysizmi?</strong></p>
+            </div>
+            <div class="modal-footer">
+              <button class="pos-btn pos-btn-secondary" (click)="closeResetModal()">Bekor qilish</button>
+              <button class="pos-btn pos-btn-danger" (click)="proceedToStep2()">Davom etish (2-bosqich) ➔</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 3. Full Reset Step 2 Modal (Type RESET) -->
+      @if (activeResetModal() === 'FULL_RESET_STEP2') {
+        <div class="modal-backdrop">
+          <div class="pos-modal confirm-modal fade-in">
+            <div class="modal-header modal-header--danger">
+              <h3>🛑 YAKUNIY TASDIQLASH (2/2)</h3>
+              <button class="modal-close" (click)="closeResetModal()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="danger-alert">
+                Tasodifiy xatolikning oldini olish uchun quyidagi maydonga bosh harflar bilan <strong>RESET</strong> deb yozing:
+              </div>
+              <div class="form-group mt-4">
+                <label>Tasdiqlash so'zi ("RESET"):</label>
+                <input type="text"
+                       class="pos-input text-center font-bold"
+                       style="font-size: 18px; letter-spacing: 2px; color: #ef4444;"
+                       placeholder="RESET"
+                       [(ngModel)]="resetConfirmationInput"
+                       autocomplete="off">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="pos-btn pos-btn-secondary" [disabled]="resetting()" (click)="closeResetModal()">Bekor qilish</button>
+              <button class="pos-btn pos-btn-danger"
+                      [disabled]="resetConfirmationInput.trim().toUpperCase() !== 'RESET' || resetting()"
+                      (click)="executeFullReset()">
+                @if (resetting()) {
+                  <span class="spinner"></span> Baza tozalanmoqda...
+                } @else {
+                  🔥 HA, BARCHASINI TOZALASH
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- 4. Result Breakdown Modal -->
+      @if (activeResetModal() === 'RESULT_MODAL' && resetResult) {
+        <div class="modal-backdrop">
+          <div class="pos-modal fade-in" style="max-width: 550px;">
+            <div class="modal-header">
+              <h3>✅ {{ resetResultTitle }}</h3>
+              <button class="modal-close" (click)="closeResetModal()">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="info-alert mb-3" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #10b981;">
+                Tozalash operatsiyasi muvaffaqiyatli yakunlandi! Quyida hisobot:
+              </div>
+              <div class="result-breakdown-table">
+                <table class="pos-table" style="width: 100%;">
+                  <thead>
+                    <tr>
+                      <th style="text-align: left;">Obyekt / Jadval</th>
+                      <th style="text-align: right;">O'chirilgan / Saqlangan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @if (resetResult.orders !== undefined) {
+                      <tr><td>📋 Buyurtmalar (Orders)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.orders }} ta</td></tr>
+                    }
+                    @if (resetResult.orderItems !== undefined) {
+                      <tr><td>🍱 Buyurtma mahsulotlari (Order Items)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.orderItems }} ta</td></tr>
+                    }
+                    @if (resetResult.payments !== undefined) {
+                      <tr><td>💳 To'lovlar (Payments)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.payments }} ta</td></tr>
+                    }
+                    @if (resetResult.kitchenBatches !== undefined) {
+                      <tr><td>👨‍🍳 Oshxona partiyalari (Kitchen Batches)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.kitchenBatches }} ta</td></tr>
+                    }
+                    @if (resetResult.cancellationReceipts !== undefined && resetResult.cancellationReceipts > 0) {
+                      <tr><td>🚫 Bekor qilish cheklari</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.cancellationReceipts }} ta</td></tr>
+                    }
+                    @if (resetResult.tablesFreed !== undefined && resetResult.tablesFreed > 0) {
+                      <tr><td>🪑 Bo'shatilgan stollar</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.tablesFreed }} ta</td></tr>
+                    }
+                    @if (resetResult.products !== undefined) {
+                      <tr><td>🍔 Mahsulotlar (Products)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.products }} ta</td></tr>
+                    }
+                    @if (resetResult.categories !== undefined) {
+                      <tr><td>📑 Kategoriyalar (Categories)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.categories }} ta</td></tr>
+                    }
+                    @if (resetResult.kitchens !== undefined) {
+                      <tr><td>🍳 Oshxonalar (Kitchens)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.kitchens }} ta</td></tr>
+                    }
+                    @if (resetResult.tables !== undefined) {
+                      <tr><td>🪑 Stollar (Tables)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.tables }} ta</td></tr>
+                    }
+                    @if (resetResult.zones !== undefined) {
+                      <tr><td>🏷️ Joylar / Zallar (Zones)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.zones }} ta</td></tr>
+                    }
+                    @if (resetResult.usersPreserved !== undefined) {
+                      <tr style="background: rgba(16, 185, 129, 0.05);"><td>👤 Saqlangan foydalanuvchilar (Users)</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.usersPreserved }} ta (saqlandi)</td></tr>
+                    }
+                    @if (resetResult.printersPreserved !== undefined) {
+                      <tr style="background: rgba(16, 185, 129, 0.05);"><td>🖨️ Saqlangan printerlar (Printers)</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.printersPreserved }} ta (saqlandi)</td></tr>
+                    }
+                    @if (resetResult.rolesPreserved !== undefined) {
+                      <tr style="background: rgba(16, 185, 129, 0.05);"><td>🛡️ Saqlangan rollar & huquqlar</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.rolesPreserved }} ta (saqlandi)</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="pos-btn pos-btn-primary" (click)="closeResetModal()">Tushunarli</button>
             </div>
           </div>
         </div>
@@ -2122,6 +2408,159 @@ type SettingsCategory =
       display: inline-block;
       animation: spin 0.6s linear infinite;
     }
+    /* RESET / TOZALASH STYLES */
+    .nav-item--reset {
+      color: #ef4444;
+      &:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #f87171;
+      }
+      &.active {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        font-weight: 700;
+      }
+    }
+    .badge-dev {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .header-with-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .reset-info-banner {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    .reset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .reset-item-card {
+      background: var(--bg-hover, rgba(255, 255, 255, 0.03));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      transition: all var(--transition);
+
+      &:hover {
+        border-color: rgba(239, 68, 68, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .reset-item-icon {
+        font-size: 28px;
+        margin-bottom: 4px;
+      }
+      .reset-item-info {
+        flex: 1;
+        h4 {
+          margin: 0 0 6px 0;
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        p {
+          margin: 0;
+          font-size: 12px;
+          line-height: 1.5;
+          color: var(--text-muted);
+        }
+      }
+    }
+    .danger-zone-card {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(185, 28, 28, 0.15));
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+
+      .danger-badge {
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        background: #ef4444;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 6px;
+      }
+      .danger-zone-title h4 {
+        margin: 4px 0 6px 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #f87171;
+      }
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-secondary);
+        max-width: 600px;
+      }
+    }
+    .modal-header--danger {
+      background: rgba(239, 68, 68, 0.1);
+      border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+      h3 { color: #ef4444; }
+    }
+    .danger-alert {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: #f87171;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .success-alert {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: #34d399;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .result-breakdown-table {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-top: 10px;
+      table {
+        margin: 0;
+        td, th {
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+      }
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
@@ -2204,6 +2643,7 @@ export class SettingsComponent implements OnInit {
   constructor(
     private settingsService: SettingsService,
     private printerService: PrinterService,
+    private resetService: ResetService,
     public auth: AuthService,
     public themeService: ThemeService
   ) {}
@@ -2634,5 +3074,114 @@ export class SettingsComponent implements OnInit {
 
   clearToast(): void {
     this.toastMessage.set(null);
+  }
+
+  // --- RESET / TOZALASH CENTER ---
+  resetting = signal<boolean>(false);
+  activeResetModal = signal<'NONE' | 'CONFIRM_SINGLE' | 'FULL_RESET_STEP1' | 'FULL_RESET_STEP2' | 'RESULT_MODAL'>('NONE');
+  pendingResetType: 'orders' | 'products' | 'categories' | 'kitchens' | 'tables' | 'zones' | null = null;
+  resetConfirmationInput = '';
+  resetResult: any = null;
+  resetResultTitle = '';
+
+  confirmReset(type: 'orders' | 'products' | 'categories' | 'kitchens' | 'tables' | 'zones'): void {
+    this.pendingResetType = type;
+    this.activeResetModal.set('CONFIRM_SINGLE');
+  }
+
+  getResetEntityTitle(type: string | null): string {
+    switch (type) {
+      case 'orders': return 'Buyurtmalar tarixi';
+      case 'products': return 'Mahsulotlar';
+      case 'categories': return 'Kategoriyalar';
+      case 'kitchens': return 'Oshxonalar';
+      case 'tables': return 'Stollar';
+      case 'zones': return 'Joylar / Zallar';
+      default: return 'Tanlangan ma\'lumot';
+    }
+  }
+
+  getResetEntityWarning(type: string | null): string {
+    switch (type) {
+      case 'orders': return 'Barcha buyurtmalar, to\'lovlar, oshxona buyurtmalari (KDS) va bekor qilish cheklari o\'chiriladi. Stollar bo\'shatiladi.';
+      case 'products': return 'Barcha test mahsulotlari o\'chiriladi. Agar buyurtmalar mavjud bo\'lsa, avval buyurtmalar tarixini tozalash talab qilinadi.';
+      case 'categories': return 'Barcha toifalar o\'chiriladi. Agar toifaga bog\'langan mahsulotlar bo\'lsa, avval mahsulotlar tozalanadi.';
+      case 'kitchens': return 'Barcha oshxonalar o\'chiriladi. Xodimlar (users) hisoblari saqlanib qoladi va bo\'limdan ajratiladi.';
+      case 'tables': return 'Barcha stollar o\'chiriladi. Agar stollarga bog\'langan buyurtmalar mavjud bo\'lsa, avval buyurtmalar tozalanadi.';
+      case 'zones': return 'Barcha joylar va zallar o\'chiriladi. Zonalarga stollar bog\'langan bo\'lsa, avval stollar tozalanadi.';
+      default: return 'Ushbu ma\'lumotlar o\'chiriladi.';
+    }
+  }
+
+  executeSingleReset(): void {
+    if (!this.pendingResetType) return;
+    const type = this.pendingResetType;
+    this.resetting.set(true);
+
+    let call$: any;
+    switch (type) {
+      case 'orders': call$ = this.resetService.resetOrders(); break;
+      case 'products': call$ = this.resetService.resetProducts(); break;
+      case 'categories': call$ = this.resetService.resetCategories(); break;
+      case 'kitchens': call$ = this.resetService.resetKitchens(); break;
+      case 'tables': call$ = this.resetService.resetTables(); break;
+      case 'zones': call$ = this.resetService.resetZones(); break;
+    }
+
+    call$.subscribe({
+      next: (res: any) => {
+        this.resetting.set(false);
+        this.resetResult = res.data;
+        this.resetResultTitle = `${this.getResetEntityTitle(type)} tozalandi`;
+        this.activeResetModal.set('RESULT_MODAL');
+        this.showToast(res.message || 'Ma\'lumotlar muvaffaqiyatli tozalandi', 'success');
+        this.loadAuditLogs();
+      },
+      error: (err: any) => {
+        this.resetting.set(false);
+        this.showToast(err.error?.message || 'Tozalashda xatolik yuz berdi', 'error');
+        this.closeResetModal();
+      }
+    });
+  }
+
+  openFullResetModal(): void {
+    this.resetConfirmationInput = '';
+    this.activeResetModal.set('FULL_RESET_STEP1');
+  }
+
+  proceedToStep2(): void {
+    this.resetConfirmationInput = '';
+    this.activeResetModal.set('FULL_RESET_STEP2');
+  }
+
+  executeFullReset(): void {
+    if (this.resetConfirmationInput.trim().toUpperCase() !== 'RESET') {
+      this.showToast('Tasdiqlash uchun "RESET" so\'zini kiriting', 'error');
+      return;
+    }
+
+    this.resetting.set(true);
+    this.resetService.resetAll().subscribe({
+      next: (res: any) => {
+        this.resetting.set(false);
+        this.resetResult = res.data;
+        this.resetResultTitle = 'Barcha test ma\'lumotlari tozalandi';
+        this.activeResetModal.set('RESULT_MODAL');
+        this.showToast(res.message || 'Barcha test ma\'lumotlari muvaffaqiyatli tozalandi', 'success');
+        this.loadAuditLogs();
+      },
+      error: (err: any) => {
+        this.resetting.set(false);
+        this.showToast(err.error?.message || 'Tozalashda xatolik yuz berdi', 'error');
+        this.closeResetModal();
+      }
+    });
+  }
+
+  closeResetModal(): void {
+    this.activeResetModal.set('NONE');
+    this.pendingResetType = null;
+    this.resetConfirmationInput = '';
   }
 }

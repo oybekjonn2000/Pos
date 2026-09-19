@@ -67,7 +67,7 @@ Name: "{autoprograms}\{#AppName}\O'chirish (Uninstall)"; Filename: "{uninstallex
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#AppExeName}"
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: shellexec nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(AppName, '&', '&&')}}"; Flags: runasoriginaluser nowait postinstall skipifsilent
 
 [Code]
 // ========================================================

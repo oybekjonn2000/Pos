@@ -770,3 +770,422 @@ Identify and stop the process that's listening on port 8080 or configure this ap
 2026-09-19 02:54:10 [http-nio-8080-exec-3] INFO  c.r.tables.service.TableService - [Zone Delete] Zone 'Terrasa Active Order Test' (id=4fcf6408-1fb3-41af-9940-a3573446b3fe) o'chirildi. 2 ta stol ham o'chirildi.
 2026-09-19 02:54:27 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 2 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(2)-CONNECTED(2)-DISCONNECT(1)], stompBrokerRelay[null], inboundChannel[pool size = 16, active threads = 0, queued tasks = 0, completed tasks = 18], outboundChannel[pool size = 7, active threads = 0, queued tasks = 0, completed tasks = 7], sockJsScheduler[pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0]
 2026-09-19 02:56:52 [http-nio-8080-exec-6] INFO  c.r.tables.service.TableService - [Zone Delete] Zone 'terassa' (id=478e431a-ad6b-4647-bfc7-11c31100e9a5) o'chirildi. 1 ta stol ham o'chirildi.
+2026-09-19 15:57:39 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 20648 (E:\posOybek\backend\restaurant-pos-api\target\restaurant-pos-api-1.0.0-SNAPSHOT.jar started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-19 15:57:39 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-19 15:57:41 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-19 15:57:41 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 166 ms. Found 34 JPA repository interfaces.
+2026-09-19 15:57:43 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-19 15:57:43 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-19 15:57:43 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-19 15:57:43 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-19 15:57:43 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 3857 ms
+2026-09-19 15:57:44 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-19 15:57:44 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@72b10258
+2026-09-19 15:57:44 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-19 15:57:44 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-19 15:57:44 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-19 15:57:45 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 31
+2026-09-19 15:57:45 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-19 15:57:45 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-19 15:57:45 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-19 15:57:45 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-19 15:57:45 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-19 15:57:45 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-19 15:57:45 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-19 15:57:47 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-19 15:57:50 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-19 15:57:51 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-19 15:57:52 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-19 15:57:56 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-19 15:57:57 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-19 15:57:57 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@62e12ea0]]
+2026-09-19 15:57:57 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-19 15:57:57 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-19 15:57:57 [main] INFO  c.r.RestaurantPosApplication - Started RestaurantPosApplication in 18.109 seconds (process running for 18.672)
+2026-09-19 15:58:03 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-19 15:58:03 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-19 15:58:03 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-09-19 15:58:14 [http-nio-8080-exec-6] INFO  o.s.s.a.AnnotationAsyncExecutionInterceptor - More than one TaskExecutor bean found within the context, and none is named 'taskExecutor'. Mark one of them as primary or name it 'taskExecutor' (possibly as an alias) in order to use it for async processing: [clientInboundChannelExecutor, clientOutboundChannelExecutor, brokerChannelExecutor, messageBrokerTaskScheduler]
+2026-09-19 15:58:14 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 15:58:14 [http-nio-8080-exec-10] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/orders/25a33bee-b8b5-48cf-ae5b-57a556947816/kitchen
+2026-09-19 15:58:14 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [ACCOUNT_CLOSED] Dispatching hisob cheki for orderId: 25a33bee-b8b5-48cf-ae5b-57a556947816, orderNumber: ORD-20260919-0101
+2026-09-19 15:58:14 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [PRINT_STARTED] Receipt print started for orderId: 25a33bee-b8b5-48cf-ae5b-57a556947816, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 15:58:14 [http-nio-8080-exec-5] INFO  c.r.p.service.ReceiptPrintService - Sending cashier receipt to Windows printer 'Generic / Text Only' for order 'ORD-20260919-0101'
+2026-09-19 15:58:14 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 523 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 15:58:14 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 15:58:14 [http-nio-8080-exec-5] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 995 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 15:58:14 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [PRINT_SUCCESS] Receipt printed successfully for orderId: 25a33bee-b8b5-48cf-ae5b-57a556947816, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 15:58:21 [SimpleAsyncTaskExecutor-2] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 15:58:21 [http-nio-8080-exec-8] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/orders/7d1460ba-cad8-4a4d-8811-5c57faca9cb5/kitchen
+2026-09-19 15:58:21 [http-nio-8080-exec-9] INFO  c.r.p.service.PrintRoutingService - [ACCOUNT_CLOSED] Dispatching hisob cheki for orderId: 7d1460ba-cad8-4a4d-8811-5c57faca9cb5, orderNumber: ORD-20260919-0102
+2026-09-19 15:58:21 [http-nio-8080-exec-9] INFO  c.r.p.service.PrintRoutingService - [PRINT_STARTED] Receipt print started for orderId: 7d1460ba-cad8-4a4d-8811-5c57faca9cb5, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 15:58:21 [SimpleAsyncTaskExecutor-2] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 523 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 15:58:21 [SimpleAsyncTaskExecutor-2] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 15:58:21 [http-nio-8080-exec-9] INFO  c.r.p.service.ReceiptPrintService - Sending cashier receipt to Windows printer 'Generic / Text Only' for order 'ORD-20260919-0102'
+2026-09-19 15:58:21 [http-nio-8080-exec-9] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 995 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 15:58:21 [http-nio-8080-exec-9] INFO  c.r.p.service.PrintRoutingService - [PRINT_SUCCESS] Receipt printed successfully for orderId: 7d1460ba-cad8-4a4d-8811-5c57faca9cb5, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 15:58:21 [SimpleAsyncTaskExecutor-3] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 15:58:21 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [ACCOUNT_CLOSED] Dispatching hisob cheki for orderId: db9dd5fe-4d11-42ea-8a46-4c73ae0774f9, orderNumber: ORD-20260919-0103
+2026-09-19 15:58:21 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [PRINT_STARTED] Receipt print started for orderId: db9dd5fe-4d11-42ea-8a46-4c73ae0774f9, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 15:58:21 [http-nio-8080-exec-5] INFO  c.r.p.service.ReceiptPrintService - Sending cashier receipt to Windows printer 'Generic / Text Only' for order 'ORD-20260919-0103'
+2026-09-19 15:58:21 [SimpleAsyncTaskExecutor-3] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 525 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 15:58:21 [SimpleAsyncTaskExecutor-3] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 15:58:21 [http-nio-8080-exec-5] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 997 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 15:58:21 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [PRINT_SUCCESS] Receipt printed successfully for orderId: db9dd5fe-4d11-42ea-8a46-4c73ae0774f9, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 15:58:57 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 1 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(1)-CONNECTED(1)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 6, active threads = 0, queued tasks = 0, completed tasks = 6], outboundChannel[pool size = 1, active threads = 0, queued tasks = 0, completed tasks = 1], sockJsScheduler[pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0]
+2026-09-19 16:28:57 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 2, active threads = 1, queued tasks = 0, completed tasks = 1]
+2026-09-19 16:58:57 [MessageBroker-2] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 3, active threads = 1, queued tasks = 0, completed tasks = 2]
+2026-09-19 17:28:57 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 4, active threads = 1, queued tasks = 0, completed tasks = 3]
+2026-09-19 17:58:57 [MessageBroker-3] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 5, active threads = 1, queued tasks = 0, completed tasks = 4]
+2026-09-19 18:28:57 [MessageBroker-2] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 6, active threads = 1, queued tasks = 0, completed tasks = 5]
+2026-09-19 18:58:57 [MessageBroker-4] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 7, active threads = 1, queued tasks = 0, completed tasks = 6]
+2026-09-19 19:28:54 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 7]
+2026-09-19 19:58:54 [MessageBroker-5] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 8]
+2026-09-19 20:28:54 [MessageBroker-5] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 9]
+2026-09-19 20:58:54 [MessageBroker-6] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 10]
+2026-09-19 21:28:54 [MessageBroker-6] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 11]
+2026-09-19 21:58:54 [MessageBroker-6] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 12]
+2026-09-19 22:28:54 [MessageBroker-4] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 168], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 13]
+2026-09-19 22:54:59 [http-nio-8080-exec-7] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: products/8aa1a7b4-2575-4125-9c71-a1d5bddd703b-ban.png
+2026-09-19 22:54:59 [http-nio-8080-exec-8] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: products/f317b57f-8389-4248-b4b5-fe39d256ec11-ban.png
+2026-09-19 22:55:02 [http-nio-8080-exec-10] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: products/8aa1a7b4-2575-4125-9c71-a1d5bddd703b-ban.png
+2026-09-19 22:55:03 [SimpleAsyncTaskExecutor-4] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 22:55:03 [SimpleAsyncTaskExecutor-4] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 520 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 22:55:03 [SimpleAsyncTaskExecutor-4] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 22:58:54 [MessageBroker-4] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 19 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(19)-CONNECTED(19)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 6, active threads = 0, queued tasks = 0, completed tasks = 186], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 37], sockJsScheduler[pool size = 8, active threads = 1, queued tasks = 0, completed tasks = 14]
+2026-09-19 23:06:52 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 5728 (E:\posOybek\backend\restaurant-pos-api\target\restaurant-pos-api-1.0.0-SNAPSHOT.jar started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-19 23:06:52 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-19 23:06:54 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-19 23:06:54 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 106 ms. Found 34 JPA repository interfaces.
+2026-09-19 23:06:55 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-19 23:06:55 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-19 23:06:55 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-19 23:06:55 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-19 23:06:55 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2401 ms
+2026-09-19 23:06:55 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-19 23:06:56 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@6d6712b7
+2026-09-19 23:06:56 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-19 23:06:56 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-19 23:06:56 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-19 23:06:56 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 31
+2026-09-19 23:06:56 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-19 23:06:56 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-19 23:06:56 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-19 23:06:56 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-19 23:06:56 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-19 23:06:56 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-19 23:06:56 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-19 23:06:58 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-19 23:07:00 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-19 23:07:00 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-19 23:07:01 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-19 23:07:04 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-19 23:07:05 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-19 23:07:05 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@9c91021]]
+2026-09-19 23:07:05 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-19 23:07:05 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-19 23:07:05 [main] INFO  c.r.RestaurantPosApplication - Started RestaurantPosApplication in 12.903 seconds (process running for 13.337)
+2026-09-19 23:07:09 [http-nio-8080-exec-2] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-19 23:07:09 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-19 23:07:09 [http-nio-8080-exec-2] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-09-19 23:08:05 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 2 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(2)-CONNECTED(2)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 9, active threads = 0, queued tasks = 0, completed tasks = 9], outboundChannel[pool size = 3, active threads = 0, queued tasks = 0, completed tasks = 3], sockJsScheduler[pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0]
+2026-09-19 23:10:38 [http-nio-8080-exec-8] INFO  o.s.s.a.AnnotationAsyncExecutionInterceptor - More than one TaskExecutor bean found within the context, and none is named 'taskExecutor'. Mark one of them as primary or name it 'taskExecutor' (possibly as an alias) in order to use it for async processing: [clientInboundChannelExecutor, clientOutboundChannelExecutor, brokerChannelExecutor, messageBrokerTaskScheduler]
+2026-09-19 23:10:38 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 23:10:38 [http-nio-8080-exec-10] INFO  c.r.settings.service.ResetService - Resetting orders and operational history for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:10:38 [http-nio-8080-exec-10] ERROR c.r.c.e.GlobalExceptionHandler - Unexpected error: BadSqlGrammarException - PreparedStatementCallback; bad SQL grammar [DELETE FROM order_item_modifiers WHERE order_item_id IN (SELECT id FROM order_items WHERE tenant_id = ?)]
+org.springframework.jdbc.BadSqlGrammarException: PreparedStatementCallback; bad SQL grammar [DELETE FROM order_item_modifiers WHERE order_item_id IN (SELECT id FROM order_items WHERE tenant_id = ?)]
+	at org.springframework.jdbc.support.SQLStateSQLExceptionTranslator.doTranslate(SQLStateSQLExceptionTranslator.java:112)
+	at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:107)
+	at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:116)
+	at org.springframework.jdbc.core.JdbcTemplate.translateException(JdbcTemplate.java:1556)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:677)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:972)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:1016)
+	at org.springframework.jdbc.core.JdbcTemplate.update(JdbcTemplate.java:1026)
+	at com.restaurantpos.settings.service.ResetService.resetOrders(ResetService.java:51)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:380)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727)
+	at com.restaurantpos.settings.service.ResetService$$SpringCGLIB$$0.resetOrders(<generated>)
+	at com.restaurantpos.settings.controller.ResetController.resetOrders(ResetController.java:30)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:359)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.proceed(AuthorizationManagerBeforeMethodInterceptor.java:268)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.attemptAuthorization(AuthorizationManagerBeforeMethodInterceptor.java:263)
+	at org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor.invoke(AuthorizationManagerBeforeMethodInterceptor.java:196)
+	at org.springframework.security.config.annotation.method.configuration.DeferringMethodInterceptor.invoke(DeferringMethodInterceptor.java:44)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:727)
+	at com.restaurantpos.settings.controller.ResetController$$SpringCGLIB$$0.resetOrders(<generated>)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:257)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:190)
+	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986)
+	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891)
+	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1088)
+	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:978)
+	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
+	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
+	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:110)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:108)
+	at org.springframework.security.web.FilterChainProxy.lambda$doFilterInternal$3(FilterChainProxy.java:231)
+	at org.springframework.security.web.ObservationFilterChainDecorator$FilterObservation$SimpleFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:479)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$1(ObservationFilterChainDecorator.java:340)
+	at org.springframework.security.web.ObservationFilterChainDecorator.lambda$wrapSecured$0(ObservationFilterChainDecorator.java:82)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:128)
+	at org.springframework.security.web.access.intercept.AuthorizationFilter.doFilter(AuthorizationFilter.java:101)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:126)
+	at org.springframework.security.web.access.ExceptionTranslationFilter.doFilter(ExceptionTranslationFilter.java:120)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:131)
+	at org.springframework.security.web.session.SessionManagementFilter.doFilter(SessionManagementFilter.java:85)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.authentication.AnonymousAuthenticationFilter.doFilter(AnonymousAuthenticationFilter.java:100)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter.doFilter(SecurityContextHolderAwareRequestFilter.java:179)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.savedrequest.RequestCacheAwareFilter.doFilter(RequestCacheAwareFilter.java:63)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at com.restaurantpos.auth.security.JwtAuthenticationFilter.doFilterInternal(JwtAuthenticationFilter.java:57)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$0(ObservationFilterChainDecorator.java:323)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:224)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.servlet.handler.HandlerMappingIntrospector.lambda$createCacheFilter$3(HandlerMappingIntrospector.java:243)
+	at org.springframework.web.filter.CompositeFilter$VirtualFilterChain.doFilter(CompositeFilter.java:113)
+	at org.springframework.web.filter.CompositeFilter.doFilter(CompositeFilter.java:74)
+	at org.springframework.security.config.annotation.web.configuration.WebMvcSecurityConfiguration$CompositeFilterChainProxy.doFilter(WebMvcSecurityConfiguration.java:238)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:362)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:278)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:114)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1743)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: org.postgresql.util.PSQLException: ОШИБКА: column "tenant_id" does not exist
+  Позиция: 91
+	at org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2733)
+	at org.postgresql.core.v3.QueryExecutorImpl.processResults(QueryExecutorImpl.java:2420)
+	at org.postgresql.core.v3.QueryExecutorImpl.execute(QueryExecutorImpl.java:372)
+	at org.postgresql.jdbc.PgStatement.executeInternal(PgStatement.java:517)
+	at org.postgresql.jdbc.PgStatement.execute(PgStatement.java:434)
+	at org.postgresql.jdbc.PgPreparedStatement.executeWithFlags(PgPreparedStatement.java:194)
+	at org.postgresql.jdbc.PgPreparedStatement.executeUpdate(PgPreparedStatement.java:155)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java)
+	at org.springframework.jdbc.core.JdbcTemplate.lambda$update$2(JdbcTemplate.java:977)
+	at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:658)
+	... 162 common frames omitted
+2026-09-19 23:10:38 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 520 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:10:38 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 23:11:43 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication v1.0.0-SNAPSHOT using Java 21.0.12.1 with PID 8216 (E:\posOybek\backend\restaurant-pos-api\target\restaurant-pos-api-1.0.0-SNAPSHOT.jar started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-19 23:11:43 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-19 23:11:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-19 23:11:45 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 112 ms. Found 34 JPA repository interfaces.
+2026-09-19 23:11:46 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-19 23:11:46 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-19 23:11:46 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-19 23:11:46 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-19 23:11:46 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2360 ms
+2026-09-19 23:11:46 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-19 23:11:46 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@3eadad14
+2026-09-19 23:11:46 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-19 23:11:46 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-19 23:11:46 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-19 23:11:47 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 31
+2026-09-19 23:11:47 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-19 23:11:47 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-19 23:11:47 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-19 23:11:47 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-19 23:11:47 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-19 23:11:47 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-19 23:11:47 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-19 23:11:48 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-19 23:11:51 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-19 23:11:51 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-19 23:11:51 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-19 23:11:55 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-19 23:11:55 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-19 23:11:55 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@315fe2b1]]
+2026-09-19 23:11:55 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-19 23:11:55 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-19 23:11:55 [main] INFO  c.r.RestaurantPosApplication - Started RestaurantPosApplication in 12.316 seconds (process running for 12.789)
+2026-09-19 23:11:56 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-19 23:11:56 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-19 23:11:56 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-09-19 23:12:02 [http-nio-8080-exec-1] INFO  c.r.orders.service.OrderService - Table 'Stol 1' already has active order 'ORD-20260919-0101'. Merging items into existing order.
+2026-09-19 23:12:02 [http-nio-8080-exec-1] INFO  o.s.s.a.AnnotationAsyncExecutionInterceptor - More than one TaskExecutor bean found within the context, and none is named 'taskExecutor'. Mark one of them as primary or name it 'taskExecutor' (possibly as an alias) in order to use it for async processing: [clientInboundChannelExecutor, clientOutboundChannelExecutor, brokerChannelExecutor, messageBrokerTaskScheduler]
+2026-09-19 23:12:02 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #2 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 23:12:02 [http-nio-8080-exec-3] INFO  c.r.settings.service.ResetService - Resetting orders and operational history for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-3] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=ORDERS, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-3] WARN  c.r.settings.service.ResetService - Failed to send WS notification after orders reset: Cannot invoke "com.restaurantpos.orders.dto.OrderDto$Response.getStatus()" because "order" is null
+2026-09-19 23:12:02 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 565 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:12:02 [SimpleAsyncTaskExecutor-1] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #2 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 23:12:02 [SimpleAsyncTaskExecutor-2] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 23:12:02 [http-nio-8080-exec-4] INFO  c.r.settings.service.ResetService - Resetting products for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-4] WARN  c.r.c.e.GlobalExceptionHandler - Business exception: BAD_REQUEST - Mahsulotlarni o'chirishdan oldin buyurtmalar tarixini tozalang. (Buyurtmalarda qatnashgan mahsulotlar mavjud: 1 ta)
+2026-09-19 23:12:02 [http-nio-8080-exec-8] INFO  c.r.settings.service.ResetService - Resetting orders and operational history for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-8] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=ORDERS, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-8] WARN  c.r.settings.service.ResetService - Failed to send WS notification after orders reset: Cannot invoke "com.restaurantpos.orders.dto.OrderDto$Response.getStatus()" because "order" is null
+2026-09-19 23:12:02 [SimpleAsyncTaskExecutor-2] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 496 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:12:02 [SimpleAsyncTaskExecutor-2] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 23:12:02 [http-nio-8080-exec-7] INFO  c.r.settings.service.ResetService - Resetting products for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-7] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=PRODUCTS, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-5] INFO  c.r.settings.service.ResetService - Resetting categories for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-5] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=CATEGORIES, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-9] INFO  c.r.settings.service.ResetService - Resetting kitchens for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-9] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=KITCHENS, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-10] INFO  c.r.settings.service.ResetService - Resetting restaurant tables for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-10] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=TABLES, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-1] INFO  c.r.settings.service.ResetService - Resetting table zones/places for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-1] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=ZONES, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-3] WARN  c.r.settings.service.ResetService - CRITICAL: FULL TEST DATA RESET initiated for tenant: a0000000-0000-0000-0000-000000000001 by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:12:02 [http-nio-8080-exec-3] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=ALL, id=null, user=admin
+2026-09-19 23:12:02 [http-nio-8080-exec-3] WARN  c.r.settings.service.ResetService - Failed to send WS notification after full reset: Cannot invoke "com.restaurantpos.orders.dto.OrderDto$Response.getStatus()" because "order" is null
+2026-09-19 23:12:36 [http-nio-8080-exec-5] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/zones
+2026-09-19 23:12:55 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 2 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(2)-CONNECTED(2)-DISCONNECT(1)], stompBrokerRelay[null], inboundChannel[pool size = 12, active threads = 0, queued tasks = 0, completed tasks = 12], outboundChannel[pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 4], sockJsScheduler[pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0]
+2026-09-19 23:25:57 [http-nio-8080-exec-2] INFO  c.r.settings.service.ResetService - Resetting orders and operational history for tenant: a0000000-0000-0000-0000-000000000001, initiated by user: c0000000-0000-0000-0000-000000000001
+2026-09-19 23:25:57 [http-nio-8080-exec-2] INFO  c.r.settings.service.AuditLogService - Audit log saved: action=RESET, entity=ORDERS, id=null, user=admin
+2026-09-19 23:25:57 [http-nio-8080-exec-2] WARN  c.r.settings.service.ResetService - Failed to send WS notification after orders reset: Cannot invoke "com.restaurantpos.orders.dto.OrderDto$Response.getStatus()" because "order" is null
+2026-09-19 23:26:30 [http-nio-8080-exec-6] WARN  c.r.c.e.GlobalExceptionHandler - Business exception: BAD_REQUEST - Bu kategoriyaga 2 ta mahsulot bog'langan. Avval ularni boshqa kategoriyaga ko'chiring yoki faolsizlantiring.
+2026-09-19 23:28:01 [SimpleAsyncTaskExecutor-3] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 23:28:01 [SimpleAsyncTaskExecutor-3] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 508 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:28:01 [SimpleAsyncTaskExecutor-3] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 23:28:17 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [ACCOUNT_CLOSED] Dispatching hisob cheki for orderId: f27e49eb-be6a-41ce-8c67-52249b31eaf5, orderNumber: ORD-20260919-0102
+2026-09-19 23:28:17 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [PRINT_STARTED] Receipt print started for orderId: f27e49eb-be6a-41ce-8c67-52249b31eaf5, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 23:28:17 [http-nio-8080-exec-5] INFO  c.r.p.service.ReceiptPrintService - Sending cashier receipt to Windows printer 'Generic / Text Only' for order 'ORD-20260919-0102'
+2026-09-19 23:28:17 [http-nio-8080-exec-5] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 996 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:28:17 [http-nio-8080-exec-5] INFO  c.r.p.service.PrintRoutingService - [PRINT_SUCCESS] Receipt printed successfully for orderId: f27e49eb-be6a-41ce-8c67-52249b31eaf5, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 23:28:54 [SimpleAsyncTaskExecutor-4] INFO  c.r.p.service.KitchenPrintService - Sending kitchen batch ticket #1 to Windows printer 'Generic / Text Only' for kitchen 'PITSAXONA'
+2026-09-19 23:28:54 [SimpleAsyncTaskExecutor-4] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 508 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:28:54 [SimpleAsyncTaskExecutor-4] INFO  c.r.p.service.PrintRoutingService - Kitchen batch #1 ticket successfully printed to 'Generic / Text Only' for 'Pitsaxona'
+2026-09-19 23:28:56 [http-nio-8080-exec-8] INFO  c.r.p.service.PrintRoutingService - [ACCOUNT_CLOSED] Dispatching hisob cheki for orderId: 5ad020f9-e3c1-40f3-896c-dea5766b2b54, orderNumber: ORD-20260919-0103
+2026-09-19 23:28:56 [http-nio-8080-exec-8] INFO  c.r.p.service.PrintRoutingService - [PRINT_STARTED] Receipt print started for orderId: 5ad020f9-e3c1-40f3-896c-dea5766b2b54, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 23:28:56 [http-nio-8080-exec-8] INFO  c.r.p.service.ReceiptPrintService - Sending cashier receipt to Windows printer 'Generic / Text Only' for order 'ORD-20260919-0103'
+2026-09-19 23:28:56 [http-nio-8080-exec-8] INFO  c.r.p.service.WindowsPrintService - Successfully dispatched 1039 raw ESC/POS bytes to Windows printer 'Generic / Text Only'
+2026-09-19 23:28:56 [http-nio-8080-exec-8] INFO  c.r.p.service.PrintRoutingService - [PRINT_SUCCESS] Receipt printed successfully for orderId: 5ad020f9-e3c1-40f3-896c-dea5766b2b54, paymentId: null, printer: 'Generic / Text Only'
+2026-09-19 23:30:31 [http-nio-8080-exec-1] WARN  c.r.c.e.GlobalExceptionHandler - Business exception: UNAUTHORIZED - Account is inactive
+2026-09-19 23:30:51 [http-nio-8080-exec-3] INFO  c.r.payments.service.PaymentService - [PAYMENT_STARTED] Processing payment for orderId: 5ad020f9-e3c1-40f3-896c-dea5766b2b54, cashierId: c0000000-0000-0000-0000-000000000001, amount: 67500, method: CASH
+2026-09-19 23:30:51 [http-nio-8080-exec-3] INFO  c.r.payments.service.PaymentService - [PAYMENT_SUCCESS] Payment completed successfully. paymentId: a74003a2-9838-4c69-9d7b-63f3995572d3, paymentNumber: PAY-20260919-1123, orderId: 5ad020f9-e3c1-40f3-896c-dea5766b2b54, amount: 67500
+2026-09-19 23:30:52 [http-nio-8080-exec-6] INFO  c.r.payments.service.PaymentService - [PAYMENT_STARTED] Processing payment for orderId: f27e49eb-be6a-41ce-8c67-52249b31eaf5, cashierId: c0000000-0000-0000-0000-000000000001, amount: 90000, method: CASH
+2026-09-19 23:30:52 [http-nio-8080-exec-6] INFO  c.r.payments.service.PaymentService - [PAYMENT_SUCCESS] Payment completed successfully. paymentId: 990ab648-f7d7-4a73-90ef-4dad02a4c218, paymentNumber: PAY-20260919-1124, orderId: f27e49eb-be6a-41ce-8c67-52249b31eaf5, amount: 90000

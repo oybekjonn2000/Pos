@@ -100,7 +100,7 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasAnyAuthority('CREATE_ORDER', 'EDIT_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
+    @PreAuthorize("hasAnyAuthority('PROCESS_PAYMENT', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_CASHIER')")
     @Operation(summary = "Hisobni yopish (Stolni bo'shatadi, buyurtma CLOSED/UNPAID holatga o'tadi)")
     public ResponseEntity<ApiResponse<OrderDto.Response>> closeOrder(
             @PathVariable UUID id,

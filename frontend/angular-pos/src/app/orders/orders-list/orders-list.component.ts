@@ -580,7 +580,7 @@ import { NotificationService } from '../../core/services/notification.service';
               <button class="pos-btn pos-btn--secondary" (click)="closeModals()">Yopish</button>
               <!-- Hisobni yopish (agar hali yopilmagan bo'lsa) -->
               <button
-                *ngIf="selectedOrder.status !== 'CLOSED' && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
+                *ngIf="canCloseBill() && selectedOrder.status !== 'CLOSED' && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
                 class="pos-btn pos-btn--warning pos-btn--lg"
                 title="Hisobni yopish (Hisob chekini chiqaradi va to'lov tugmasini faollashtiradi)"
                 (click)="closeOrderFromModal(selectedOrder)">
@@ -2465,6 +2465,16 @@ export class OrdersListComponent implements OnInit {
     return this.auth.hasPermission('PROCESS_PAYMENT') || role === 'ADMIN' || role === 'MANAGER' || role === 'CASHIER';
   }
 
+  canCloseBill(): boolean {
+    const user = this.auth.user();
+    const role = (user?.role || '').toUpperCase();
+    const username = (user?.username || '').toLowerCase();
+    if (role === 'WAITER' || username === 'waiter' || this.auth.isWaiter()) {
+      return false;
+    }
+    return true;
+  }
+
   ngOnInit(): void {
     this.loadOrders();
   }
@@ -2823,6 +2833,10 @@ export class OrdersListComponent implements OnInit {
 
   closeOrderFromModal(order: Order): void {
     if (!order?.id) return;
+    if (!this.canCloseBill()) {
+      this.notify.warning("Ofitsiant hisobni yopa olmaydi. Hisob faqat Kassa yoki Admin tomonidan yopiladi!");
+      return;
+    }
     if (!confirm(`№ ${order.orderNumber} buyurtma hisobini yopmoqchimisiz?\n(Hisob cheki printerdan chiqariladi va stol bo'shatiladi)`)) {
       return;
     }

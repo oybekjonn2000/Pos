@@ -193,9 +193,54 @@ function updateSplash(step, message, error = null) {
 }
 
 // ============================================================
-// Main Application Window
+// Main Application Window & Menu Management
 // ============================================================
+function buildAppMenu() {
+  const template = [
+    {
+      label: 'Fayl',
+      submenu: [
+        { role: 'quit', label: 'Chiqish' }
+      ]
+    },
+    {
+      label: 'Tahrirlash',
+      submenu: [
+        { role: 'undo', label: 'Bekor qilish' },
+        { role: 'redo', label: 'Qaytarish' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Qirqib olish' },
+        { role: 'copy', label: 'Nusxa olish' },
+        { role: 'paste', label: 'Qo‘yish' },
+        { role: 'delete', label: 'O‘chirish' },
+        { type: 'separator' },
+        { role: 'selectAll', label: 'Barchasini tanlash' }
+      ]
+    },
+    {
+      label: 'Ko‘rinish',
+      submenu: [
+        { role: 'reload', label: 'Qayta yuklash' },
+        { role: 'forceReload', label: 'Majburiy qayta yuklash' },
+        { role: 'toggleDevTools', label: 'Dasturchi asboblari' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: 'Asl masshtab' },
+        { role: 'zoomIn', label: 'Kattalashtirish' },
+        { role: 'zoomOut', label: 'Kichiklashtirish' },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: 'To‘liq ekran' }
+      ]
+    }
+  ];
+  return Menu.buildFromTemplate(template);
+}
+
 function createMainWindow() {
+  // Always register a complete Application Menu with Edit roles
+  // so Win32 keyboard accelerator table and text editing are fully functional.
+  const appMenu = buildAppMenu();
+  Menu.setApplicationMenu(appMenu);
+
   mainWindow = new BrowserWindow({
     width: 1366,
     height: 768,
@@ -205,6 +250,7 @@ function createMainWindow() {
     icon: path.join(__dirname, 'assets', 'icon.ico'),
     backgroundColor: '#0f1117',
     show: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -213,9 +259,7 @@ function createMainWindow() {
     }
   });
 
-  if (!isDev) {
-    Menu.setApplicationMenu(null);
-  }
+  mainWindow.setMenuBarVisibility(false);
 
   const targetUrl = activeServerUrl || BACKEND_URL;
   const indexPath = findFrontendIndex();
@@ -235,12 +279,36 @@ function createMainWindow() {
   });
 
   mainWindow.once('ready-to-show', () => {
+    // Show and maximize main window first to capture OS foreground focus
+    mainWindow.maximize();
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.webContents.focus();
+
+    // Safely destroy splash window after main window has focus
     if (splashWindow && !splashWindow.isDestroyed()) {
       splashWindow.destroy();
       splashWindow = null;
     }
-    mainWindow.maximize();
-    mainWindow.show();
+  });
+
+  // Ensure Chromium WebContents maintains focus when window is activated
+  mainWindow.on('focus', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.focus();
+    }
+  });
+
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Guarantee developer shortcuts work seamlessly
+    if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+      mainWindow.webContents.toggleDevTools();
+      event.preventDefault();
+    }
+    if (input.control && input.key.toLowerCase() === 'r') {
+      mainWindow.webContents.reload();
+      event.preventDefault();
+    }
   });
 
   mainWindow.on('closed', () => {

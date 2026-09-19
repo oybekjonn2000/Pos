@@ -320,11 +320,13 @@ export interface PosCartItem {
                 <span class="new-count-badge">{{ newItemsCount() }} ta yangi</span>
               }
             </button>
-            <button class="btn-close-bill" 
-                    [disabled]="!canCloseBill()"
-                    (click)="closeBill()">
-              🔒 HISOBNI YOPISH
-            </button>
+            @if (!auth.isWaiter()) {
+              <button class="btn-close-bill" 
+                      [disabled]="!canCloseBill()"
+                      (click)="closeBill()">
+                🔒 HISOBNI YOPISH
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -1919,6 +1921,7 @@ export class PosComponent implements OnInit {
   total = computed(() => this.subtotal() + this.placeFee());
 
   canCloseBill = computed(() => {
+    if (this.auth.isWaiter()) return false;
     return !!this.currentOrderId() && !this.isSubmitting() && this.cart().filter(i => !i.voided).length > 0;
   });
 
@@ -2447,6 +2450,11 @@ export class PosComponent implements OnInit {
   }
 
   closeBill(): void {
+    if (this.auth.isWaiter()) {
+      this.notify.warning("Ofitsiant hisobni yopa olmaydi. Hisob faqat Kassa yoki Admin tomonidan yopiladi!");
+      return;
+    }
+
     if (!this.currentOrderId()) {
       this.notify.warning("Hisobni yopish uchun avval buyurtmani oshxonaga yuboring!");
       return;

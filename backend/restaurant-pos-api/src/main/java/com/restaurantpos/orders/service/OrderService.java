@@ -536,6 +536,10 @@ public class OrderService {
 
     @Transactional
     public OrderDto.Response closeOrder(UUID orderId, UUID tenantId, com.restaurantpos.auth.security.UserPrincipal user) {
+        if (user != null && user.isWaiter()) {
+            throw PosException.forbidden("Ofitsiant hisobni yopa olmaydi. Hisob faqat Kassa yoki Admin tomonidan yopiladi!");
+        }
+
         Order order = orderRepository.findByIdWithLock(orderId, tenantId)
                 .orElseThrow(() -> PosException.notFound("Buyurtma topilmadi: " + orderId));
 
