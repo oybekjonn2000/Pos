@@ -1,7 +1,14 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanResponse, CheckoutResponse } from '../../core/services/billing.service';
+import {
+  BillingService,
+  CurrentSubscriptionResponse,
+  PlanResponse,
+  CalculatePriceResponse,
+  InvoiceResponse,
+  SubscriptionPeriodResponse
+} from '../../core/services/billing.service';
 
 @Component({
   selector: 'app-restaurant-billing',
@@ -12,49 +19,108 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       <!-- Page Header -->
       <div class="billing-header">
         <div>
-          <h1 class="page-title">Tarif va Obuna Boshqaruvi</h1>
-          <p class="page-subtitle">Restoraningiz obuna holati, limitlar va to'lovlar tarixi</p>
+          <h1 class="page-title">Tariflar va Obuna Boshqaruvi</h1>
+          <p class="page-subtitle">Restoraningiz obuna holati, xizmat limitlari va hisob-fakturalar</p>
         </div>
 
         <div class="header-actions">
           <button class="btn btn-primary" (click)="openCheckoutModal()">
-            ⚡ Tarifni yangilash / Uzaytirish
+            ⚡ Tarifni Yangilash / Uzaytirish
           </button>
         </div>
       </div>
 
-      <!-- Expired Warning Banner -->
-      @if (sub() && sub()!.status === 'EXPIRED') {
-        <div class="banner banner-expired">
-          <div class="banner-icon">⚠️</div>
-          <div class="banner-content">
-            <h3>Obunangiz muddati tugagan!</h3>
-            <p>
-              Yangi buyurtma va to'lovlarni qabul qilish vaqtincha cheklandi. 
-              Barcha ma'lumotlaringiz xavfsiz saqlanmoqda. POS'dan to'liq foydalanish uchun obunani yangilang.
-            </p>
+      <!-- Warning Banners based on Subscription Expiry & Warnings -->
+      @if (sub()) {
+        <!-- Expired Banner -->
+        @if (sub()!.status === 'EXPIRED') {
+          <div class="banner banner-expired">
+            <div class="banner-icon">🚫</div>
+            <div class="banner-content">
+              <h3>Obunangiz muddati tugagan!</h3>
+              <p>
+                Yangi buyurtmalar va asosiy POS operatsiyalari to'xtatildi. 
+                Ma'lumotlaringiz xavfsiz saqlanmoqda. POS xizmatidan to'liq foydalanish uchun obunani uzaytiring.
+              </p>
+            </div>
+            <button class="btn btn-danger-dark" (click)="openCheckoutModal()">
+              Hoziroq uzaytirish
+            </button>
           </div>
-          <button class="btn btn-danger-dark" (click)="openCheckoutModal()">
-            Hoziroq yangilash
-          </button>
-        </div>
-      }
+        }
 
-      <!-- Trial Warning Banner -->
-      @if (sub() && sub()!.status === 'TRIAL') {
-        <div class="banner banner-trial">
-          <div class="banner-icon">✨</div>
-          <div class="banner-content">
-            <h3>Siz 14 kunlik bepul sinov davridasiz!</h3>
-            <p>
-              Sinov muddati tugashiga <strong>{{ sub()!.daysRemaining }} kun</strong> qoldi.
-              Muddatingiz tugashidan oldin tarifni tanlab, uzluksiz xizmatdan bahramand bo'ling.
-            </p>
+        <!-- 1 Day Remaining Banner -->
+        @if (sub()!.warningLevel === '1_DAY' && sub()!.status !== 'EXPIRED') {
+          <div class="banner banner-urgent">
+            <div class="banner-icon">⏰</div>
+            <div class="banner-content">
+              <h3>Obunangiz ertaga tugaydi!</h3>
+              <p>Xizmatingiz to'xtab qolmasligi uchun bugun obunani uzaytirishni tavsiya qilamiz.</p>
+            </div>
+            <button class="btn btn-warning-dark" (click)="openCheckoutModal()">
+              Uzaytirish
+            </button>
           </div>
-          <button class="btn btn-trial-action" (click)="openCheckoutModal()">
-            Tarif tanlash
-          </button>
-        </div>
+        }
+
+        <!-- 3 Days Remaining Banner -->
+        @if (sub()!.warningLevel === '3_DAYS') {
+          <div class="banner banner-warning">
+            <div class="banner-icon">⚠️</div>
+            <div class="banner-content">
+              <h3>Obunangiz 3 kundan keyin tugaydi!</h3>
+              <p>Uzluksiz xizmat uchun to'lovni oldindan amalga oshirishingiz mumkin.</p>
+            </div>
+            <button class="btn btn-warning-dark" (click)="openCheckoutModal()">
+              Tarifni uzaytirish
+            </button>
+          </div>
+        }
+
+        <!-- 7 Days Remaining Banner -->
+        @if (sub()!.warningLevel === '7_DAYS') {
+          <div class="banner banner-info">
+            <div class="banner-icon">ℹ️</div>
+            <div class="banner-content">
+              <h3>Obunangiz 7 kundan keyin tugaydi.</h3>
+              <p>Obuna muddatini uzaytirish yoki yuqori tarifga o'tishingiz mumkin.</p>
+            </div>
+            <button class="btn btn-outline" (click)="openCheckoutModal()">
+              Batafsil
+            </button>
+          </div>
+        }
+
+        <!-- Trial Banner -->
+        @if (sub()!.status === 'TRIAL') {
+          <div class="banner banner-trial">
+            <div class="banner-icon">✨</div>
+            <div class="banner-content">
+              <h3>Siz bepul sinov (Trial) davridasiz!</h3>
+              <p>
+                Sinov muddati tugashiga <strong>{{ sub()!.daysRemaining }} kun</strong> qoldi.
+                Chegirmali obuna tariflaridan birini tanlang.
+              </p>
+            </div>
+            <button class="btn btn-trial-action" (click)="openCheckoutModal()">
+              Tarif tanlash
+            </button>
+          </div>
+        }
+
+        <!-- Scheduled Downgrade Notice -->
+        @if (sub()!.hasScheduledDowngrade) {
+          <div class="banner banner-info">
+            <div class="banner-icon">🔄</div>
+            <div class="banner-content">
+              <h3>Rejalashtirilgan tarif o'zgarishi: {{ sub()!.nextPlanName }}</h3>
+              <p>
+                Joriy billing muddati ({{ formatDate(sub()!.endDate) }}) tugagach, 
+                avtomatik ravishda yangi tarif kuchga kiradi.
+              </p>
+            </div>
+          </div>
+        }
       }
 
       @if (loading()) {
@@ -63,7 +129,7 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
           <p>Obuna ma'lumotlari yuklanmoqda...</p>
         </div>
       } @else if (sub()) {
-        <!-- Main Stats & Cards -->
+        <!-- Main Stats Grid -->
         <div class="billing-grid">
           <!-- Card 1: Current Plan Overview -->
           <div class="card plan-overview-card">
@@ -75,7 +141,10 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
             </div>
 
             <div class="plan-price-row">
-              <h2 class="plan-name">{{ sub()!.planName }}</h2>
+              <div>
+                <h2 class="plan-name">{{ sub()!.planName }}</h2>
+                <span class="plan-code-badge">{{ sub()!.planCode }}</span>
+              </div>
               <div class="price-wrap">
                 <span class="price-val">{{ formatPrice(sub()!.price) }}</span>
                 <span class="price-cur">so'm / oy</span>
@@ -92,20 +161,20 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
                 <span class="val">{{ formatDate(sub()!.endDate) }}</span>
               </div>
               <div class="detail-row highlight">
-                <span class="label">Qolgan kunlar:</span>
+                <span class="label">Qolgan muddat:</span>
                 <span class="val days-val">{{ sub()!.daysRemaining }} kun</span>
               </div>
               <div class="detail-row">
-                <span class="label">POS Holati:</span>
+                <span class="label">Tizim holati:</span>
                 <span class="val" [class.text-success]="sub()!.operating" [class.text-danger]="!sub()!.operating">
-                  {{ sub()!.operating ? 'Faol (Ruxsat berilgan)' : 'To‘xtatilgan (Cheklangan)' }}
+                  {{ sub()!.operating ? 'Faol (Operatsiyalar ruxsat etilgan)' : 'Bloklangan (Faqat ko‘rish rejimi)' }}
                 </span>
               </div>
             </div>
 
             <div class="card-footer-actions">
               <button class="btn btn-outline-primary" (click)="openCheckoutModal()">
-                Tarifni o'zgartirish (Upgrade)
+                ⚡ Tarifni Yangilash / Muddatni Uzaytirish
               </button>
             </div>
           </div>
@@ -113,125 +182,212 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
           <!-- Card 2: Resource Limits & Usage -->
           <div class="card usage-card">
             <div class="card-header">
-              <span class="card-title">Tarif Bo'yicha Resurs Limitlari</span>
-              <span class="card-subtitle">Hozirgi foydalanish ko'rsatkichi</span>
+              <span class="card-title">Resurs Limitlari va Ishlatilishi</span>
+              <span class="card-subtitle">Haqiqiy holat</span>
             </div>
 
             <div class="meters-container">
-              <!-- Tables Meter -->
+              <!-- Users (Employees) -->
+              <div class="meter-item">
+                <div class="meter-info">
+                  <span class="meter-label">👥 Xodimlar (Foydalanuvchilar)</span>
+                  <span class="meter-counts">
+                    <strong>{{ sub()!.currentUsers }}</strong> / {{ sub()!.maxUsers && sub()!.maxUsers > 0 ? sub()!.maxUsers : 'Cheksiz' }}
+                  </span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentUsers, sub()!.maxUsers)" [class.danger]="isLimitReached(sub()!.currentUsers, sub()!.maxUsers)"></div>
+                </div>
+              </div>
+
+              <!-- Tables -->
               <div class="meter-item">
                 <div class="meter-info">
                   <span class="meter-label">🪑 Stollar soni</span>
                   <span class="meter-counts">
-                    <strong>{{ sub()!.currentTables }}</strong> / {{ sub()!.maxTables ? sub()!.maxTables : 'Cheksiz' }}
+                    <strong>{{ sub()!.currentTables }}</strong> / {{ sub()!.maxTables && sub()!.maxTables > 0 ? sub()!.maxTables : 'Cheksiz' }}
                   </span>
                 </div>
                 <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentTables, sub()!.maxTables)"></div>
+                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentTables, sub()!.maxTables)" [class.danger]="isLimitReached(sub()!.currentTables, sub()!.maxTables)"></div>
                 </div>
               </div>
 
-              <!-- Users Meter -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">👥 Xodimlar / Foydalanuvchilar</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentUsers }}</strong> / {{ sub()!.maxUsers ? sub()!.maxUsers : 'Cheksiz' }}
-                  </span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentUsers, sub()!.maxUsers)"></div>
-                </div>
-              </div>
-
-              <!-- Products Meter -->
+              <!-- Products -->
               <div class="meter-item">
                 <div class="meter-info">
                   <span class="meter-label">🍔 Mahsulotlar katalogi</span>
                   <span class="meter-counts">
-                    <strong>{{ sub()!.currentProducts }}</strong> / {{ sub()!.maxProducts ? sub()!.maxProducts : 'Cheksiz' }}
+                    <strong>{{ sub()!.currentProducts }}</strong> / {{ sub()!.maxProducts && sub()!.maxProducts > 0 ? sub()!.maxProducts : 'Cheksiz' }}
                   </span>
                 </div>
                 <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentProducts, sub()!.maxProducts)"></div>
+                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentProducts, sub()!.maxProducts)" [class.danger]="isLimitReached(sub()!.currentProducts, sub()!.maxProducts)"></div>
                 </div>
               </div>
 
-              <!-- Kitchens Meter -->
+              <!-- Kitchens -->
               <div class="meter-item">
                 <div class="meter-info">
                   <span class="meter-label">👨‍🍳 Oshxonalar / Sexlar</span>
                   <span class="meter-counts">
-                    <strong>{{ sub()!.currentKitchens }}</strong> / {{ sub()!.maxKitchens ? sub()!.maxKitchens : 'Cheksiz' }}
+                    <strong>{{ sub()!.currentKitchens }}</strong> / {{ sub()!.maxKitchens && sub()!.maxKitchens > 0 ? sub()!.maxKitchens : 'Cheksiz' }}
                   </span>
                 </div>
                 <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentKitchens, sub()!.maxKitchens)"></div>
+                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentKitchens, sub()!.maxKitchens)" [class.danger]="isLimitReached(sub()!.currentKitchens, sub()!.maxKitchens)"></div>
+                </div>
+              </div>
+
+              <!-- Devices -->
+              <div class="meter-item">
+                <div class="meter-info">
+                  <span class="meter-label">📱 Ulangan Qurilmalar</span>
+                  <span class="meter-counts">
+                    <strong>{{ sub()!.currentDevices }}</strong> / {{ sub()!.maxDevices && sub()!.maxDevices > 0 ? sub()!.maxDevices : 'Cheksiz' }}
+                  </span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentDevices, sub()!.maxDevices)"></div>
+                </div>
+              </div>
+
+              <!-- Monthly Orders -->
+              <div class="meter-item">
+                <div class="meter-info">
+                  <span class="meter-label">🧾 Oylik Buyurtmalar</span>
+                  <span class="meter-counts">
+                    <strong>{{ sub()!.currentMonthOrders }}</strong> / {{ sub()!.maxOrdersPerMonth && sub()!.maxOrdersPerMonth > 0 ? sub()!.maxOrdersPerMonth : 'Cheksiz' }}
+                  </span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentMonthOrders, sub()!.maxOrdersPerMonth)"></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Payment History Table -->
-        <div class="card history-card">
-          <div class="card-header">
-            <span class="card-title">To'lovlar Tarixi</span>
-            <button class="btn btn-sm btn-outline" (click)="loadPaymentHistory()">Yangilash</button>
-          </div>
-
-          @if (paymentHistory().length === 0) {
-            <div class="empty-state">
-              <p>Hozircha hech qanday to'lovlar amalga oshirilmagan.</p>
-            </div>
-          } @else {
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Sana</th>
-                    <th>Tarif</th>
-                    <th>Summa</th>
-                    <th>To'lov Tizimi</th>
-                    <th>Tranzaksiya ID</th>
-                    <th>Holat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (p of paymentHistory(); track p.id) {
-                    <tr>
-                      <td>{{ formatDate(p.createdAt) }}</td>
-                      <td><strong>{{ p.planName || p.planCode }}</strong></td>
-                      <td class="amount-cell">{{ formatPrice(p.amount) }} {{ p.currency }}</td>
-                      <td>
-                        <span class="provider-badge">{{ p.provider }}</span>
-                      </td>
-                      <td class="code-cell">{{ p.providerTransactionId || p.id.substring(0, 8) }}</td>
-                      <td>
-                        <span class="status-badge" [ngClass]="getPaymentStatusBadgeClass(p.status)">
-                          {{ p.status }}
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
+        <!-- Navigation Tabs for Invoices & History -->
+        <div class="tabs-nav">
+          <button class="tab-btn" [class.active]="activeTab === 'invoices'" (click)="activeTab = 'invoices'">
+            🧾 Hisob-fakturalar ({{ invoices().length }})
+          </button>
+          <button class="tab-btn" [class.active]="activeTab === 'periods'" (click)="activeTab = 'periods'">
+            📅 Obunalar Tarixi ({{ periods().length }})
+          </button>
         </div>
+
+        <!-- Tab 1: Invoices -->
+        @if (activeTab === 'invoices') {
+          <div class="card table-card">
+            <div class="card-header">
+              <span class="card-title">Hisob-fakturalar ro'yxati</span>
+              <button class="btn btn-sm btn-outline" (click)="loadInvoices()">Yangilash</button>
+            </div>
+
+            @if (invoices().length === 0) {
+              <div class="empty-state">
+                <p>Hozircha hisob-fakturalar mavjud emas.</p>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Hisob-faktura #</th>
+                      <th>Tarif</th>
+                      <th>Muddat</th>
+                      <th>Asosiy Summa</th>
+                      <th>Chegirma</th>
+                      <th>Yakuniy Summa</th>
+                      <th>Holat</th>
+                      <th>Sana</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (inv of invoices(); track inv.id) {
+                      <tr>
+                        <td class="code-cell"><strong>{{ inv.invoiceNumber }}</strong></td>
+                        <td>{{ inv.planName }}</td>
+                        <td>{{ inv.durationMonths }} oy</td>
+                        <td>{{ formatPrice(inv.baseAmount) }} {{ inv.currency }}</td>
+                        <td class="text-success">
+                          {{ inv.discountPercent > 0 ? '-' + inv.discountPercent + '% (-' + formatPrice(inv.discountAmount) + ')' : '-' }}
+                        </td>
+                        <td class="amount-cell">{{ formatPrice(inv.finalAmount) }} {{ inv.currency }}</td>
+                        <td>
+                          <span class="status-badge" [ngClass]="getInvoiceBadgeClass(inv.status)">
+                            {{ inv.status }}
+                          </span>
+                        </td>
+                        <td>{{ formatDate(inv.createdAt) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Tab 2: Subscription Periods History -->
+        @if (activeTab === 'periods') {
+          <div class="card table-card">
+            <div class="card-header">
+              <span class="card-title">Obunalar Davrlari Tarixi</span>
+              <button class="btn btn-sm btn-outline" (click)="loadPeriods()">Yangilash</button>
+            </div>
+
+            @if (periods().length === 0) {
+              <div class="empty-state">
+                <p>Hozircha davrlar tarixi mavjud emas.</p>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tarif</th>
+                      <th>Tur (Turi)</th>
+                      <th>Boshlanish</th>
+                      <th>Tugash</th>
+                      <th>Hisob-faktura</th>
+                      <th>Yaratilgan vaqt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (per of periods(); track per.id) {
+                      <tr>
+                        <td><strong>{{ per.planName }}</strong> ({{ per.planCode }})</td>
+                        <td>
+                          <span class="provider-badge">{{ per.periodType }}</span>
+                        </td>
+                        <td>{{ formatDate(per.startDate) }}</td>
+                        <td>{{ formatDate(per.endDate) }}</td>
+                        <td class="code-cell">{{ per.invoiceNumber || '-' }}</td>
+                        <td>{{ formatDate(per.createdAt) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
       }
 
-      <!-- Checkout / Upgrade Modal -->
+      <!-- Checkout / Upgrade Modal with Real-time Calculation -->
       @if (showCheckoutModal()) {
         <div class="modal-overlay" (click)="closeCheckoutModal()">
           <div class="modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h2>Tarifni Tanlash va To'lash</h2>
+              <h2>Tarif Tanlash va Hisob-faktura Yaratish</h2>
               <button class="btn-close" (click)="closeCheckoutModal()">✕</button>
             </div>
 
             <div class="modal-body">
-              @if (!checkoutResponse()) {
+              @if (!checkoutCreatedInvoice()) {
                 <!-- Step 1: Select Plan -->
                 <div class="step-section">
                   <label class="section-label">1. Tarif rejasini tanlang:</label>
@@ -239,23 +395,26 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
                     @for (plan of availablePlans(); track plan.code) {
                       <div class="modal-plan-card" 
                            [class.active]="selectedPlanCode() === plan.code"
-                           (click)="selectedPlanCode.set(plan.code)">
+                           (click)="selectPlan(plan.code)">
                         <div class="p-name">{{ plan.name }}</div>
                         <div class="p-price">{{ formatPrice(plan.price) }} so'm</div>
-                        <div class="p-limit">{{ plan.maxTables ? plan.maxTables + ' stol' : 'Cheksiz' }} • {{ plan.maxUsers ? plan.maxUsers + ' xodim' : 'Cheksiz' }}</div>
+                        <div class="p-limit">
+                          {{ plan.maxTables && plan.maxTables > 0 ? plan.maxTables + ' stol' : 'Cheksiz stol' }} • 
+                          {{ plan.maxUsers && plan.maxUsers > 0 ? plan.maxUsers + ' xodim' : 'Cheksiz xodim' }}
+                        </div>
                       </div>
                     }
                   </div>
                 </div>
 
-                <!-- Step 2: Select Duration (Months) -->
+                <!-- Step 2: Select Duration -->
                 <div class="step-section">
                   <label class="section-label">2. Obuna muddatini tanlang:</label>
                   <div class="months-selection">
                     @for (opt of monthOptions; track opt.value) {
                       <div class="month-card" 
                            [class.active]="selectedMonths() === opt.value"
-                           (click)="selectedMonths.set(opt.value)">
+                           (click)="selectMonths(opt.value)">
                         @if (opt.badge) {
                           <span class="month-badge">{{ opt.badge }}</span>
                         }
@@ -266,73 +425,56 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
                   </div>
                 </div>
 
-                <!-- Step 3: Waiter Mobile App -->
-                <div class="step-section">
-                  <label class="section-label">3. Ofitsiant Mobile App (ixtiyoriy):</label>
-                  <div class="waiter-section">
-                    <div class="waiter-info-box">
-                      <span class="waiter-icon">📱</span>
-                      <div class="waiter-info-text">
-                        <strong>Ofitsiant mobil ilovasi</strong>
-                        <p>Dastlabki <strong>2 ta ofitsiant bepul</strong>. Qo'shimcha har bir ofitsiant uchun oyiga <strong>35,000 so'm</strong>.</p>
-                      </div>
-                    </div>
-                    <div class="waiter-counter">
-                      <label>Jami ofitsiantlar soni:</label>
-                      <div class="counter-row">
-                        <button class="counter-btn" (click)="decrementWaiters()" [disabled]="totalWaiters() <= 0">−</button>
-                        <span class="counter-val">{{ totalWaiters() }}</span>
-                        <button class="counter-btn" (click)="incrementWaiters()">+</button>
-                      </div>
-                      @if (totalWaiters() > 0) {
-                        <small class="waiter-cost-hint">
-                          @if (totalWaiters() <= 2) {
-                            ✅ {{ totalWaiters() }} ofitsiant — bepul
-                          } @else {
-                            📱 2 ta bepul + {{ totalWaiters() - 2 }} ta × 35,000 = <strong>{{ formatPrice((totalWaiters() - 2) * 35000) }} so'm/oy</strong>
-                          }
-                        </small>
-                      }
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Step 4: Select Provider -->
-                <div class="step-section">
-                  <label class="section-label">4. To'lov tizimini tanlang:</label>
-                  <div class="providers-selection">
-                    <div class="provider-pill" [class.active]="selectedProvider() === 'MOCK'" (click)="selectedProvider.set('MOCK')">
-                      🧪 Test To'lov (Mock)
-                    </div>
-                    <div class="provider-pill" [class.active]="selectedProvider() === 'CLICK'" (click)="selectedProvider.set('CLICK')">
-                      🔹 Click Up
-                    </div>
-                    <div class="provider-pill" [class.active]="selectedProvider() === 'PAYME'" (click)="selectedProvider.set('PAYME')">
-                      🟢 Payme
-                    </div>
-                    <div class="provider-pill" [class.active]="selectedProvider() === 'UZUM'" (click)="selectedProvider.set('UZUM')">
-                      🍇 Uzum Bank
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Total Price Summary -->
-                <div class="price-summary-box">
-                  <div class="price-summary-row">
-                    <span>Tarif narxi:</span>
-                    <span>{{ formatPrice(getSelectedPlanPrice()) }} so'm × {{ selectedMonths() }} oy</span>
-                  </div>
-                  @if (getExtraWaiters() > 0) {
+                <!-- Calculation Summary Box -->
+                @if (calculating()) {
+                  <div class="calc-loading">Narx hisoblanmoqda...</div>
+                } @else if (calcResult()) {
+                  <div class="price-summary-box">
                     <div class="price-summary-row">
-                      <span>Qo'shimcha {{ getExtraWaiters() }} ofitsiant:</span>
-                      <span>{{ formatPrice(getExtraWaiters() * 35000) }} so'm × {{ selectedMonths() }} oy</span>
+                      <span>Tarif:</span>
+                      <strong>{{ calcResult()!.planName }}</strong>
                     </div>
-                  }
-                  <div class="price-summary-total">
-                    <span>Jami to'lov:</span>
-                    <strong>{{ formatPrice(calcTotalAmount()) }} so'm</strong>
+                    <div class="price-summary-row">
+                      <span>Tanlangan davr:</span>
+                      <span>{{ calcResult()!.months }} oy ({{ formatPrice(calcResult()!.monthlyPrice) }} so'm / oy)</span>
+                    </div>
+                    <div class="price-summary-row">
+                      <span>Asosiy summa:</span>
+                      <span>{{ formatPrice(calcResult()!.baseAmount) }} so'm</span>
+                    </div>
+
+                    @if (calcResult()!.discountAmount > 0) {
+                      <div class="price-summary-row discount-row">
+                        <span>Chegirma ({{ calcResult()!.discountPercent }}%):</span>
+                        <span class="text-success">-{{ formatPrice(calcResult()!.discountAmount) }} so'm</span>
+                      </div>
+                    }
+
+                    @if (calcResult()!.adjustmentAmount !== 0) {
+                      <div class="price-summary-row">
+                        <span>Qayta hisob-kitob (Adjustment):</span>
+                        <span>{{ formatPrice(calcResult()!.adjustmentAmount) }} so'm</span>
+                      </div>
+                    }
+
+                    <div class="price-summary-total">
+                      <span>To'lanadigan yakuniy summa:</span>
+                      <strong>{{ formatPrice(calcResult()!.finalAmount) }} so'm</strong>
+                    </div>
+
+                    @if (calcResult()!.isDowngrade) {
+                      <div class="notice-box notice-warning">
+                        ℹ️ <strong>Tarif pasaytirilishi (Downgrade):</strong> Yangi tarif joriy billing davri tugagandan keyin kuchga kiradi.
+                      </div>
+                    }
+
+                    @if (calcResult()!.isUpgrade) {
+                      <div class="notice-box notice-info">
+                        ⚡ <strong>Upgrade:</strong> Yangi tarif to'lov tasdiqlanishi bilan darhol faollashadi.
+                      </div>
+                    }
                   </div>
-                </div>
+                }
 
                 @if (checkoutError()) {
                   <div class="alert alert-error">{{ checkoutError() }}</div>
@@ -340,34 +482,37 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
 
                 <div class="modal-actions">
                   <button class="btn btn-outline" (click)="closeCheckoutModal()">Bekor qilish</button>
-                  <button class="btn btn-primary" [disabled]="initiatingCheckout()" (click)="confirmCheckout()">
+                  <button class="btn btn-primary" [disabled]="initiatingCheckout() || calculating()" (click)="confirmCheckout()">
                     @if (initiatingCheckout()) {
                       <span>Yaratilmoqda...</span>
                     } @else {
-                      <span>To'lovga o'tish →</span>
+                      <span>Hisob-faktura Yaratish →</span>
                     }
                   </button>
                 </div>
               } @else {
-                <!-- Step 5: Mock Payment Simulation -->
-                <div class="mock-payment-box">
-                  <div class="mock-header">
-                    <span class="mock-icon">💳</span>
-                    <h3>To'lov Yaratildi</h3>
-                    <p class="mock-amount">{{ formatPrice(checkoutResponse()!.amount) }} {{ checkoutResponse()!.currency }}</p>
-                    <small>Tranzaksiya ID: {{ checkoutResponse()!.paymentId }}</small>
+                <!-- Invoice Confirmation Screen (No Fake Billing) -->
+                <div class="invoice-created-box">
+                  <div class="invoice-icon">🧾</div>
+                  <h3>Hisob-faktura Muvaffaqiyatli Yaratildi!</h3>
+                  <div class="invoice-number-pill">{{ checkoutCreatedInvoice()!.invoiceNumber }}</div>
+
+                  <p class="invoice-amount-desc">
+                    To'lanadigan summa: <strong>{{ formatPrice(checkoutCreatedInvoice()!.finalAmount) }} {{ checkoutCreatedInvoice()!.currency }}</strong>
+                  </p>
+
+                  <div class="manual-instruction-alert">
+                    <p><strong>To'lov bo'yicha ko'rsatma:</strong></p>
+                    <p>
+                      Hozirgi vaqtda to'lovlar qo'lda (Manual) qabul qilinadi.
+                      Hisob-faktura raqami asosida administratorga to'lov amalga oshirilgach, 
+                      Super Admin hisobingizni tasdiqlaydi va tarif avtomatik faollashadi.
+                    </p>
                   </div>
 
-                  <div class="mock-simulation-alert">
-                    ⚡ <strong>Development Rejimi:</strong> Test to'lovini simulyatsiya qiling.
-                  </div>
-
-                  <div class="mock-actions">
-                    <button class="btn btn-success" [disabled]="simulatingPay()" (click)="executeMockPay(true)">
-                      ✅ Test To'lov: Muvaffaqiyatli (PAID)
-                    </button>
-                    <button class="btn btn-danger" [disabled]="simulatingPay()" (click)="executeMockPay(false)">
-                      ❌ Test To'lov: Xatolik (FAILED)
+                  <div class="modal-actions">
+                    <button class="btn btn-primary" (click)="closeCheckoutModal()">
+                      Tushunarli, Yopish
                     </button>
                   </div>
                 </div>
@@ -412,9 +557,9 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       gap: 16px;
       padding: 16px 20px;
       border-radius: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
 
-      .banner-icon { font-size: 24px; }
+      .banner-icon { font-size: 26px; }
       .banner-content {
         flex: 1;
         h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
@@ -423,9 +568,30 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
 
       &-expired {
         background: rgba(239, 68, 68, 0.15);
-        border: 1px solid rgba(239, 68, 68, 0.35);
+        border: 1px solid rgba(239, 68, 68, 0.4);
         color: #fca5a5;
         h3 { color: #ef4444; }
+      }
+
+      &-urgent {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        color: #fca5a5;
+        h3 { color: #f87171; }
+      }
+
+      &-warning {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        color: #fcd34d;
+        h3 { color: #f59e0b; }
+      }
+
+      &-info {
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #c7d2fe;
+        h3 { color: #818cf8; }
       }
 
       &-trial {
@@ -442,7 +608,7 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       gap: 24px;
       margin-bottom: 24px;
 
-      @media (max-width: 800px) {
+      @media (max-width: 850px) {
         grid-template-columns: 1fr;
       }
     }
@@ -482,6 +648,16 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
         font-size: 24px;
         font-weight: 800;
         color: #6366f1;
+        margin-bottom: 4px;
+      }
+
+      .plan-code-badge {
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        padding: 2px 8px;
+        border-radius: 4px;
       }
 
       .price-wrap {
@@ -516,7 +692,7 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
     .meters-container {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
 
       .meter-item {
         .meter-info {
@@ -541,13 +717,42 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
             background: linear-gradient(90deg, #6366f1, #10b981);
             border-radius: 4px;
             transition: width 0.3s ease;
+
+            &.danger {
+              background: #ef4444;
+            }
           }
         }
       }
     }
 
-    .history-card {
-      margin-top: 10px;
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+
+      .tab-btn {
+        padding: 10px 18px;
+        background: var(--bg-secondary, #1e293b);
+        border: 1px solid var(--border, #334155);
+        color: var(--text-secondary, #94a3b8);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          color: white;
+          border-color: #6366f1;
+        }
+
+        &.active {
+          background: #6366f1;
+          color: white;
+          border-color: #6366f1;
+        }
+      }
     }
 
     .data-table {
@@ -599,10 +804,11 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
 
       &.status-active { background: rgba(16, 185, 129, 0.15); color: #34d399; }
       &.status-trial { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+      &.status-expiring { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
       &.status-expired { background: rgba(239, 68, 68, 0.15); color: #f87171; }
       &.status-paid { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-      &.status-failed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
       &.status-pending { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+      &.status-cancelled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
     }
 
     .modal-overlay {
@@ -648,7 +854,7 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
 
     .modal-body {
       overflow-y: auto;
-      max-height: calc(80vh - 80px);
+      max-height: calc(85vh - 80px);
     }
 
     .step-section {
@@ -671,6 +877,26 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       @media (max-width: 500px) {
         grid-template-columns: 1fr;
       }
+    }
+
+    .modal-plan-card {
+      background: var(--bg-primary, #0f172a);
+      border: 2px solid var(--border, #334155);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+
+      &:hover { border-color: #6366f1; }
+      &.active {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.1);
+      }
+
+      .p-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+      .p-price { font-size: 14px; font-weight: 800; color: #10b981; margin-bottom: 4px; }
+      .p-limit { font-size: 10px; color: var(--text-muted, #64748b); }
     }
 
     .months-selection {
@@ -717,81 +943,12 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       .month-price-hint { font-size: 10px; color: var(--text-muted, #64748b); }
     }
 
-    .waiter-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .waiter-info-box {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      border-radius: 10px;
-      padding: 12px 14px;
-
-      .waiter-icon { font-size: 24px; }
-      .waiter-info-text {
-        strong { font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px; }
-        p { font-size: 12px; color: var(--text-secondary, #94a3b8); margin: 0; line-height: 1.4; }
-      }
-    }
-
-    .waiter-counter {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-
-      label { font-size: 13px; color: var(--text-secondary, #94a3b8); }
-
-      .counter-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: var(--bg-primary, #0f172a);
-        border: 1px solid var(--border, #334155);
-        border-radius: 8px;
-        padding: 6px 12px;
-
-        .counter-btn {
-          width: 28px; height: 28px;
-          border-radius: 50%;
-          background: rgba(99, 102, 241, 0.15);
-          border: 1px solid rgba(99, 102, 241, 0.3);
-          color: #818cf8;
-          font-size: 18px; font-weight: 700;
-          cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          transition: all 0.2s;
-          &:hover:not(:disabled) { background: #6366f1; color: white; }
-          &:disabled { opacity: 0.3; cursor: not-allowed; }
-        }
-
-        .counter-val {
-          font-size: 20px;
-          font-weight: 800;
-          min-width: 28px;
-          text-align: center;
-          color: #f8fafc;
-        }
-      }
-
-      .waiter-cost-hint {
-        font-size: 12px;
-        color: var(--text-secondary, #94a3b8);
-        strong { color: #10b981; }
-      }
-    }
-
     .price-summary-box {
       background: rgba(16, 185, 129, 0.06);
-      border: 1px solid rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.25);
       border-radius: 10px;
-      padding: 14px 16px;
-      margin-top: 4px;
+      padding: 16px;
+      margin-bottom: 20px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -800,7 +957,7 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
         display: flex;
         justify-content: space-between;
         font-size: 13px;
-        color: var(--text-secondary, #94a3b8);
+        color: var(--text-secondary, #cbd5e1);
       }
 
       .price-summary-total {
@@ -815,81 +972,58 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       }
     }
 
-    .modal-plan-card {
-      background: var(--bg-primary, #0f172a);
-      border: 2px solid var(--border, #334155);
-      border-radius: 8px;
-      padding: 12px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s;
+    .notice-box {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
 
-      &:hover { border-color: #6366f1; }
-      &.active {
-        border-color: #6366f1;
+      &.notice-warning {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: #fcd34d;
+      }
+
+      &.notice-info {
         background: rgba(99, 102, 241, 0.1);
-      }
-
-      .p-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-      .p-price { font-size: 14px; font-weight: 800; color: #10b981; margin-bottom: 4px; }
-      .p-limit { font-size: 10px; color: var(--text-muted, #64748b); }
-    }
-
-    .providers-selection {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-
-      .provider-pill {
-        padding: 8px 14px;
-        background: var(--bg-primary, #0f172a);
-        border: 1px solid var(--border, #334155);
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover { border-color: #6366f1; }
-        &.active {
-          background: #6366f1;
-          border-color: #6366f1;
-          color: white;
-        }
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        color: #c7d2fe;
       }
     }
 
-    .mock-payment-box {
+    .invoice-created-box {
       text-align: center;
       padding: 20px;
 
-      .mock-header {
-        margin-bottom: 20px;
-        .mock-icon { font-size: 36px; margin-bottom: 8px; }
-        h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-        .mock-amount { font-size: 28px; font-weight: 800; color: #10b981; margin: 4px 0; }
-        small { color: var(--text-muted, #64748b); font-family: monospace; }
+      .invoice-icon { font-size: 40px; margin-bottom: 12px; }
+      h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+      .invoice-number-pill {
+        display: inline-block;
+        padding: 6px 14px;
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        font-family: monospace;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: 6px;
+        margin-bottom: 14px;
       }
-
-      .mock-simulation-alert {
-        background: rgba(99, 102, 241, 0.12);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        padding: 12px;
+      .invoice-amount-desc {
+        font-size: 16px;
+        margin-bottom: 16px;
+        strong { color: #10b981; }
+      }
+      .manual-instruction-alert {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border, #334155);
         border-radius: 8px;
+        padding: 14px;
+        text-align: left;
         font-size: 13px;
-        color: #c7d2fe;
-        margin-bottom: 24px;
-      }
-
-      .mock-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-
-        button {
-          flex: 1;
-          padding: 12px;
-        }
+        color: var(--text-secondary, #94a3b8);
+        line-height: 1.5;
+        margin-bottom: 20px;
+        p { margin: 0 0 6px 0; &:last-child { margin: 0; } }
       }
     }
 
@@ -897,7 +1031,7 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       display: flex;
       justify-content: flex-end;
       gap: 12px;
-      margin-top: 24px;
+      margin-top: 20px;
     }
 
     .btn {
@@ -915,9 +1049,8 @@ import { BillingService, CurrentSubscriptionResponse, PaymentHistoryItem, PlanRe
       &-primary { background: #6366f1; color: white; &:hover { background: #4f46e5; } }
       &-outline { background: transparent; border-color: var(--border, #334155); color: var(--text-primary, #f8fafc); }
       &-outline-primary { background: transparent; border-color: #6366f1; color: #818cf8; width: 100%; &:hover { background: rgba(99, 102, 241, 0.1); } }
-      &-success { background: #10b981; color: white; &:hover { background: #059669; } }
-      &-danger { background: #ef4444; color: white; &:hover { background: #dc2626; } }
       &-danger-dark { background: #ef4444; color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
+      &-warning-dark { background: #f59e0b; color: #1e1b4b; font-weight: 700; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
       &-trial-action { background: #f59e0b; color: #1e1b4b; font-weight: 700; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
       &-sm { padding: 6px 12px; font-size: 12px; }
     }
@@ -938,31 +1071,33 @@ export class RestaurantBillingComponent implements OnInit {
   private billingService = inject(BillingService);
 
   sub = signal<CurrentSubscriptionResponse | null>(null);
-  paymentHistory = signal<PaymentHistoryItem[]>([]);
+  invoices = signal<InvoiceResponse[]>([]);
+  periods = signal<SubscriptionPeriodResponse[]>([]);
   availablePlans = signal<PlanResponse[]>([]);
   loading = signal(true);
+  activeTab: 'invoices' | 'periods' = 'invoices';
 
-  // Modal state
+  // Checkout modal
   showCheckoutModal = signal(false);
   selectedPlanCode = signal<string>('BUSINESS');
-  selectedProvider = signal<string>('MOCK');
   selectedMonths = signal<number>(1);
-  totalWaiters = signal<number>(0);
+  calculating = signal(false);
+  calcResult = signal<CalculatePriceResponse | null>(null);
   initiatingCheckout = signal(false);
-  simulatingPay = signal(false);
-  checkoutResponse = signal<CheckoutResponse | null>(null);
+  checkoutCreatedInvoice = signal<any | null>(null);
   checkoutError = signal<string | null>(null);
 
   readonly monthOptions = [
-    { value: 1,  label: '1 oy',   hint: 'Standart', badge: '' },
-    { value: 3,  label: '3 oy',   hint: "10% chegirma", badge: '-10%' },
-    { value: 6,  label: '6 oy',   hint: "15% chegirma", badge: '-15%' },
-    { value: 12, label: '12 oy',  hint: "20% chegirma", badge: '-20%' },
+    { value: 1,  label: '1 oy',   hint: 'Standart narx', badge: '' },
+    { value: 3,  label: '3 oy',   hint: '5% chegirma',   badge: '-5%' },
+    { value: 6,  label: '6 oy',   hint: '10% chegirma',  badge: '-10%' },
+    { value: 12, label: '12 oy',  hint: '20% chegirma',  badge: '-20%' },
   ];
 
   ngOnInit(): void {
     this.loadCurrentSubscription();
-    this.loadPaymentHistory();
+    this.loadInvoices();
+    this.loadPeriods();
     this.loadPlans();
   }
 
@@ -973,30 +1108,38 @@ export class RestaurantBillingComponent implements OnInit {
         this.sub.set(data);
         this.loading.set(false);
       },
-      error: () => {
-        this.loading.set(false);
-      }
+      error: () => this.loading.set(false)
     });
   }
 
-  loadPaymentHistory(): void {
-    this.billingService.getPaymentHistory().subscribe({
-      next: (items) => this.paymentHistory.set(items)
+  loadInvoices(): void {
+    this.billingService.getInvoices().subscribe({
+      next: (items) => this.invoices.set(items)
+    });
+  }
+
+  loadPeriods(): void {
+    this.billingService.getPeriods().subscribe({
+      next: (items) => this.periods.set(items)
     });
   }
 
   loadPlans(): void {
     this.billingService.getPublicPlans().subscribe({
       next: (plans) => {
-        // Exclude trial from upgrade modal
         this.availablePlans.set(plans.filter(p => p.code !== 'TRIAL'));
       }
     });
   }
 
   calcPercentage(current: number, max: number): number {
-    if (!max || max <= 0) return 20; // Default visualization for unlimited
+    if (!max || max <= 0) return 20;
     return Math.min(Math.round((current / max) * 100), 100);
+  }
+
+  isLimitReached(current: number, max: number): boolean {
+    if (!max || max <= 0) return false;
+    return current >= max;
   }
 
   formatPrice(price: number): string {
@@ -1014,8 +1157,10 @@ export class RestaurantBillingComponent implements OnInit {
     switch (status) {
       case 'TRIAL': return 'Sinov davri (Trial)';
       case 'ACTIVE': return 'Faol (Active)';
+      case 'EXPIRING_SOON': return 'Yaqinda tugaydi (Expiring Soon)';
       case 'EXPIRED': return 'Muddati tugagan (Expired)';
       case 'SUSPENDED': return 'To‘xtatilgan (Suspended)';
+      case 'PENDING_PAYMENT': return 'To‘lov kutilmoqda (Pending)';
       default: return status;
     }
   }
@@ -1024,57 +1169,70 @@ export class RestaurantBillingComponent implements OnInit {
     switch (status) {
       case 'ACTIVE': return 'status-active';
       case 'TRIAL': return 'status-trial';
+      case 'EXPIRING_SOON': return 'status-expiring';
+      case 'EXPIRED': return 'status-expired';
+      case 'SUSPENDED': return 'status-cancelled';
+      case 'PENDING_PAYMENT': return 'status-pending';
+      default: return 'status-pending';
+    }
+  }
+
+  getInvoiceBadgeClass(status: string): string {
+    switch (status) {
+      case 'PAID': return 'status-paid';
+      case 'PENDING': return 'status-pending';
+      case 'CANCELLED': return 'status-cancelled';
       case 'EXPIRED': return 'status-expired';
       default: return 'status-pending';
     }
   }
 
-  getPaymentStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'PAID': return 'status-paid';
-      case 'FAILED': return 'status-failed';
-      default: return 'status-pending';
-    }
-  }
-
   openCheckoutModal(): void {
-    this.checkoutResponse.set(null);
+    this.checkoutCreatedInvoice.set(null);
     this.checkoutError.set(null);
     this.selectedMonths.set(1);
-    this.totalWaiters.set(0);
     if (this.sub()) {
-      this.selectedPlanCode.set(this.sub()!.planCode === 'TRIAL' ? 'BUSINESS' : this.sub()!.planCode);
+      const initialCode = (this.sub()!.planCode === 'TRIAL' || !this.sub()!.planCode) ? 'BUSINESS' : this.sub()!.planCode;
+      this.selectedPlanCode.set(initialCode);
     }
     this.showCheckoutModal.set(true);
+    this.triggerCalculate();
   }
 
   closeCheckoutModal(): void {
     this.showCheckoutModal.set(false);
-    this.checkoutResponse.set(null);
+    this.checkoutCreatedInvoice.set(null);
     this.checkoutError.set(null);
   }
 
-  incrementWaiters(): void {
-    this.totalWaiters.update(v => v + 1);
+  selectPlan(planCode: string): void {
+    this.selectedPlanCode.set(planCode);
+    this.triggerCalculate();
   }
 
-  decrementWaiters(): void {
-    this.totalWaiters.update(v => Math.max(0, v - 1));
+  selectMonths(months: number): void {
+    this.selectedMonths.set(months);
+    this.triggerCalculate();
   }
 
-  getExtraWaiters(): number {
-    return Math.max(0, this.totalWaiters() - 2);
-  }
+  triggerCalculate(): void {
+    this.calculating.set(true);
+    this.calcResult.set(null);
+    this.checkoutError.set(null);
 
-  getSelectedPlanPrice(): number {
-    const plan = this.availablePlans().find(p => p.code === this.selectedPlanCode());
-    return plan?.price ?? 0;
-  }
-
-  calcTotalAmount(): number {
-    const planTotal = this.getSelectedPlanPrice() * this.selectedMonths();
-    const waiterExtra = this.getExtraWaiters() * 35000 * this.selectedMonths();
-    return planTotal + waiterExtra;
+    this.billingService.calculatePrice({
+      planCode: this.selectedPlanCode(),
+      months: this.selectedMonths()
+    }).subscribe({
+      next: (res) => {
+        this.calcResult.set(res);
+        this.calculating.set(false);
+      },
+      error: (err) => {
+        this.calculating.set(false);
+        this.checkoutError.set(err?.error?.message || 'Narxni hisoblashda xatolik yuz berdi');
+      }
+    });
   }
 
   confirmCheckout(): void {
@@ -1083,39 +1241,18 @@ export class RestaurantBillingComponent implements OnInit {
 
     this.billingService.initiateCheckout({
       planCode: this.selectedPlanCode(),
-      provider: this.selectedProvider(),
       months: this.selectedMonths(),
-      extraWaiters: this.getExtraWaiters()
+      provider: 'MANUAL'
     }).subscribe({
       next: (res) => {
         this.initiatingCheckout.set(false);
-        this.checkoutResponse.set(res);
+        this.checkoutCreatedInvoice.set(res);
+        this.loadInvoices();
+        this.loadCurrentSubscription();
       },
       error: (err) => {
         this.initiatingCheckout.set(false);
-        this.checkoutError.set(err?.error?.message || 'Checkout yaratishda xatolik yuz berdi');
-      }
-    });
-  }
-
-  executeMockPay(simulateSuccess: boolean): void {
-    if (!this.checkoutResponse()) return;
-
-    this.simulatingPay.set(true);
-    this.billingService.mockPay({
-      paymentId: this.checkoutResponse()!.paymentId,
-      simulateSuccess
-    }).subscribe({
-      next: (updatedSub) => {
-        this.simulatingPay.set(false);
-        this.sub.set(updatedSub);
-        this.loadPaymentHistory();
-        this.closeCheckoutModal();
-      },
-      error: (err) => {
-        this.simulatingPay.set(false);
-        this.loadPaymentHistory();
-        this.closeCheckoutModal();
+        this.checkoutError.set(err?.error?.message || 'Hisob-faktura yaratishda xatolik yuz berdi');
       }
     });
   }

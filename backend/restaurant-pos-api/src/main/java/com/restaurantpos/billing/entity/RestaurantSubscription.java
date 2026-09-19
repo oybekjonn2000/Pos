@@ -27,6 +27,10 @@ public class RestaurantSubscription {
     @JoinColumn(name = "plan_id", nullable = false)
     private SubscriptionPlan plan;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "next_plan_id")
+    private SubscriptionPlan nextPlan;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private SubscriptionStatus status = SubscriptionStatus.TRIAL;
@@ -39,6 +43,9 @@ public class RestaurantSubscription {
 
     @Column(name = "auto_renew", nullable = false)
     private boolean autoRenew = false;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -55,7 +62,9 @@ public class RestaurantSubscription {
      * Checks whether this subscription is currently operating and not expired.
      */
     public boolean isOperating() {
-        boolean validStatus = status == SubscriptionStatus.ACTIVE || status == SubscriptionStatus.TRIAL;
+        boolean validStatus = status == SubscriptionStatus.ACTIVE 
+                || status == SubscriptionStatus.TRIAL 
+                || status == SubscriptionStatus.EXPIRING_SOON;
         boolean notExpired = endDate != null && Instant.now().isBefore(endDate);
         return validStatus && notExpired;
     }

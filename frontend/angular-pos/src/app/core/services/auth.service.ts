@@ -199,7 +199,15 @@ export class AuthService {
   }
 
   private loadUser(): UserInfo | null {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem('user');
+      if (!stored || stored === 'undefined' || stored === 'null') {
+        return null;
+      }
+      return JSON.parse(stored);
+    } catch (e) {
+      console.error('Failed to parse user from localStorage', e);
+      return null;
+    }
   }
 }

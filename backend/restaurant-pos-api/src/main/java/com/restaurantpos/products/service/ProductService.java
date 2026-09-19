@@ -32,6 +32,7 @@ public class ProductService {
     private final ModifierGroupRepository modifierGroupRepository;
     private final com.restaurantpos.kitchen.repository.KitchenRepository kitchenRepository;
     private final ProductImageService productImageService;
+    private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
 
     @Transactional(readOnly = true)
     public List<ProductDto.Response> getProducts(UUID tenantId, UUID categoryId, String query, boolean activeOnly) {
@@ -82,6 +83,8 @@ public class ProductService {
 
     @Transactional
     public ProductDto.Response createProduct(UUID tenantId, ProductDto.CreateRequest request) {
+        subscriptionLimitService.checkProductLimit(tenantId);
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> PosException.notFound("Tenant not found"));
 

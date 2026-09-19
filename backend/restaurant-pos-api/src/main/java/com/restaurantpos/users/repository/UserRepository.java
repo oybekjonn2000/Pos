@@ -30,6 +30,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("SELECT u FROM User u WHERE u.tenant.id = :tenantId AND u.deletedAt IS NULL")
     Page<User> findAllByTenantId(UUID tenantId, Pageable pageable);
 
+    Page<User> findByTenantIdAndDeletedAtIsNull(UUID tenantId, Pageable pageable);
+
     boolean existsByUsernameAndTenantIdAndDeletedAtIsNull(String username, UUID tenantId);
 
     long countByTenantIdAndDeletedAtIsNull(UUID tenantId);

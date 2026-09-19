@@ -46,6 +46,7 @@ public class KitchenService {
     private final com.restaurantpos.users.repository.UserRepository userRepository;
     private final com.restaurantpos.users.service.UserService userService;
     private final com.restaurantpos.products.service.CategoryService categoryService;
+    private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
 
     @Transactional(readOnly = true)
     public List<KitchenDto.Response> getKitchens(UUID tenantId) {
@@ -107,6 +108,8 @@ public class KitchenService {
 
     @Transactional
     public KitchenDto.Response createKitchen(UUID tenantId, KitchenDto.CreateRequest request) {
+        subscriptionLimitService.checkKitchenLimit(tenantId);
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> PosException.notFound("Tenant not found"));
 

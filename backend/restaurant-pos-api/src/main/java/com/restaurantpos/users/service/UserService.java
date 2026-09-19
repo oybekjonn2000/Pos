@@ -31,6 +31,7 @@ public class UserService {
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final com.restaurantpos.kitchen.repository.KitchenRepository kitchenRepository;
+    private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
 
     @Transactional(readOnly = true)
     public List<UserDto.Response> getAllUsers(UUID tenantId) {
@@ -43,7 +44,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<UserDto.Response> getUsersPaginated(UUID tenantId, org.springframework.data.domain.Pageable pageable) {
-        return userRepository.findAllByTenantId(tenantId, pageable)
+        return userRepository.findByTenantIdAndDeletedAtIsNull(tenantId, pageable)
                 .map(this::mapToResponse);
     }
 
@@ -57,6 +58,8 @@ public class UserService {
 
     @Transactional
     public UserDto.Response createUser(UUID tenantId, UserDto.CreateRequest request) {
+        subscriptionLimitService.checkUserLimit(tenantId);
+
         if (userRepository.existsByUsernameAndTenantIdAndDeletedAtIsNull(request.getUsername(), tenantId)) {
             throw new IllegalArgumentException("Username '" + request.getUsername() + "' is already taken");
         }

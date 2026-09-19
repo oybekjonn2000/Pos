@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -9,31 +9,43 @@ export interface PlanResponse {
   name: string;
   description: string;
   price: number;
+  yearlyPrice: number;
   currency: string;
   billingPeriod: string;
+  trialEnabled: boolean;
   trialDays: number;
   maxUsers: number;
   maxTables: number;
   maxProducts: number;
   maxKitchens: number;
+  maxDevices: number;
+  maxBranches: number;
   maxOrdersPerMonth: number;
   features: string[];
   active: boolean;
+  archived: boolean;
+  sortOrder: number;
 }
 
 export interface CurrentSubscriptionResponse {
   id: string;
   planCode: string;
   planName: string;
-  status: 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED' | 'PENDING_PAYMENT';
+  status: 'TRIAL' | 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED' | 'PENDING_PAYMENT' | 'PAYMENT_FAILED';
   operating: boolean;
   startDate: string;
   endDate: string;
   daysRemaining: number;
   autoRenew: boolean;
   price: number;
+  yearlyPrice: number;
   currency: string;
   features: string[];
+  notes?: string;
+  nextPlanCode?: string;
+  nextPlanName?: string;
+  hasScheduledDowngrade?: boolean;
+  warningLevel: 'NONE' | '7_DAYS' | '3_DAYS' | '1_DAY' | 'EXPIRED';
   currentUsers: number;
   maxUsers: number;
   currentTables: number;
@@ -42,33 +54,106 @@ export interface CurrentSubscriptionResponse {
   maxProducts: number;
   currentKitchens: number;
   maxKitchens: number;
+  currentDevices: number;
+  maxDevices: number;
+  currentMonthOrders: number;
+  maxOrdersPerMonth: number;
+}
+
+export interface CalculatePriceRequest {
+  planId?: string;
+  planCode?: string;
+  months?: number;
+  extraWaiters?: number;
+}
+
+export interface CalculatePriceResponse {
+  planId: string;
+  planCode: string;
+  planName: string;
+  months: number;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  baseAmount: number;
+  discountPercent: number;
+  discountAmount: number;
+  adjustmentAmount: number;
+  extraWaiters: number;
+  extraWaitersAmount: number;
+  finalAmount: number;
+  currency: string;
+  isUpgrade: boolean;
+  isDowngrade: boolean;
+  isRenewal: boolean;
+  prorationCredit: number;
+  effectiveStartDate: string;
+  note: string;
 }
 
 export interface CheckoutRequest {
   planId?: string;
   planCode?: string;
   provider?: string;
-  months?: number;       // 1, 3, 6, 12
-  extraWaiters?: number; // 2 ta tekin, qo'shimchasi oyiga 35_000 UZS
+  months?: number;
+  extraWaiters?: number;
+  notes?: string;
 }
 
 export interface CheckoutResponse {
+  invoiceId: string;
+  invoiceNumber: string;
   paymentId: string;
-  amount: number;
+  baseAmount: number;
+  discountAmount: number;
+  adjustmentAmount: number;
+  finalAmount: number;
   currency: string;
   provider: string;
   checkoutUrl: string;
   status: string;
   message: string;
+  isDowngradeScheduled: boolean;
+  effectiveDate: string;
 }
 
-export interface MockPayRequest {
-  paymentId: string;
-  simulateSuccess: boolean;
+export interface InvoiceResponse {
+  id: string;
+  invoiceNumber: string;
+  tenantId: string;
+  restaurantName: string;
+  restaurantCode: string;
+  planCode: string;
+  planName: string;
+  durationMonths: number;
+  baseAmount: number;
+  discountPercent: number;
+  discountAmount: number;
+  adjustmentAmount: number;
+  finalAmount: number;
+  currency: string;
+  status: 'DRAFT' | 'PENDING' | 'PAID' | 'CANCELLED' | 'EXPIRED';
+  paymentMethod: string;
+  notes?: string;
+  dueDate: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface SubscriptionPeriodResponse {
+  id: string;
+  planName: string;
+  planCode: string;
+  startDate: string;
+  endDate: string;
+  periodType: string;
+  invoiceNumber?: string;
+  createdAt: string;
 }
 
 export interface PaymentHistoryItem {
   id: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
   amount: number;
   currency: string;
   provider: string;
@@ -82,13 +167,53 @@ export interface PaymentHistoryItem {
   restaurantCode: string;
 }
 
+export interface DiscountRuleDto {
+  id?: string;
+  minMonths: number;
+  discountPercent: number;
+  name?: string;
+  active: boolean;
+}
+
+export interface ManualActivationRequest {
+  tenantId: string;
+  planId?: string;
+  planCode?: string;
+  months?: number;
+  startDate?: string;
+  endDate?: string;
+  discountPercent?: number;
+  adjustmentAmount?: number;
+  notes?: string;
+}
+
+export interface AuditLogResponse {
+  id: string;
+  tenantId?: string;
+  restaurantName?: string;
+  userId?: string;
+  username?: string;
+  role?: string;
+  action: string;
+  entityType?: string;
+  entityId?: string;
+  details?: any;
+  ipAddress?: string;
+  createdAt: string;
+}
+
 export interface PlatformSubscriptionOverview {
   totalSubscriptions: number;
   activeSubscriptions: number;
   trialSubscriptions: number;
+  expiringSoonSubscriptions: number;
   expiredSubscriptions: number;
+  cancelledSubscriptions: number;
+  pendingPaymentSubscriptions: number;
   totalRevenue: number;
   monthlyRecurringRevenue: number;
+  totalDiscountsGiven: number;
+  manualPaymentsCount: number;
   subscriptions: TenantSubscriptionSummary[];
 }
 
@@ -101,11 +226,13 @@ export interface TenantSubscriptionSummary {
   planName: string;
   planCode: string;
   price: number;
+  yearlyPrice: number;
   status: string;
   startDate: string;
   endDate: string;
   daysRemaining: number;
   operating: boolean;
+  nextPlanName?: string;
 }
 
 export interface PlanSaveRequest {
@@ -113,16 +240,22 @@ export interface PlanSaveRequest {
   code?: string;
   description: string;
   price: number;
+  yearlyPrice?: number;
   currency: string;
   billingPeriod: string;
+  trialEnabled?: boolean;
   trialDays: number;
   maxUsers: number;
   maxTables: number;
   maxProducts: number;
   maxKitchens: number;
+  maxDevices?: number;
+  maxBranches?: number;
   maxOrdersPerMonth: number;
   features: string[];
   active?: boolean;
+  archived?: boolean;
+  sortOrder?: number;
 }
 
 @Injectable({
@@ -131,6 +264,10 @@ export interface PlanSaveRequest {
 export class BillingService {
   private http = inject(HttpClient);
   private get apiPrefix(): string { return environment.apiUrl; }
+
+  // ==========================================
+  // RESTAURANT CLIENT BILLING
+  // ==========================================
 
   getPublicPlans(): Observable<PlanResponse[]> {
     return this.http.get<any>(`${this.apiPrefix}/public/plans`).pipe(
@@ -144,8 +281,26 @@ export class BillingService {
     );
   }
 
+  calculatePrice(req: CalculatePriceRequest): Observable<CalculatePriceResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/restaurant/billing/calculate`, req).pipe(
+      map(res => res.data)
+    );
+  }
+
   getPaymentHistory(): Observable<PaymentHistoryItem[]> {
     return this.http.get<any>(`${this.apiPrefix}/restaurant/billing/history`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  getInvoices(): Observable<InvoiceResponse[]> {
+    return this.http.get<any>(`${this.apiPrefix}/restaurant/billing/invoices`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  getPeriods(): Observable<SubscriptionPeriodResponse[]> {
+    return this.http.get<any>(`${this.apiPrefix}/restaurant/billing/periods`).pipe(
       map(res => res.data || [])
     );
   }
@@ -156,11 +311,9 @@ export class BillingService {
     );
   }
 
-  mockPay(req: MockPayRequest): Observable<CurrentSubscriptionResponse> {
-    return this.http.post<any>(`${this.apiPrefix}/restaurant/billing/mock-pay`, req).pipe(
-      map(res => res.data)
-    );
-  }
+  // ==========================================
+  // PLATFORM / SUPER ADMIN BILLING
+  // ==========================================
 
   getPlatformOverview(): Observable<PlatformSubscriptionOverview> {
     return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/overview`).pipe(
@@ -171,6 +324,28 @@ export class BillingService {
   getPlatformPayments(): Observable<PaymentHistoryItem[]> {
     return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/payments`).pipe(
       map(res => res.data || [])
+    );
+  }
+
+  getPlatformInvoices(): Observable<InvoiceResponse[]> {
+    return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/invoices`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  markInvoiceAsPaid(invoiceId: string, adminNotes?: string): Observable<InvoiceResponse> {
+    let params = new HttpParams();
+    if (adminNotes) {
+      params = params.set('adminNotes', adminNotes);
+    }
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/invoices/${invoiceId}/mark-paid`, {}, { params }).pipe(
+      map(res => res.data)
+    );
+  }
+
+  manualActivate(req: ManualActivationRequest): Observable<CurrentSubscriptionResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/manual-activate`, req).pipe(
+      map(res => res.data)
     );
   }
 
@@ -189,6 +364,42 @@ export class BillingService {
   updatePlan(id: string, req: PlanSaveRequest): Observable<PlanResponse> {
     return this.http.put<any>(`${this.apiPrefix}/platform/subscriptions/plans/${id}`, req).pipe(
       map(res => res.data)
+    );
+  }
+
+  archivePlan(id: string): Observable<PlanResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/plans/${id}/archive`, {}).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getDiscountRules(): Observable<DiscountRuleDto[]> {
+    return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/discounts`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  saveDiscountRule(req: DiscountRuleDto): Observable<DiscountRuleDto> {
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/discounts`, req).pipe(
+      map(res => res.data)
+    );
+  }
+
+  updateDiscountRule(id: string, req: DiscountRuleDto): Observable<DiscountRuleDto> {
+    return this.http.put<any>(`${this.apiPrefix}/platform/subscriptions/discounts/${id}`, req).pipe(
+      map(res => res.data)
+    );
+  }
+
+  deleteDiscountRule(id: string): Observable<void> {
+    return this.http.delete<any>(`${this.apiPrefix}/platform/subscriptions/discounts/${id}`).pipe(
+      map(() => void 0)
+    );
+  }
+
+  getAuditLogs(): Observable<AuditLogResponse[]> {
+    return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/audit-logs`).pipe(
+      map(res => res.data || [])
     );
   }
 }

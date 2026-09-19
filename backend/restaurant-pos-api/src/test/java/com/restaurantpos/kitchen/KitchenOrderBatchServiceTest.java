@@ -351,7 +351,7 @@ public class KitchenOrderBatchServiceTest {
                 null, null, orderRepository, orderItemRepository, orderService,
                 wsNotification, null, null, null, null, null,
                 kitchenOrderBatchRepository, kitchenOrderBatchItemRepository,
-                null, null, null, null
+                null, null, null, null, null
         );
 
         Order order = new Order();

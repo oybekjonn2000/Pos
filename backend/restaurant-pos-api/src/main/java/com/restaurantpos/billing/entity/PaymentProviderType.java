@@ -1,8 +1,11 @@
 package com.restaurantpos.billing.entity;
 
 public enum PaymentProviderType {
-    MOCK,
+    MANUAL,
     CLICK,
     PAYME,
-    UZUM
+    UZUM,
+    STRIPE,
+    OTHER,
+    MOCK
 }

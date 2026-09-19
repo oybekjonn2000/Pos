@@ -72,6 +72,7 @@ public class OrderService {
     private final com.restaurantpos.kitchen.repository.KitchenOrderBatchItemRepository kitchenOrderBatchItemRepository;
     private final com.restaurantpos.common.websocket.WebSocketNotificationService wsNotification;
     private final com.restaurantpos.printers.service.PrintRoutingService printRoutingService;
+    private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
 
     private static final AtomicInteger ORDER_COUNTER = new AtomicInteger(100);
     private static final AtomicInteger CANCEL_COUNTER = new AtomicInteger(100);
@@ -228,6 +229,8 @@ public class OrderService {
 
     @Transactional
     public OrderDto.Response createOrder(UUID tenantId, UUID userId, OrderDto.CreateRequest request) {
+        subscriptionLimitService.checkOrderLimit(tenantId);
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> PosException.notFound("Tenant not found"));
 

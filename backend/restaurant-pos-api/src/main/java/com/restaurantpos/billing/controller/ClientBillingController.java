@@ -64,33 +64,37 @@ public class ClientBillingController {
         return ResponseEntity.ok(ApiResponse.success(response, "To'lov jarayoni boshlandi"));
     }
 
-    @PostMapping("/mock-pay")
-    @Operation(summary = "Process test/mock payment (Development mode)")
-    public ResponseEntity<ApiResponse<BillingDto.CurrentSubscriptionResponse>> mockPay(
-            @RequestBody BillingDto.MockPayRequest request) {
+    @PostMapping("/calculate")
+    @Operation(summary = "Calculate exact price, discounts, and proration adjustments for a plan and duration")
+    public ResponseEntity<ApiResponse<BillingDto.CalculatePriceResponse>> calculate(
+            @RequestBody BillingDto.CalculatePriceRequest request) {
         UUID tenantId = TenantContext.getCurrentTenantId();
         if (tenantId == null) {
             throw PosException.badRequest("Tenant konteksti topilmadi!");
         }
+        BillingDto.CalculatePriceResponse response = subscriptionService.calculatePrice(tenantId, request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
-        SubscriptionPayment payment = paymentRepository.findById(request.getPaymentId())
-                .orElseThrow(() -> PosException.notFound("To'lov topilmadi: " + request.getPaymentId()));
-
-        // Tenant Security Check: Ensure payment belongs to the current caller's tenant
-        if (!payment.getTenant().getId().equals(tenantId)) {
-            log.warn("Unauthorized attempt by tenant {} to pay for payment {} belonging to tenant {}",
-                    tenantId, payment.getId(), payment.getTenant().getId());
-            throw PosException.forbidden("Siz boshqa restoranning to'lovini amalga oshirolmaysiz!");
+    @GetMapping("/invoices")
+    @Operation(summary = "Get all subscription invoices for current restaurant")
+    public ResponseEntity<ApiResponse<List<BillingDto.InvoiceResponse>>> getInvoices() {
+        UUID tenantId = TenantContext.getCurrentTenantId();
+        if (tenantId == null) {
+            throw PosException.badRequest("Tenant konteksti topilmadi!");
         }
+        List<BillingDto.InvoiceResponse> invoices = subscriptionService.getTenantInvoices(tenantId);
+        return ResponseEntity.ok(ApiResponse.success(invoices));
+    }
 
-        if (request.isSimulateSuccess()) {
-            String fakeTx = "MOCK-TX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            BillingDto.CurrentSubscriptionResponse updated = subscriptionService.processPaymentSuccess(
-                    payment.getId(), fakeTx, Map.of("mode", "SIMULATED_SUCCESS", "timestamp", System.currentTimeMillis()));
-            return ResponseEntity.ok(ApiResponse.success(updated, "To'lov muvaffaqiyatli qabul qilindi va obuna faollashtirildi!"));
-        } else {
-            subscriptionService.processPaymentFailed(payment.getId(), "Foydalanuvchi tomonidan bekor qilindi yoki simulyatsiya xatosi");
-            throw PosException.badRequest("To'lov muvaffaqiyatsiz yakunlandi (Simulated failure).");
+    @GetMapping("/periods")
+    @Operation(summary = "Get historical subscription periods for current restaurant")
+    public ResponseEntity<ApiResponse<List<BillingDto.SubscriptionPeriodResponse>>> getPeriods() {
+        UUID tenantId = TenantContext.getCurrentTenantId();
+        if (tenantId == null) {
+            throw PosException.badRequest("Tenant konteksti topilmadi!");
         }
+        List<BillingDto.SubscriptionPeriodResponse> periods = subscriptionService.getSubscriptionPeriods(tenantId);
+        return ResponseEntity.ok(ApiResponse.success(periods));
     }
 }

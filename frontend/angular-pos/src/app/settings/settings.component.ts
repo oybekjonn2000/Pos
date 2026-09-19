@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { SettingsService, AllSettingsResponse, RestaurantSettings, GeneralSettings, ReceiptSettings, PaymentSettings, TaxServiceSettings, OrderSettings, KitchenSettings, NotificationSettings, SecuritySettings, BackupSettings, SystemInfoDto, AuditLogEntry } from '../core/services/settings.service';
 import { PrinterService, Printer, CreatePrinterRequest, UpdatePrinterRequest, TestPrintResult, ExtendedKitchenStation, AvailablePrinter } from '../core/services/printer.service';
 import { ResetService, OrdersResetResult, EntityResetResult, AllResetResult } from '../core/services/reset.service';
@@ -29,7 +30,7 @@ type SettingsCategory =
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="settings-container fade-in">
       <!-- HEADER -->
@@ -85,6 +86,11 @@ type SettingsCategory =
             <span class="nav-icon">🍔</span>
             <span class="nav-label">Mahsulotlar toifalari</span>
           </button>
+          <a routerLink="/restaurant/billing" class="nav-item" style="text-decoration: none;">
+            <span class="nav-icon">💳</span>
+            <span class="nav-label">Tarif va Obuna (Billing)</span>
+            <span class="nav-badge" style="background:#6366f1;color:white;font-weight:700;">PRO</span>
+          </a>
 
           <div class="nav-group-title">OSXONA VA PRINTERLAR</div>
           <button class="nav-item" [class.active]="activeCategory() === 'KITCHENS'" (click)="setCategory('KITCHENS')">

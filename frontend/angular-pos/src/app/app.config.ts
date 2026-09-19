@@ -25,6 +25,6 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideNativeDateAdapter(),
     provideTranslateService({ lang: 'uz' }),
-    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' })
+    provideTranslateHttpLoader({ prefix: '/assets/i18n/', suffix: '.json' })
   ]
 };

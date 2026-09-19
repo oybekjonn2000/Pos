@@ -23,6 +23,10 @@ public class SubscriptionPayment {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
+    private SubscriptionInvoice invoice;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
@@ -43,7 +47,7 @@ public class SubscriptionPayment {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false, length = 30)
-    private PaymentProviderType provider = PaymentProviderType.MOCK;
+    private PaymentProviderType provider = PaymentProviderType.MANUAL;
 
     @Column(name = "provider_transaction_id", length = 100)
     private String providerTransactionId;

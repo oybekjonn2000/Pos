@@ -20,3 +20,326 @@
 2026-09-20 02:43:58 [http-nio-8080-exec-5] INFO  c.r.payments.service.PaymentService - [PAYMENT_SUCCESS] Payment completed successfully. paymentId: 951784dc-2901-4e55-8069-36540fdd4cd0, paymentNumber: PAY-20260920-1127, orderId: a89a5879-fd38-4c0d-bc21-cbaf9aaea8bd, amount: 270000
 2026-09-20 02:43:59 [http-nio-8080-exec-4] INFO  c.r.payments.service.PaymentService - [PAYMENT_STARTED] Processing payment for orderId: 2fad697e-8a85-45b6-8f2b-d48870a6deb5, cashierId: c0000000-0000-0000-0000-000000000001, amount: 607500, method: CASH
 2026-09-20 02:43:59 [http-nio-8080-exec-4] INFO  c.r.payments.service.PaymentService - [PAYMENT_SUCCESS] Payment completed successfully. paymentId: 5f0b76fe-0cfe-431e-aa08-f42fa03a949d, paymentNumber: PAY-20260920-1128, orderId: 2fad697e-8a85-45b6-8f2b-d48870a6deb5, amount: 607500
+2026-09-20 03:04:35 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 15 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(15)-CONNECTED(15)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 189], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 77], sockJsScheduler[pool size = 4, active threads = 1, queued tasks = 0, completed tasks = 3]
+2026-09-20 03:05:39 [http-nio-8080-exec-2] INFO  c.r.b.service.SubscriptionService - Extended subscription for Demo Restaurant until 2027-11-18T20:15:42.491638Z
+2026-09-20 03:06:14 [http-nio-8080-exec-10] INFO  c.r.b.service.SubscriptionService - Extended subscription for Demo Restaurant until 2027-12-18T20:15:42.491638Z
+2026-09-20 03:06:27 [http-nio-8080-exec-1] INFO  c.r.b.service.SubscriptionService - Extended subscription for Demo Restaurant until 2028-01-17T20:15:42.491638Z
+2026-09-20 03:26:37 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication using Java 21.0.12.1 with PID 15724 (E:\posOybek\backend\restaurant-pos-api\target\classes started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-20 03:26:37 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-20 03:26:39 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-20 03:26:39 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 155 ms. Found 42 JPA repository interfaces.
+2026-09-20 03:26:40 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-20 03:26:40 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-20 03:26:40 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-20 03:26:40 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-20 03:26:40 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2715 ms
+2026-09-20 03:26:41 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-20 03:26:41 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@1b6cad77
+2026-09-20 03:26:41 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-20 03:26:41 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-20 03:26:41 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-20 03:26:42 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 33
+2026-09-20 03:26:42 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "public" to version "34 - enhanced subscription and billing"
+2026-09-20 03:26:42 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 1 migration to schema "public", now at version v34 (execution time 00:00.300s)
+2026-09-20 03:26:42 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-20 03:26:42 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-20 03:26:42 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-20 03:26:43 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-20 03:26:43 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-20 03:26:43 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-20 03:26:44 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-20 03:26:47 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:26:47 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-20 03:26:54 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-20 03:26:54 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-20 03:26:55 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-20 03:26:55 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@57bb9c59]]
+2026-09-20 03:26:55 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-20 03:26:55 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-20 03:26:55 [main] INFO  c.r.RestaurantPosApplication - Started RestaurantPosApplication in 18.086 seconds (process running for 18.444)
+2026-09-20 03:27:55 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 2, active threads = 1, queued tasks = 1, completed tasks = 0]
+2026-09-20 03:31:53 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Starting SubscriptionComprehensiveIntegrationTest using Java 21.0.12.1 with PID 13888 (started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-20 03:31:53 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - No active profile set, falling back to 1 default profile: "default"
+2026-09-20 03:31:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-20 03:31:55 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 212 ms. Found 42 JPA repository interfaces.
+2026-09-20 03:31:57 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-20 03:31:57 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@cef885d
+2026-09-20 03:31:57 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-20 03:31:57 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-20 03:31:57 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-20 03:31:57 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 34
+2026-09-20 03:31:57 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-20 03:31:57 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-20 03:31:57 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-20 03:31:57 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-20 03:31:58 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-20 03:31:58 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-20 03:31:58 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-20 03:32:00 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-20 03:32:03 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:32:03 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-20 03:32:08 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-20 03:32:09 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-20 03:32:10 [main] INFO  o.s.b.t.m.w.SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+2026-09-20 03:32:10 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Initializing Servlet ''
+2026-09-20 03:32:10 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Completed initialization in 2 ms
+2026-09-20 03:32:10 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-20 03:32:10 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7579baf3]]
+2026-09-20 03:32:10 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-20 03:32:10 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Started SubscriptionComprehensiveIntegrationTest in 17.774 seconds (process running for 19.149)
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23505
+2026-09-20 03:32:11 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: duplicate key value violates unique constraint "subscription_discount_rules_min_months_key"
+  Подробности: Key (min_months)=(1) already exists.
+2026-09-20 03:32:11 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-09-20 03:32:11 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7579baf3]]
+2026-09-20 03:32:11 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-09-20 03:32:11 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:32:11 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown initiated...
+2026-09-20 03:32:11 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown completed.
+2026-09-20 03:33:03 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Starting SubscriptionComprehensiveIntegrationTest using Java 21.0.12.1 with PID 20924 (started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-20 03:33:03 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - No active profile set, falling back to 1 default profile: "default"
+2026-09-20 03:33:05 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-20 03:33:05 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 185 ms. Found 42 JPA repository interfaces.
+2026-09-20 03:33:06 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-20 03:33:07 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@1d654b5f
+2026-09-20 03:33:07 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-20 03:33:07 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-20 03:33:07 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-20 03:33:07 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 34
+2026-09-20 03:33:07 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-20 03:33:07 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-20 03:33:07 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-20 03:33:07 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-20 03:33:08 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-20 03:33:08 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-20 03:33:08 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-20 03:33:10 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-20 03:33:13 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:33:13 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-20 03:33:19 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-20 03:33:20 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-20 03:33:21 [main] INFO  o.s.b.t.m.w.SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+2026-09-20 03:33:21 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Initializing Servlet ''
+2026-09-20 03:33:21 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Completed initialization in 1 ms
+2026-09-20 03:33:21 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-20 03:33:21 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7d2b832]]
+2026-09-20 03:33:21 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-20 03:33:21 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Started SubscriptionComprehensiveIntegrationTest in 18.427 seconds (process running for 19.483)
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (45b00f34-6c9c-44b4-bae9-dae80a5c8b4e, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:21.976886+05, 2026-09-20 03:33:21.976886+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (3a724a51-d8ab-4d0d-b9c7-60985f5fdf09, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.095996+05, 2026-09-20 03:33:22.095996+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (32e8ac05-f92b-4d54-ad03-26f7c95bfc8d, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.144567+05, 2026-09-20 03:33:22.144567+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (1d980f8d-85b9-4cfa-88c6-a6b2350cb092, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.183293+05, 2026-09-20 03:33:22.183293+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (da6d065e-b61d-4bbc-af4c-c42512deb851, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.21992+05, 2026-09-20 03:33:22.21992+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (3bb9481b-96e4-40db-9df9-d2c571ccc95a, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.267605+05, 2026-09-20 03:33:22.267605+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (60221d93-3a51-4eca-9180-71f39f5c94e9, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.313466+05, 2026-09-20 03:33:22.313466+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (60672029-f09c-4622-9fd5-dd9bf38f8dff, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.361909+05, 2026-09-20 03:33:22.361909+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23502
+2026-09-20 03:33:22 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: null value in column "slug" of relation "tenants" violates not-null constraint
+  Подробности: Failing row contains (493750c8-8bf8-4db7-9cbe-b117e89d6b45, Oshxona Alpha, null, null, null, null, null, UZ, UZS, Asia/Tashkent, null, null, t, null, 2026-09-20 03:33:22.389773+05, 2026-09-20 03:33:22.389773+05, null, ALPHA01, ACTIVE, null).
+2026-09-20 03:33:22 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-09-20 03:33:22 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7d2b832]]
+2026-09-20 03:33:22 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-09-20 03:33:22 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:33:22 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown initiated...
+2026-09-20 03:33:22 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown completed.
+2026-09-20 03:33:57 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Starting SubscriptionComprehensiveIntegrationTest using Java 21.0.12.1 with PID 7236 (started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-20 03:33:57 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - No active profile set, falling back to 1 default profile: "default"
+2026-09-20 03:33:59 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-20 03:33:59 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 229 ms. Found 42 JPA repository interfaces.
+2026-09-20 03:34:00 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-20 03:34:01 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@5b895e76
+2026-09-20 03:34:01 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-20 03:34:01 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-20 03:34:01 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-20 03:34:01 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 34
+2026-09-20 03:34:01 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-20 03:34:01 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-20 03:34:01 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-20 03:34:01 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-20 03:34:01 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-20 03:34:01 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-20 03:34:02 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-20 03:34:04 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-20 03:34:07 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:34:07 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-20 03:34:13 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-20 03:34:13 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-20 03:34:14 [main] INFO  o.s.b.t.m.w.SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+2026-09-20 03:34:14 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Initializing Servlet ''
+2026-09-20 03:34:14 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Completed initialization in 1 ms
+2026-09-20 03:34:14 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-20 03:34:14 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4a411545]]
+2026-09-20 03:34:14 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-20 03:34:14 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Started SubscriptionComprehensiveIntegrationTest in 17.401 seconds (process running for 18.356)
+2026-09-20 03:34:15 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23503
+2026-09-20 03:34:15 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: INSERT или UPDATE в таблице "subscription_audit_logs" нарушает ограничение внешнего ключа "subscription_audit_logs_tenant_id_fkey"
+  Подробности: Ключ (tenant_id)=(b2c467fd-579a-44b3-850b-5c2f14845075) отсутствует в таблице "tenants".
+2026-09-20 03:34:15 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23503
+2026-09-20 03:34:15 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: INSERT или UPDATE в таблице "subscription_audit_logs" нарушает ограничение внешнего ключа "subscription_audit_logs_tenant_id_fkey"
+  Подробности: Ключ (tenant_id)=(064ed8e4-e9b2-41a9-a5ad-e4df7945e19e) отсутствует в таблице "tenants".
+2026-09-20 03:34:15 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23503
+2026-09-20 03:34:15 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: INSERT или UPDATE в таблице "subscription_audit_logs" нарушает ограничение внешнего ключа "subscription_audit_logs_tenant_id_fkey"
+  Подробности: Ключ (tenant_id)=(dfa24f7d-fda7-4a04-8267-518c776fcc4b) отсутствует в таблице "tenants".
+2026-09-20 03:34:15 [main] WARN  o.h.e.jdbc.spi.SqlExceptionHelper - SQL Error: 0, SQLState: 23503
+2026-09-20 03:34:15 [main] ERROR o.h.e.jdbc.spi.SqlExceptionHelper - ОШИБКА: INSERT или UPDATE в таблице "subscription_audit_logs" нарушает ограничение внешнего ключа "subscription_audit_logs_tenant_id_fkey"
+  Подробности: Ключ (tenant_id)=(125c6198-e0c3-4c06-83c8-3661ec4780fd) отсутствует в таблице "tenants".
+2026-09-20 03:34:15 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-09-20 03:34:15 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4a411545]]
+2026-09-20 03:34:15 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-09-20 03:34:15 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:34:15 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown initiated...
+2026-09-20 03:34:15 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown completed.
+2026-09-20 03:35:00 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Starting SubscriptionComprehensiveIntegrationTest using Java 21.0.12.1 with PID 1528 (started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-20 03:35:00 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - No active profile set, falling back to 1 default profile: "default"
+2026-09-20 03:35:01 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-20 03:35:02 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 285 ms. Found 42 JPA repository interfaces.
+2026-09-20 03:35:03 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-20 03:35:03 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@1e029a04
+2026-09-20 03:35:03 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-20 03:35:03 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-20 03:35:03 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-20 03:35:04 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 34
+2026-09-20 03:35:04 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-20 03:35:04 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-20 03:35:04 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-20 03:35:04 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-20 03:35:04 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-20 03:35:04 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-20 03:35:04 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-20 03:35:06 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-20 03:35:09 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:35:10 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-20 03:35:14 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-20 03:35:15 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-20 03:35:15 [main] INFO  o.s.b.t.m.w.SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+2026-09-20 03:35:15 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Initializing Servlet ''
+2026-09-20 03:35:15 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Completed initialization in 3 ms
+2026-09-20 03:35:16 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-20 03:35:16 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@28ef319]]
+2026-09-20 03:35:16 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-20 03:35:16 [main] INFO  c.r.b.SubscriptionComprehensiveIntegrationTest - Started SubscriptionComprehensiveIntegrationTest in 16.24 seconds (process running for 17.167)
+2026-09-20 03:35:17 [main] INFO  c.r.b.service.SubscriptionService - Created initial subscription (14 days) for restaurant: Oshxona Alpha e040cf (AE040CF) with plan: 14-Kunlik Sinov (Trial)
+2026-09-20 03:35:17 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-09-20 03:35:17 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@28ef319]]
+2026-09-20 03:35:17 [SpringApplicationShutdownHook] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-09-20 03:35:17 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:35:17 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown initiated...
+2026-09-20 03:35:17 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown completed.
+2026-09-20 03:35:52 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication using Java 21.0.12.1 with PID 17196 (E:\posOybek\backend\restaurant-pos-api\target\classes started by Steam in E:\posOybek\backend\restaurant-pos-api)
+2026-09-20 03:35:52 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-20 03:35:53 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-20 03:35:53 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 101 ms. Found 42 JPA repository interfaces.
+2026-09-20 03:35:54 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-20 03:35:54 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-20 03:35:54 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-20 03:35:54 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-20 03:35:54 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1591 ms
+2026-09-20 03:35:54 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-20 03:35:54 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@131777e8
+2026-09-20 03:35:54 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-20 03:35:54 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-20 03:35:54 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-20 03:35:54 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 34
+2026-09-20 03:35:54 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-20 03:35:55 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-20 03:35:55 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-20 03:35:55 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-20 03:35:55 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-20 03:35:55 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-20 03:35:55 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-20 03:35:56 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-20 03:35:59 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-20 03:35:59 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-20 03:36:03 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-20 03:36:04 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-20 03:36:04 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-20 03:36:04 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@73e91c6d]]
+2026-09-20 03:36:04 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-20 03:36:04 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-20 03:36:04 [main] INFO  c.r.RestaurantPosApplication - Started RestaurantPosApplication in 12.269 seconds (process running for 12.508)
+2026-09-20 03:36:07 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-20 03:36:07 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-20 03:36:07 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2026-09-20 03:37:04 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 2, active threads = 1, queued tasks = 1, completed tasks = 0]

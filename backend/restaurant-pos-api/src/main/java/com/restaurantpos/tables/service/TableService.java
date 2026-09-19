@@ -39,6 +39,7 @@ public class TableService {
     private final com.restaurantpos.users.repository.UserRepository userRepository;
     private final com.restaurantpos.shifts.repository.ShiftRepository shiftRepository;
     private final WebSocketNotificationService wsNotification;
+    private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
 
     private static final java.util.concurrent.atomic.AtomicInteger ORDER_COUNTER = new java.util.concurrent.atomic.AtomicInteger(500);
 
@@ -406,6 +407,8 @@ public class TableService {
 
     @Transactional
     public TableDto.Response createTable(UUID tenantId, TableDto.CreateRequest request) {
+        subscriptionLimitService.checkTableLimit(tenantId);
+
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> PosException.notFound("Tenant not found"));
 

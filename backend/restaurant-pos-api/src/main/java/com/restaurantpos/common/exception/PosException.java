@@ -53,4 +53,8 @@ public class PosException extends RuntimeException {
     public static PosException internalError(String message) {
         return new PosException(message, "INTERNAL_ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    public static PosException paymentRequired(String message) {
+        return new PosException(message, "PAYMENT_REQUIRED", HttpStatus.PAYMENT_REQUIRED);
+    }
 }
