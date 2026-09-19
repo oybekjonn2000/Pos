@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface ModifierGroupRepository extends JpaRepository<ModifierGroup, UUID> {
 
     List<ModifierGroup> findByTenantIdAndDeletedAtIsNullOrderBySortOrderAsc(UUID tenantId);
+
+    List<ModifierGroup> findByTenantIdAndIdInAndDeletedAtIsNull(UUID tenantId, java.util.Collection<UUID> ids);
 }

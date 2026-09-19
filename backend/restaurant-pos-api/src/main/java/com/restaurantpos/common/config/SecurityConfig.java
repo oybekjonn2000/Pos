@@ -35,12 +35,16 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final com.restaurantpos.billing.security.SubscriptionEnforcementFilter subscriptionEnforcementFilter;
     private final com.restaurantpos.auth.security.CustomUserDetailsService userDetailsService;
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/auth/login",
+            "/api/auth/register",
             "/api/auth/refresh",
             "/api/auth/device/register",
+            "/api/public/**",
+            "/api/webhooks/**",
             "/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -69,7 +73,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/orders", "/api/orders/**").hasAnyRole("ADMIN", "MANAGER", "WAITER", "CASHIER")
+                        .requestMatchers("/api/platform/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/orders", "/api/orders/**").hasAnyRole("ADMIN", "MANAGER", "WAITER", "CASHIER", "SUPER_ADMIN", "RESTAURANT_ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED))
@@ -81,6 +86,7 @@ public class SecurityConfig {
                         }))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(subscriptionEnforcementFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 

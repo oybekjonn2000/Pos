@@ -58,8 +58,26 @@ public class Tenant {
     @Column(name = "tax_number", length = 100)
     private String taxNumber;
 
+    @Column(name = "code", nullable = false, unique = true, length = 50)
+    private String code;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private RestaurantStatus status = RestaurantStatus.ACTIVE;
+
+    @Column(name = "inn", length = 50)
+    private String inn;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
+
+    public boolean isSuspended() {
+        return status == RestaurantStatus.SUSPENDED;
+    }
+
+    public boolean isOperating() {
+        return active && status == RestaurantStatus.ACTIVE && deletedAt == null;
+    }
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "settings", columnDefinition = "jsonb")

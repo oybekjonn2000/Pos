@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
@@ -22,7 +22,7 @@ interface QuickAccount {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LanServerConfigModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LanServerConfigModalComponent],
   template: `
     <div class="login-page">
       <!-- Top Right Theme Switcher -->
@@ -90,43 +90,72 @@ interface QuickAccount {
 
           <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
             <div class="form-group">
-              <label class="form-label">Username</label>
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <label class="form-label">Restoran Kodi (ixtiyoriy)</label>
+                <span style="font-size: 11px; color: var(--text-muted);">Masalan: DEMO001</span>
+              </div>
+              <input
+                type="text"
+                class="pos-input pos-input--lg"
+                formControlName="restaurantCode"
+                placeholder="Bo‘sh qoldirish mumkin (avtomatik aniqlanadi)"
+                autocomplete="off"
+                style="text-transform: uppercase;"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Login, email yoki telefon</label>
               <input
                 type="text"
                 class="pos-input pos-input--lg"
                 formControlName="username"
-                placeholder="Enter your username"
+                placeholder="Login, email yoki telefon raqamingiz"
                 autocomplete="username"
               />
               @if (loginForm.get('username')?.invalid && loginForm.get('username')?.touched) {
-                <span class="form-error">Username is required</span>
+                <span class="form-error">Login, email yoki telefon kiritilishi shart</span>
               }
             </div>
 
             <div class="form-group">
-              <label class="form-label">Password</label>
+              <div class="label-row-forgot">
+                <label class="form-label">Parol</label>
+                <button type="button" class="btn-forgot-password" (click)="onForgotPassword()">
+                  Parolni unutdingizmi?
+                </button>
+              </div>
               <div class="password-field">
                 <input
                   [type]="showPassword() ? 'text' : 'password'"
                   class="pos-input pos-input--lg"
                   formControlName="password"
-                  placeholder="Enter your password"
+                  placeholder="Parolingizni kiriting"
                   autocomplete="current-password"
                 />
                 <button
                   type="button"
                   class="password-toggle"
                   (click)="showPassword.update(v => !v)"
+                  [title]="showPassword() ? 'Parolni yashirish' : 'Parolni ko‘rsatish'"
                 >
                   {{ showPassword() ? '🙈' : '👁️' }}
                 </button>
               </div>
               @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
-                <span class="form-error">Password is required</span>
+                <span class="form-error">Parol kiritilishi shart</span>
               }
             </div>
 
-            @if (errorMessage()) {
+            @if (isBlocked()) {
+              <div class="login-error login-error--blocked">
+                <div class="blocked-icon">🔒</div>
+                <div class="blocked-content">
+                  <div class="blocked-title">Restoran bloklangan</div>
+                  <div class="blocked-desc">Ushbu restoran faoliyati vaqtincha to'xtatilgan. Tizim administratoriga murojaat qiling.</div>
+                </div>
+              </div>
+            } @else if (errorMessage()) {
               <div class="login-error" [class.login-error--network]="isNetworkError()">
                 <div class="login-error-text">
                   ❌ {{ errorMessage() }}
@@ -146,12 +175,18 @@ interface QuickAccount {
             >
               @if (loading() && !activeQuickUser()) {
                 <span class="spinner"></span>
-                Signing in...
+                Kirilmoqda...
               } @else {
-                Sign In
+                Kirish
               }
             </button>
           </form>
+
+          <!-- Hisobingiz yo'qmi? Ro'yxatdan o'tish link -->
+          <div class="register-prompt-box">
+            <span class="register-prompt-text">Hisobingiz yo‘qmi?</span>
+            <a routerLink="/register" class="register-prompt-link">Ro‘yxatdan o‘tish</a>
+          </div>
 
           <!-- Quick Role Login Section -->
           <div class="quick-login-divider">
@@ -207,7 +242,7 @@ interface QuickAccount {
       justify-content: center;
       background: var(--bg-primary);
       position: relative;
-      overflow: hidden;
+      overflow-y: auto;
 
       .login-theme-bar {
         position: absolute;
@@ -760,6 +795,54 @@ interface QuickAccount {
       border: 1px solid rgba(239, 68, 68, 0.4);
     }
 
+    /* Blocked restaurant styling */
+    .login-error--blocked {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 14px;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.08));
+      border: 1.5px solid rgba(239, 68, 68, 0.5);
+      border-left: 4px solid #ef4444;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      animation: shake 0.4s ease;
+
+      .blocked-icon {
+        font-size: 28px;
+        flex-shrink: 0;
+        line-height: 1;
+        filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
+      }
+
+      .blocked-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .blocked-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #ef4444;
+        letter-spacing: -0.2px;
+      }
+
+      .blocked-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
     .login-error-text {
       line-height: 1.4;
     }
@@ -783,6 +866,58 @@ interface QuickAccount {
       }
     }
 
+    .label-row-forgot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .btn-forgot-password {
+      background: none;
+      border: none;
+      padding: 0;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
+    .register-prompt-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 18px;
+      margin-bottom: 4px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+    }
+
+    .register-prompt-text {
+      color: var(--text-muted);
+    }
+
+    .register-prompt-link {
+      color: var(--primary);
+      font-weight: 700;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
@@ -794,6 +929,7 @@ export class LoginComponent implements OnInit {
   theme = inject(ThemeService);
   showServerModal = signal<boolean>(false);
   isNetworkError = signal<boolean>(false);
+  isBlocked = signal<boolean>(false);
 
   loginForm: FormGroup;
   loading = signal(false);
@@ -803,14 +939,24 @@ export class LoginComponent implements OnInit {
 
   readonly quickAccounts: QuickAccount[] = [
     {
+      role: 'SUPER_ADMIN',
+      title: 'Platforma Rahbari',
+      name: 'Super Admin',
+      username: 'superadmin',
+      password: 'superadmin123',
+      icon: '🌐',
+      badgeClass: 'badge-admin',
+      description: 'Platform Super Admin'
+    },
+    {
       role: 'ADMIN',
-      title: 'Admin',
+      title: 'Demo Admin',
       name: 'Oybek Rustamov',
       username: 'admin',
       password: 'admin123',
       icon: '👑',
       badgeClass: 'badge-admin',
-      description: 'Super Administrator'
+      description: 'Demo Restaurant Admin'
     },
     {
       role: 'WAITER',
@@ -862,13 +1008,22 @@ export class LoginComponent implements OnInit {
     private notify: NotificationService
   ) {
     this.loginForm = this.fb.group({
+      restaurantCode: [''],
       username: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(4)]]
     });
   }
 
   ngOnInit(): void {
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate([this.authService.getDefaultRoute()]);
+      return;
+    }
     this.lan.checkImmediate();
+  }
+
+  onForgotPassword(): void {
+    this.notify.info('Parolni tiklash uchun administratoringiz yoki qo‘llab-quvvatlash xizmati (+998 71 200-00-00) bilan bog‘laning.');
   }
 
   onServerModalClosed(): void {
@@ -881,6 +1036,7 @@ export class LoginComponent implements OnInit {
   quickLogin(acc: QuickAccount): void {
     this.activeQuickUser.set(acc.username);
     this.loginForm.patchValue({
+      restaurantCode: '',
       username: acc.username,
       password: acc.password
     });
@@ -897,6 +1053,7 @@ export class LoginComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set('');
     this.isNetworkError.set(false);
+    this.isBlocked.set(false);
 
     this.authService.login(this.loginForm.value).subscribe({
       next: (response) => {
@@ -910,6 +1067,13 @@ export class LoginComponent implements OnInit {
       error: (err) => {
         this.loading.set(false);
         this.activeQuickUser.set(null);
+
+        // 403 = Restoran superadmin tomonidan bloklangan
+        if (err.status === 403) {
+          this.isBlocked.set(true);
+          return;
+        }
+
         const isNet = err.status === 0 ||
                       (err.name === 'HttpErrorResponse' && !err.status) ||
                       err.message?.includes('Failed to fetch') ||

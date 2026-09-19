@@ -139,14 +139,13 @@ html {
 }
 
 body {
-  height: 100%;
+  min-height: 100%;
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
   transition: background-color var(--transition), color var(--transition);
 }
 

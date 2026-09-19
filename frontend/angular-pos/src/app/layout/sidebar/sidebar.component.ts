@@ -9,6 +9,7 @@ interface NavItem {
   route: string;
   permission?: string;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
   disallowRoles?: string[];
   badge?: number;
 }
@@ -21,11 +22,11 @@ interface NavItem {
     <nav class="sidebar" [class.collapsed]="collapsed()">
       <!-- Logo -->
       <div class="sidebar__logo" (click)="toggleCollapse()">
-        <div class="sidebar__logo-icon">🍽️</div>
+        <div class="sidebar__logo-icon">{{ auth.isSuperAdmin() ? '🌐' : '🍽️' }}</div>
         @if (!collapsed()) {
           <div class="sidebar__logo-text">
-            <span class="sidebar__brand">RestaurantPOS</span>
-            <span class="sidebar__version">v1.0.0</span>
+            <span class="sidebar__brand">{{ auth.isSuperAdmin() ? 'Platform Admin' : 'RestaurantPOS' }}</span>
+            <span class="sidebar__version">{{ auth.isSuperAdmin() ? 'Markaziy Nazorat' : 'v1.0.0' }}</span>
           </div>
         }
       </div>
@@ -285,7 +286,17 @@ export class SidebarComponent {
   collapsed = signal(false);
   lan = inject(LanStatusService);
 
-  navItems: NavItem[] = [
+  readonly platformNavItems: NavItem[] = [
+    { icon: '📊', label: 'Platforma Dashboard', route: '/platform/dashboard' },
+    { icon: '🏢', label: 'Restoranlar', route: '/platform/restaurants' },
+    { icon: '💳', label: 'Obunalar', route: '/platform/subscriptions' },
+    { icon: '💵', label: 'To‘lovlar', route: '/platform/payments' },
+    { icon: '💰', label: 'Savdo monitoringi', route: '/platform/sales' },
+    { icon: '👥', label: 'Xodimlar monitoringi', route: '/platform/employees' },
+    { icon: '📈', label: 'Platforma hisobotlari', route: '/platform/reports' }
+  ];
+
+  readonly restaurantNavItems: NavItem[] = [
     { icon: '📊', label: 'Boshqaruv paneli', route: '/dashboard', permission: 'VIEW_DASHBOARD' },
     { icon: '🪑', label: 'Joylar va Stollar', route: '/tables' },
     { icon: '📋', label: 'Buyurtmalar', route: '/orders' },
@@ -297,15 +308,21 @@ export class SidebarComponent {
     { icon: '👥', label: 'Mijozlar', route: '/customers', adminOnly: true },
     { icon: '👤', label: 'Xodimlar', route: '/employees', permission: 'MANAGE_USERS' },
     { icon: '📈', label: 'Hisobotlar', route: '/reports', permission: 'VIEW_REPORTS' },
+    { icon: '💳', label: 'Tarif & Billing', route: '/restaurant/billing', adminOnly: true },
     { icon: '📱', label: 'Qurilmalar', route: '/devices', permission: 'MANAGE_DEVICES' },
-    { icon: '⚙️', label: 'Sozlamalar', route: '/settings', permission: 'MANAGE_SETTINGS' },
+    { icon: '⚙️', label: 'Sozlamalar', route: '/settings', permission: 'MANAGE_SETTINGS' }
   ];
 
   constructor(public auth: AuthService) {}
 
-  visibleNavItems() {
+  visibleNavItems(): NavItem[] {
+    if (this.auth.isSuperAdmin()) {
+      return this.platformNavItems;
+    }
+
     const role = (this.auth.user()?.role || '').toUpperCase();
-    return this.navItems.filter(item => {
+
+    return this.restaurantNavItems.filter(item => {
       if (item.adminOnly && !this.auth.isAdmin()) {
         return false;
       }

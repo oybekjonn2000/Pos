@@ -29,6 +29,14 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(response, "Login successful"));
     }
 
+    @PostMapping("/register")
+    @Operation(summary = "Client self-registration for new restaurant owner")
+    public ResponseEntity<ApiResponse<AuthDto.TokenResponse>> register(
+            @Valid @RequestBody AuthDto.RegisterRequest request) {
+        AuthDto.TokenResponse response = authService.register(request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Restoran va admin muvaffaqiyatli ro'yxatdan o'tkazildi"));
+    }
+
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token")
     public ResponseEntity<ApiResponse<AuthDto.TokenResponse>> refresh(

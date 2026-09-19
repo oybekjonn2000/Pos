@@ -89,8 +89,16 @@ public class UserPrincipal implements UserDetails {
         return "ADMIN".equalsIgnoreCase(role) || "MANAGER".equalsIgnoreCase(role);
     }
 
+    public boolean isSuperAdmin() {
+        return "SUPER_ADMIN".equalsIgnoreCase(role) || (role != null && role.toUpperCase().contains("SUPER_ADMIN"));
+    }
+
+    public boolean isRestaurantAdmin() {
+        return "RESTAURANT_ADMIN".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
+    }
+
     public boolean hasKitchenAccess(UUID kId) {
-        if (isAdminOrManager()) return true;
+        if (isAdminOrManager() || isSuperAdmin()) return true;
         if (kId == null) return false;
         if (kitchenIds != null && kitchenIds.contains(kId)) return true;
         return kitchenId != null && kitchenId.equals(kId);

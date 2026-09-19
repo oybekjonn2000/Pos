@@ -31,6 +31,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     long countByTenantIdAndKitchenIdAndDeletedAtIsNull(UUID tenantId, UUID kitchenId);
 
+    long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
+
     Optional<Product> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);
 
     Optional<Product> findByTenantIdAndBarcodeAndDeletedAtIsNull(UUID tenantId, String barcode);

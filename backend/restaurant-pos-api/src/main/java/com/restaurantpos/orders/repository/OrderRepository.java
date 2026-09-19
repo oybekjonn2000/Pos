@@ -113,5 +113,19 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
            "AND (o.status NOT IN ('PAID', 'CANCELLED', 'REFUNDED') " +
            "     OR (o.status = 'CLOSED' AND (o.paymentStatus IS NULL OR o.paymentStatus <> 'PAID')))")
     List<Order> findActiveOrdersByZoneId(@Param("tenantId") UUID tenantId, @Param("zoneId") UUID zoneId);
+
+    long countByDeletedAtIsNull();
+
+    long countByOpenedAtBetweenAndDeletedAtIsNull(Instant from, Instant to);
+
+    long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
+
+    long countByTenantIdAndOpenedAtBetweenAndDeletedAtIsNull(UUID tenantId, Instant from, Instant to);
+
+    long countByTenantIdAndStatusAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status);
+
+    org.springframework.data.domain.Page<Order> findByTenantIdAndDeletedAtIsNullOrderByOpenedAtDesc(UUID tenantId, org.springframework.data.domain.Pageable pageable);
+
+    java.util.Optional<Order> findFirstByTenantIdAndDeletedAtIsNullOrderByOpenedAtDesc(UUID tenantId);
 }
 

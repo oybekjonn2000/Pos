@@ -25,9 +25,23 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsernameAndDeletedAtIsNull(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-        return buildPrincipal(user);
+        if (username != null && username.contains(":")) {
+            String[] parts = username.split(":", 2);
+            User user = userRepository.findByRestaurantCodeAndUsername(parts[0].trim(), parts[1].trim())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found in restaurant: " + username));
+            return buildPrincipal(user);
+        }
+
+        var superOpt = userRepository.findByUsernameAndTenantIsNullAndDeletedAtIsNull(username);
+        if (superOpt.isPresent()) {
+            return buildPrincipal(superOpt.get());
+        }
+
+        var users = userRepository.findAllByUsername(username);
+        if (users.isEmpty()) {
+            throw new UsernameNotFoundException("User not found: " + username);
+        }
+        return buildPrincipal(users.get(0));
     }
 
     @Transactional(readOnly = true)
@@ -52,7 +66,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return UserPrincipal.builder()
                 .userId(user.getId())
-                .tenantId(user.getTenant().getId())
+                .tenantId(user.getTenant() != null ? user.getTenant().getId() : null)
                 .kitchenId(primaryKitchenId)
                 .kitchenIds(kitchenIds)
                 .username(user.getUsername())
@@ -61,7 +75,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .lastName(user.getLastName())
                 .role(role)
                 .permissions(permissions)
-                .active(user.isActive())
+                .active(user.isActive() && (user.getTenant() == null || user.getTenant().isOperating()))
                 .build();
     }
 }

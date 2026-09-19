@@ -39,7 +39,8 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(userPrincipal.getUserId().toString())
                 .claim("username", userPrincipal.getUsername())
-                .claim("tenantId", userPrincipal.getTenantId().toString())
+                .claim("tenantId", userPrincipal.getTenantId() != null ? userPrincipal.getTenantId().toString() : null)
+                .claim("role", userPrincipal.getRole())
                 .claim("deviceId", userPrincipal.getDeviceId() != null
                         ? userPrincipal.getDeviceId().toString() : null)
                 .claim("type", "ACCESS")
@@ -55,7 +56,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .subject(userId.toString())
-                .claim("tenantId", tenantId.toString())
+                .claim("tenantId", tenantId != null ? tenantId.toString() : null)
                 .claim("type", "REFRESH")
                 .issuedAt(now)
                 .expiration(expiry)

@@ -12,8 +12,17 @@ import { ThemeService } from '../../core/services/theme.service';
   template: `
     <header class="topbar">
       <div class="topbar__left">
-        <div class="topbar__title">
-          {{ pageTitle }}
+        <div class="topbar__title-group">
+          <div class="topbar__title">
+            {{ pageTitle }}
+          </div>
+          <div class="tenant-badge" [class.tenant-badge--super]="auth.isSuperAdmin()">
+            <span class="tenant-icon">{{ auth.isSuperAdmin() ? '🌐' : '🏢' }}</span>
+            <span class="tenant-name">{{ auth.restaurantName() }}</span>
+            @if (auth.restaurantCode()) {
+              <span class="tenant-code">{{ auth.restaurantCode() }}</span>
+            }
+          </div>
         </div>
       </div>
 
@@ -82,10 +91,57 @@ import { ThemeService } from '../../core/services/theme.service';
 
       &__left { flex: 1; }
 
+      &__title-group {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
       &__title {
         font-size: 16px;
         font-weight: 600;
         color: var(--text-primary);
+      }
+
+      .tenant-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+
+        .tenant-icon {
+          font-size: 13px;
+        }
+
+        .tenant-name {
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .tenant-code {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          color: var(--primary);
+          background: rgba(var(--primary-rgb), 0.1);
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-weight: 700;
+        }
+
+        &--super {
+          border-color: rgba(99, 102, 241, 0.3);
+          background: rgba(99, 102, 241, 0.08);
+          color: #6366f1;
+        }
       }
 
       &__right {

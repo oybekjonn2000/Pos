@@ -123,7 +123,7 @@ public class ProductService {
         product.setSortOrder(request.getSortOrder());
 
         if (request.getModifierGroupIds() != null && !request.getModifierGroupIds().isEmpty()) {
-            List<ModifierGroup> groups = modifierGroupRepository.findAllById(request.getModifierGroupIds());
+            List<ModifierGroup> groups = modifierGroupRepository.findByTenantIdAndIdInAndDeletedAtIsNull(tenantId, request.getModifierGroupIds());
             product.setModifierGroups(new java.util.HashSet<>(groups));
         }
 

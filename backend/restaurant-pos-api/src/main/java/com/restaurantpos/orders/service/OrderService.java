@@ -269,7 +269,7 @@ public class OrderService {
 
         Customer customer = null;
         if (request.getCustomerId() != null) {
-            customer = customerRepository.findById(request.getCustomerId()).orElse(null);
+            customer = customerRepository.findByIdAndTenantIdAndDeletedAtIsNull(request.getCustomerId(), tenantId).orElse(null);
         }
 
         Shift currentShift = shiftRepository.findByTenantIdAndStatus(tenantId, Shift.ShiftStatus.OPEN).orElse(null);
@@ -508,7 +508,7 @@ public class OrderService {
 
         if (req.getModifiers() != null && !req.getModifiers().isEmpty()) {
             for (OrderDto.ModifierRequest modReq : req.getModifiers()) {
-                Modifier mod = modifierRepository.findById(modReq.getModifierId())
+                Modifier mod = modifierRepository.findByIdAndTenantId(modReq.getModifierId(), tenantId)
                         .orElseThrow(() -> PosException.notFound("Modifier not found: " + modReq.getModifierId()));
 
                 OrderItemModifier applied = new OrderItemModifier();

@@ -22,6 +22,10 @@ public interface RestaurantTableRepository extends JpaRepository<RestaurantTable
            "AND (t.zone IS NULL OR t.zone.deletedAt IS NULL) ORDER BY t.tableNumber ASC")
     List<RestaurantTable> findByTenantIdAndDeletedAtIsNullOrderByTableNumberAsc(@Param("tenantId") UUID tenantId);
 
+    @Query("SELECT COUNT(t) FROM RestaurantTable t WHERE t.tenant.id = :tenantId AND t.deletedAt IS NULL " +
+           "AND (t.zone IS NULL OR t.zone.deletedAt IS NULL)")
+    long countByTenantIdAndDeletedAtIsNull(@Param("tenantId") UUID tenantId);
+
     List<RestaurantTable> findByTenantIdAndZoneIdAndDeletedAtIsNullOrderByTableNumberAsc(UUID tenantId, UUID zoneId);
 
     Optional<RestaurantTable> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);

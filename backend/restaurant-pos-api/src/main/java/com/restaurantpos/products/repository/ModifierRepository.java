@@ -11,4 +11,7 @@ import java.util.UUID;
 public interface ModifierRepository extends JpaRepository<Modifier, UUID> {
 
     List<Modifier> findByGroupIdAndDeletedAtIsNullOrderBySortOrderAsc(UUID groupId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT m FROM Modifier m WHERE m.id = :id AND m.group.tenant.id = :tenantId AND m.deletedAt IS NULL")
+    java.util.Optional<Modifier> findByIdAndTenantId(UUID id, UUID tenantId);
 }

@@ -19,6 +19,12 @@ export const permissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
     return false;
   }
 
+  if (authService.isSuperAdmin()) {
+    notify.error('Super Administrator restoran operatsion modullariga kirmaydi. Platforma boshqaruviga yo‘naltirildingiz.');
+    router.navigate(['/platform/dashboard']);
+    return false;
+  }
+
   if (authService.isAdmin()) {
     return true;
   }

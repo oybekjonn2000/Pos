@@ -8,6 +8,27 @@ export interface LoginRequest {
   username: string;
   password: string;
   deviceId?: string;
+  restaurantCode?: string;
+}
+
+export interface RegisterRequest {
+  ownerName?: string;
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  phone: string;
+  email?: string;
+  password: string;
+  confirmPassword?: string;
+  restaurantName: string;
+  restaurantPhone?: string;
+  restaurantCode?: string;
+  address?: string;
+  city?: string;
+  district?: string;
+  inn?: string;
+  logoUrl?: string;
+  planCode?: string;
 }
 
 export interface TokenResponse {
@@ -22,7 +43,11 @@ export interface UserInfo {
   id: string;
   username: string;
   fullName: string;
-  tenantId: string;
+  tenantId?: string;
+  restaurantCode?: string;
+  restaurantName?: string;
+  restaurantStatus?: string;
+  isSuperAdmin?: boolean;
   role?: string;
   kitchenId?: string;
   permissions: string[];
@@ -62,9 +87,15 @@ export class AuthService {
   readonly accessToken = this._accessToken.asReadonly();
   readonly isAuthenticated = computed(() => !!this._user() && !!this._accessToken());
   readonly permissions = computed(() => new Set(this._user()?.permissions ?? []));
+  readonly isSuperAdmin = computed(() => {
+    const role = (this._user()?.role || '').toUpperCase();
+    return role === 'SUPER_ADMIN' || role === 'ROLE_SUPER_ADMIN' || this._user()?.isSuperAdmin === true || this._user()?.username === 'superadmin';
+  });
+  readonly restaurantCode = computed(() => this._user()?.restaurantCode || '');
+  readonly restaurantName = computed(() => this._user()?.restaurantName || (this.isSuperAdmin() ? 'Platform Admin' : 'Demo Restaurant'));
   readonly isAdmin = computed(() => {
     const role = (this._user()?.role || '').toUpperCase();
-    return role === 'ADMIN' || this._user()?.username === 'admin';
+    return role === 'ADMIN' || role === 'RESTAURANT_ADMIN' || role === 'SUPER_ADMIN' || this._user()?.username === 'admin';
   });
   readonly isWaiter = computed(() => {
     const role = (this._user()?.role || '').toUpperCase();
@@ -83,6 +114,16 @@ export class AuthService {
 
   login(request: LoginRequest): Observable<ApiResponse<TokenResponse>> {
     return this.http.post<ApiResponse<TokenResponse>>(`${this.API}/login`, request).pipe(
+      tap(response => {
+        if (response.success && response.data) {
+          this.storeTokens(response.data);
+        }
+      })
+    );
+  }
+
+  register(request: RegisterRequest): Observable<ApiResponse<TokenResponse>> {
+    return this.http.post<ApiResponse<TokenResponse>>(`${this.API}/register`, request).pipe(
       tap(response => {
         if (response.success && response.data) {
           this.storeTokens(response.data);
@@ -114,7 +155,7 @@ export class AuthService {
     localStorage.removeItem('user');
     this._user.set(null);
     this._accessToken.set(null);
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/login']);
   }
 
   hasPermission(permission: string): boolean {
@@ -137,6 +178,7 @@ export class AuthService {
   }
 
   getDefaultRoute(): string {
+    if (this.isSuperAdmin()) return '/platform/dashboard';
     const role = (this._user()?.role || '').toUpperCase();
     if (role === 'WAITER') return '/tables';
     if (role === 'KITCHEN') return '/kitchen';

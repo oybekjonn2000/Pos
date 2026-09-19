@@ -13,6 +13,8 @@ public interface KitchenRepository extends JpaRepository<Kitchen, UUID> {
 
     List<Kitchen> findByTenantIdAndDeletedAtIsNullOrderBySortOrderAsc(UUID tenantId);
 
+    long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
+
     List<Kitchen> findByTenantIdAndActiveTrueAndDeletedAtIsNullOrderBySortOrderAsc(UUID tenantId);
 
     Optional<Kitchen> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);
