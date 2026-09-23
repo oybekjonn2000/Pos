@@ -29,6 +29,7 @@ public class UserDto {
         private String role;
 
         private UUID roleId;
+        private UUID kitchenId;
         private List<UUID> kitchenIds;
 
         // Admin-only fields (null for ordinary employees)
@@ -51,6 +52,7 @@ public class UserDto {
         private String role;
         private UUID roleId;
         private Boolean active;
+        private UUID kitchenId;
         private List<UUID> kitchenIds;
     }
 
@@ -91,6 +93,9 @@ public class UserDto {
         private String authenticationType;
         private boolean hasPin;
         private List<String> permissions;
+        private UUID kitchenId;
+        private String kitchenName;
+        private String kitchenCode;
         private List<UUID> kitchenIds;
         private List<KitchenSummary> kitchens;
         private Instant lastLoginAt;

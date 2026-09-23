@@ -65,7 +65,9 @@ public class KitchenService {
         String printerName = pa != null ? pa.getPrinter().getName() : null;
         String printerStatus = pa != null ? pa.getPrinter().getStatus().name() : null;
 
-        int employeesCount = (int) employeeKitchenRepository.countByKitchenId(k.getId());
+        long userDirectCount = userRepository.countByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, k.getId());
+        long ekCount = employeeKitchenRepository.countByKitchenId(k.getId());
+        int employeesCount = (int) Math.max(userDirectCount, ekCount);
         int categoriesCount = (int) categoryRepository.countByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, k.getId());
 
         return KitchenDto.Response.builder()
@@ -485,11 +487,15 @@ public class KitchenService {
     public List<com.restaurantpos.users.dto.UserDto.Response> getKitchenEmployees(UUID tenantId, UUID kitchenId) {
         Kitchen kitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(kitchenId, tenantId)
                 .orElseThrow(() -> PosException.notFound("Oshxona topilmadi: " + kitchenId));
+        List<com.restaurantpos.users.entity.User> directUsers = userRepository.findByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, kitchenId);
         List<com.restaurantpos.users.entity.EmployeeKitchen> assignments = employeeKitchenRepository.findByKitchenId(kitchen.getId());
-        return assignments.stream()
-                .map(com.restaurantpos.users.entity.EmployeeKitchen::getEmployee)
-                .filter(u -> u != null && u.getDeletedAt() == null && u.getTenant().getId().equals(tenantId))
-                .distinct()
+        Set<com.restaurantpos.users.entity.User> allUsers = new java.util.LinkedHashSet<>(directUsers);
+        for (com.restaurantpos.users.entity.EmployeeKitchen ek : assignments) {
+            if (ek.getEmployee() != null && ek.getEmployee().getDeletedAt() == null && ek.getEmployee().getTenant().getId().equals(tenantId)) {
+                allUsers.add(ek.getEmployee());
+            }
+        }
+        return allUsers.stream()
                 .map(userService::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -554,6 +560,57 @@ public class KitchenService {
                 .build();
     }
 
+    public boolean isKitchenStaff(com.restaurantpos.users.entity.User user) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            return false;
+        }
+
+        // 1. Strictly exclude non-kitchen roles (Admin, Manager, Waiter, Cashier, etc.)
+        boolean hasNonKitchenRole = user.getRoles().stream().anyMatch(role -> {
+            String roleName = role.getName() != null ? role.getName().trim().toUpperCase() : "";
+            return roleName.equals("ADMIN") || roleName.equals("SUPER_ADMIN") ||
+                   roleName.equals("MANAGER") || roleName.equals("WAITER") ||
+                   roleName.equals("CASHIER");
+        });
+        if (hasNonKitchenRole) {
+            return false;
+        }
+
+        // 2. User MUST specifically have a cook/kitchen role
+        return user.getRoles().stream().anyMatch(role -> {
+            String roleName = role.getName() != null ? role.getName().trim().toUpperCase() : "";
+            return roleName.equals("KITCHEN") || roleName.contains("OSHPAZ") || roleName.contains("COOK") ||
+                   roleName.contains("CHEF") || roleName.contains("SOMSA") || roleName.contains("PIZZA") ||
+                   roleName.contains("PITSA") || roleName.contains("LAVASH") || roleName.contains("HOTDOG") ||
+                   roleName.contains("BAR") || roleName.contains("QANDOLAT");
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.restaurantpos.users.dto.UserDto.Response> getAvailableCooks(UUID tenantId) {
+        List<com.restaurantpos.users.entity.User> allUsers = userRepository.findAllByTenantIdWithRoles(tenantId);
+
+        // Build set of employee IDs that are already assigned to any kitchen
+        // via EmployeeKitchen join table OR via direct kitchen_id on user
+        List<com.restaurantpos.users.entity.EmployeeKitchen> allAssignments = employeeKitchenRepository.findByTenantId(tenantId);
+        Set<UUID> assignedViaJoinTable = allAssignments.stream()
+                .map(ek -> ek.getEmployee().getId())
+                .collect(Collectors.toSet());
+
+        return allUsers.stream()
+                .filter(u -> {
+                    if (!u.isActive()) return false;
+                    if (!isKitchenStaff(u)) return false;
+                    // Exclude if assigned via join table
+                    if (assignedViaJoinTable.contains(u.getId())) return false;
+                    // Exclude if has direct kitchen_id set
+                    if (u.getKitchen() != null) return false;
+                    return true;
+                })
+                .map(userService::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void assignKitchenEmployees(UUID tenantId, UUID kitchenId, List<UUID> employeeIds) {
         Tenant tenant = tenantRepository.findById(tenantId)
@@ -565,51 +622,128 @@ public class KitchenService {
             throw PosException.badRequest("Faol bo'lmagan (INACTIVE) oshxonaga xodimlarni biriktirib bo'lmaydi.");
         }
 
-        List<com.restaurantpos.users.entity.EmployeeKitchen> existing = employeeKitchenRepository.findByKitchenId(kitchen.getId());
         Set<UUID> targetEmployeeIds = employeeIds != null ? new java.util.HashSet<>(employeeIds) : Collections.emptySet();
 
+        // 1. Unassign employees who were previously assigned to this kitchen but not in targetEmployeeIds
+        List<com.restaurantpos.users.entity.EmployeeKitchen> existing = employeeKitchenRepository.findByKitchenId(kitchen.getId());
         for (com.restaurantpos.users.entity.EmployeeKitchen ek : existing) {
             if (!targetEmployeeIds.contains(ek.getEmployee().getId())) {
                 com.restaurantpos.users.entity.User emp = ek.getEmployee();
-                boolean isKitchenRole = emp.getRoles().stream().anyMatch(r -> "KITCHEN".equalsIgnoreCase(r.getName()));
-                if (isKitchenRole) {
-                    long otherKitchensCount = emp.getEmployeeKitchens().stream()
-                            .filter(otherEk -> !otherEk.getKitchen().getId().equals(kitchen.getId()) && otherEk.getKitchen().isActive())
-                            .count();
-                    if (otherKitchensCount == 0) {
-                        throw PosException.badRequest("Xodim '" + emp.getFullName() + "' KITCHEN rolida va kamida bitta faol oshxonaga ega bo'lishi shart!");
-                    }
-                }
                 emp.getEmployeeKitchens().remove(ek);
                 employeeKitchenRepository.delete(ek);
                 if (emp.getKitchen() != null && emp.getKitchen().getId().equals(kitchen.getId())) {
-                    emp.setKitchen(emp.getEmployeeKitchens().isEmpty() ? null : emp.getEmployeeKitchens().iterator().next().getKitchen());
+                    emp.setKitchen(null);
                     userRepository.save(emp);
                 }
             }
         }
 
-        Set<UUID> currentAssignedEmpIds = existing.stream().map(ek -> ek.getEmployee().getId()).collect(Collectors.toSet());
-        for (UUID empId : targetEmployeeIds) {
-            if (!currentAssignedEmpIds.contains(empId)) {
-                com.restaurantpos.users.entity.User emp = userRepository.findByIdAndDeletedAtIsNull(empId)
-                        .filter(u -> u.getTenant().getId().equals(tenantId))
-                        .orElseThrow(() -> PosException.notFound("Xodim topilmadi: " + empId));
-                com.restaurantpos.users.entity.EmployeeKitchen ek = new com.restaurantpos.users.entity.EmployeeKitchen(tenant, emp, kitchen);
-                emp.getEmployeeKitchens().add(ek);
-                employeeKitchenRepository.save(ek);
-                if (emp.getKitchen() == null) {
-                    emp.setKitchen(kitchen);
-                }
-                userRepository.save(emp);
+        List<com.restaurantpos.users.entity.User> directUsers = userRepository.findByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, kitchenId);
+        for (com.restaurantpos.users.entity.User directUser : directUsers) {
+            if (!targetEmployeeIds.contains(directUser.getId())) {
+                directUser.setKitchen(null);
+                employeeKitchenRepository.deleteByKitchenIdAndEmployeeId(kitchenId, directUser.getId());
+                directUser.getEmployeeKitchens().removeIf(ek -> ek.getKitchen().getId().equals(kitchenId));
+                userRepository.save(directUser);
             }
         }
+
+        // Flush all pending deletes to DB before inserts to avoid unique constraint violations
+        employeeKitchenRepository.flush();
+        userRepository.flush();
+
+        // 2. Assign target employees to this kitchen (Single Kitchen: Employee 1 -> 1 Kitchen)
+        for (UUID empId : targetEmployeeIds) {
+            com.restaurantpos.users.entity.User emp = userRepository.findByIdAndDeletedAtIsNull(empId)
+                    .filter(u -> u.getTenant().getId().equals(tenantId))
+                    .orElseThrow(() -> PosException.notFound("Xodim topilmadi: " + empId));
+
+            // Validation: Only kitchen/cook employees can be assigned to a kitchen!
+            if (!isKitchenStaff(emp)) {
+                String roleName = emp.getRoles().isEmpty() ? "Noma'lum" : emp.getRoles().iterator().next().getName();
+                throw PosException.badRequest("Xodim '" + emp.getFullName() + "' (" + roleName + ") oshpazlik roliga ega emas. Faqat oshpaz lavozimidagi xodimlarni oshxonaga biriktirish mumkin!");
+            }
+
+            // Delete ALL existing kitchen assignments for this employee (any kitchen)
+            employeeKitchenRepository.deleteByEmployeeId(emp.getId());
+            employeeKitchenRepository.flush(); // Flush deletes immediately before re-inserting
+
+            // Now safely create new assignment
+            com.restaurantpos.users.entity.EmployeeKitchen ek = new com.restaurantpos.users.entity.EmployeeKitchen(tenant, emp, kitchen);
+            employeeKitchenRepository.save(ek);
+
+            emp.setKitchen(kitchen);
+            userRepository.save(emp);
+        }
+    }
+
+    @Transactional
+    public void transferEmployee(UUID tenantId, UUID currentKitchenId, UUID employeeId, UUID targetKitchenId) {
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> PosException.notFound("Tenant not found"));
+
+        if (currentKitchenId.equals(targetKitchenId)) {
+            throw PosException.badRequest("Xodim allaqachon ushbu oshxonaga biriktirilgan!");
+        }
+
+        Kitchen currentKitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(currentKitchenId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Hozirgi oshxona topilmadi: " + currentKitchenId));
+
+        Kitchen targetKitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(targetKitchenId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Ko'chiriladigan oshxona topilmadi: " + targetKitchenId));
+
+        if (!targetKitchen.isActive()) {
+            throw PosException.badRequest("Faol bo'lmagan (INACTIVE) oshxonaga xodim ko'chirib bo'lmaydi: " + targetKitchen.getName());
+        }
+
+        com.restaurantpos.users.entity.User emp = userRepository.findByIdAndDeletedAtIsNull(employeeId)
+                .filter(u -> u.getTenant().getId().equals(tenantId))
+                .orElseThrow(() -> PosException.notFound("Xodim topilmadi: " + employeeId));
+
+        if (!isKitchenStaff(emp)) {
+            throw PosException.badRequest("Faqat oshpazlik lavozimidagi xodimlarni oshxonaga o'tkazish mumkin!");
+        }
+
+        // Clean previous assignments
+        employeeKitchenRepository.deleteByEmployeeId(emp.getId());
+        employeeKitchenRepository.flush(); // Flush delete before insert to avoid unique constraint
+
+        // Assign to target kitchen
+        com.restaurantpos.users.entity.EmployeeKitchen ek = new com.restaurantpos.users.entity.EmployeeKitchen(tenant, emp, targetKitchen);
+        employeeKitchenRepository.save(ek);
+
+        emp.setKitchen(targetKitchen);
+        userRepository.save(emp);
+    }
+
+    @Transactional
+    public void detachEmployee(UUID tenantId, UUID kitchenId, UUID employeeId) {
+        Kitchen kitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(kitchenId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Oshxona topilmadi: " + kitchenId));
+        com.restaurantpos.users.entity.User emp = userRepository.findByIdAndDeletedAtIsNull(employeeId)
+                .filter(u -> u.getTenant().getId().equals(tenantId))
+                .orElseThrow(() -> PosException.notFound("Xodim topilmadi: " + employeeId));
+
+        if (emp.getKitchen() != null && emp.getKitchen().getId().equals(kitchenId)) {
+            emp.setKitchen(null);
+        }
+        employeeKitchenRepository.deleteByKitchenIdAndEmployeeId(kitchenId, employeeId);
+        emp.getEmployeeKitchens().removeIf(ek -> ek.getKitchen().getId().equals(kitchenId));
+        userRepository.save(emp);
     }
 
     @Transactional
     public void deleteKitchen(UUID tenantId, UUID kitchenId) {
         Kitchen kitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(kitchenId, tenantId)
                 .orElseThrow(() -> PosException.notFound("Oshxona topilmadi: " + kitchenId));
+
+        long employeeCount = userRepository.countByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, kitchenId);
+        if (employeeCount == 0) {
+            employeeCount = employeeKitchenRepository.countByKitchenId(kitchenId);
+        }
+        if (employeeCount > 0) {
+            throw PosException.badRequest("Bu oshxonaga " + employeeCount + " ta xodim biriktirilgan. Oshxonani o'chirishdan oldin xodimlarni boshqa oshxonaga o'tkazing yoki biriktirishni bekor qiling.");
+        }
 
         long categoryCount = categoryRepository.countByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, kitchenId);
         long productCount = productRepository.countByTenantIdAndKitchenIdAndDeletedAtIsNull(tenantId, kitchenId);

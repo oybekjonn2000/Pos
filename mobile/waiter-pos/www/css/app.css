@@ -452,8 +452,13 @@ input, button, select, textarea {
 
 .pin-dots {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   margin-bottom: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 280px;
 }
 
 .pin-dot {
@@ -462,14 +467,14 @@ input, button, select, textarea {
   border-radius: 50%;
   border: 2px solid var(--border-color);
   background: transparent;
-  transition: all 0.15s;
+  transition: all 0.15s ease-out;
 }
 
 .pin-dot.filled {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
 }
 
 .pin-numpad {
@@ -510,8 +515,40 @@ input, button, select, textarea {
   color: var(--color-warning);
 }
 
+.btn-pin-submit {
+  width: 100%;
+  max-width: 300px;
+  height: 52px;
+  margin-top: 14px;
+  background: linear-gradient(135deg, var(--color-primary), #6366f1);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 17px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+  transition: all 0.15s ease;
+}
+
+.btn-pin-submit:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.btn-pin-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .btn-back-waiters {
-  margin-top: 18px;
+  margin-top: 16px;
   background: transparent;
   border: none;
   color: var(--text-secondary);

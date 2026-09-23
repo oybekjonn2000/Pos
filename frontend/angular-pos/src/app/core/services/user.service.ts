@@ -24,6 +24,9 @@ export interface Employee {
   authenticationType?: string;
   hasPin?: boolean;
   permissions: string[];
+  kitchenId?: string;
+  kitchenName?: string;
+  kitchenCode?: string;
   kitchenIds?: string[];
   kitchens?: KitchenSummary[];
   createdAt: string;
@@ -45,6 +48,7 @@ export interface CreateEmployeeRequest {
   password?: string;
   email?: string;
   roleId?: string;
+  kitchenId?: string;
   kitchenIds?: string[];
 }
 
@@ -56,6 +60,7 @@ export interface UpdateEmployeeRequest {
   pin?: string;
   role: string;
   active?: boolean;
+  kitchenId?: string;
   kitchenIds?: string[];
 }
 

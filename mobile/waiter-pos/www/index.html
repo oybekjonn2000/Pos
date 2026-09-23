@@ -66,6 +66,17 @@
               />
             </div>
 
+            <div class="form-group">
+              <label class="form-label" for="inputRestaurantCode">Restoran kodi (ixtiyoriy)</label>
+              <input
+                type="text"
+                id="inputRestaurantCode"
+                class="input-field"
+                placeholder="Bo‘sh bo‘lsa server restorani ulanadi"
+                autocomplete="off"
+              />
+            </div>
+
             <button type="submit" id="btnConnect" class="btn-primary">
               <span id="btnConnectText">Ulanish ➔</span>
             </button>
@@ -113,7 +124,7 @@
         <div class="pin-header">
           <div id="pinAvatar" class="pin-avatar">AV</div>
           <h2 id="pinWaiterName" class="pin-name">Ali Valiyev</h2>
-          <p class="pin-hint">4 xonali PIN kodni kiriting</p>
+          <p class="pin-hint">PIN kodni kiriting</p>
         </div>
 
         <div id="pinDots" class="pin-dots">
@@ -146,6 +157,13 @@
           <button type="button" class="numpad-key" onclick="app.onNumpadPress('0')">0</button>
           <button type="button" class="numpad-key numpad-key--action numpad-key--back" onclick="app.onNumpadPress('DEL')">⌫</button>
         </div>
+
+        <button type="button" id="btnPinSubmit" class="btn-pin-submit" onclick="app.submitPinLogin()">
+          <span>Kirish</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
 
         <button type="button" class="btn-back-waiters" onclick="app.backToWaiters()">
           ← Boshqa ofitsiantni tanlash

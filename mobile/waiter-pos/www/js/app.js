@@ -56,8 +56,11 @@ class WaiterPosApp {
     // Populate connect inputs with saved values if any
     const ipInput = document.getElementById('inputServerIp');
     const portInput = document.getElementById('inputServerPort');
+    const codeInput = document.getElementById('inputRestaurantCode');
     if (ipInput && this.serverIp) ipInput.value = this.serverIp;
     if (portInput && this.serverPort) portInput.value = this.serverPort;
+    const savedCode = localStorage.getItem('pos_mobile_restaurant_code');
+    if (codeInput && savedCode) codeInput.value = savedCode;
 
     // Check if we already have saved server configuration
     if (this.serverIp && this.serverPort) {
@@ -66,6 +69,22 @@ class WaiterPosApp {
     } else {
       this.showScreen('screenConnect');
     }
+
+    // Physical and virtual keyboard support for PIN screen
+    document.addEventListener('keydown', (e) => {
+      const pinScreen = document.getElementById('screenPin');
+      if (pinScreen && pinScreen.classList.contains('active')) {
+        if (e.key >= '0' && e.key <= '9') {
+          this.onNumpadPress(e.key);
+        } else if (e.key === 'Backspace') {
+          this.onNumpadPress('DEL');
+        } else if (e.key === 'Escape' || e.key === 'c' || e.key === 'C') {
+          this.onNumpadPress('C');
+        } else if (e.key === 'Enter') {
+          this.submitPinLogin();
+        }
+      }
+    });
   }
 
   showScreen(screenId) {
@@ -126,6 +145,7 @@ class WaiterPosApp {
 
     const ip = (document.getElementById('inputServerIp')?.value || '').trim();
     const port = (document.getElementById('inputServerPort')?.value || '').trim() || '8080';
+    const restCode = (document.getElementById('inputRestaurantCode')?.value || '').trim();
     const errBanner = document.getElementById('connectErrorBanner');
     const errText = document.getElementById('connectErrorText');
     const btn = document.getElementById('btnConnect');
@@ -153,7 +173,7 @@ class WaiterPosApp {
 
     const candidateUrl = `http://${ip}:${port}`;
     try {
-      await this.verifyAndConnectServer(candidateUrl, ip, port);
+      await this.verifyAndConnectServer(candidateUrl, ip, port, false, restCode);
     } catch (err) {
       errText.textContent = err.message || 'Serverga ulanishning imkoni bo‘lmadi.';
       errBanner.style.display = 'flex';
@@ -165,7 +185,8 @@ class WaiterPosApp {
 
   async tryAutoConnect() {
     try {
-      await this.verifyAndConnectServer(this.serverBase, this.serverIp, this.serverPort, true);
+      const savedCode = localStorage.getItem('pos_mobile_restaurant_code') || '';
+      await this.verifyAndConnectServer(this.serverBase, this.serverIp, this.serverPort, true, savedCode);
     } catch (err) {
       console.warn('Auto-connect failed:', err.message);
       this.showScreen('screenConnect');
@@ -178,8 +199,9 @@ class WaiterPosApp {
     }
   }
 
-  async verifyAndConnectServer(baseUrl, ip, port, silent = false) {
-    const checkUrl = `${baseUrl}/api/mobile/connection-check`;
+  async verifyAndConnectServer(baseUrl, ip, port, silent = false, restaurantCode = '') {
+    const codeParam = restaurantCode ? `?restaurantCode=${encodeURIComponent(restaurantCode)}` : '';
+    const checkUrl = `${baseUrl}/api/mobile/connection-check${codeParam}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
@@ -226,6 +248,11 @@ class WaiterPosApp {
     // Save to persistent storage
     localStorage.setItem('pos_mobile_ip', ip);
     localStorage.setItem('pos_mobile_port', port);
+    if (restaurantCode) {
+      localStorage.setItem('pos_mobile_restaurant_code', restaurantCode);
+    } else {
+      localStorage.removeItem('pos_mobile_restaurant_code');
+    }
 
     if (!silent) {
       this.showToast('POS serverga muvaffaqiyatli ulandi', 'success');
@@ -251,7 +278,8 @@ class WaiterPosApp {
     listEl.innerHTML = '<div style="padding: 20px; color: var(--text-muted); grid-column: 1/-1; text-align: center;">Yuklanmoqda...</div>';
 
     try {
-      const url = `${this.serverBase}/api/mobile/waiters`;
+      const restIdParam = this.restaurant?.restaurantId ? `?restaurantId=${encodeURIComponent(this.restaurant.restaurantId)}` : '';
+      const url = `${this.serverBase}/api/mobile/waiters${restIdParam}`;
       const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
       const json = await res.json();
 
@@ -340,35 +368,58 @@ class WaiterPosApp {
     } else if (char === 'DEL') {
       this.currentPin = this.currentPin.slice(0, -1);
     } else {
-      if (this.currentPin.length < 6) {
+      if (this.currentPin.length < 16) {
         this.currentPin += char;
       }
     }
 
     this.updatePinDots();
-
-    // Auto submit on 4 digits (standard PIN length)
-    if (this.currentPin.length === 4) {
-      setTimeout(() => this.submitPinLogin(), 150);
-    }
   }
 
   updatePinDots() {
-    const dots = document.querySelectorAll('#pinDots .pin-dot');
-    dots.forEach((dot, index) => {
-      if (index < this.currentPin.length) {
-        dot.classList.add('filled');
+    const dotsContainer = document.getElementById('pinDots');
+    if (dotsContainer) {
+      if (this.currentPin.length === 0) {
+        dotsContainer.innerHTML = `
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+          <div class="pin-dot"></div>
+        `;
       } else {
-        dot.classList.remove('filled');
+        dotsContainer.innerHTML = Array.from(this.currentPin)
+          .map(() => '<div class="pin-dot filled"></div>')
+          .join('');
       }
-    });
+    }
+
+    const submitBtn = document.getElementById('btnPinSubmit');
+    if (submitBtn) {
+      submitBtn.disabled = this.currentPin.length === 0;
+    }
   }
 
   async submitPinLogin() {
-    if (!this.selectedWaiter || !this.currentPin) return;
+    if (!this.selectedWaiter) return;
 
     const errorEl = document.getElementById('pinErrorAlert');
     const errorText = document.getElementById('pinErrorText');
+    const submitBtn = document.getElementById('btnPinSubmit');
+
+    const pinToSubmit = (this.currentPin || '').trim();
+    if (!pinToSubmit) {
+      if (errorText) errorText.textContent = 'Iltimos, PIN kodni kiriting.';
+      if (errorEl) errorEl.style.display = 'flex';
+      this.shakePinDots();
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <span>Kirilmoqda...</span>
+      `;
+    }
 
     try {
       const url = `${this.serverBase}/api/mobile/pin-login`;
@@ -380,7 +431,7 @@ class WaiterPosApp {
         },
         body: JSON.stringify({
           employeeId: this.selectedWaiter.id,
-          pin: this.currentPin
+          pin: pinToSubmit
         })
       });
 
@@ -403,6 +454,10 @@ class WaiterPosApp {
         const waiterNameEl = document.getElementById('activeWaiterName');
         if (waiterNameEl) waiterNameEl.textContent = this.selectedWaiter.fullName;
 
+        // Reset pin
+        this.currentPin = '';
+        this.updatePinDots();
+
         // Open STOLLAR screen
         this.openTablesScreen();
       } else {
@@ -419,6 +474,16 @@ class WaiterPosApp {
       this.updatePinDots();
       if (errorText) errorText.textContent = err.message || 'Serverga ulanish xatosi';
       if (errorEl) errorEl.style.display = 'flex';
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = this.currentPin.length === 0;
+        submitBtn.innerHTML = `
+          <span>Kirish</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        `;
+      }
     }
   }
 

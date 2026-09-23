@@ -5,11 +5,13 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { CategoryService, Category, CreateCategoryRequest } from '../core/services/category.service';
 import { KitchenService, KitchenStation } from '../core/services/kitchen.service';
 import { NotificationService } from '../core/services/notification.service';
+import { ExcelService } from '../core/services/excel.service';
+import { ExcelImportModalComponent } from '../shared/components/excel-import-modal/excel-import-modal.component';
 
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent],
   template: `
     <div class="categories-page fade-in">
       <!-- Header -->
@@ -19,13 +21,24 @@ import { NotificationService } from '../core/services/notification.service';
           <p class="page-subtitle">Ierarxiya: <strong>Oshxona ➔ Kategoriya ➔ Mahsulot</strong>. Har bir kategoriya qat'iy bitta oshxonaga tegishli.</p>
         </div>
 
-        <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
-          <span>➕ Yangi Kategoriya Qo'shish</span>
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" title="Bo'sh Excel shablonini yuklab olish">
+            <span>{{ downloadingTemplate ? 'Yuklanmoqda...' : '📥 Shablon' }}</span>
+          </button>
+          <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" title="Kategoriyalarni Excel faylga eksport qilish">
+            <span>{{ exportingExcel ? 'Eksport...' : '📤 Export' }}</span>
+          </button>
+          <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" title="Excel fayldan kategoriyalarni yuklash">
+            <span>📥 Import</span>
+          </button>
+          <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
+            <span>➕ Yangi Kategoriya Qo'shish</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Search & Kitchen Filter Tabs -->
-      <div class="filter-strip" style="display: flex; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; align-items: center;">
+      <!-- Search & Kitchen Filter Tabs & View Mode -->
+      <div class="filter-strip" style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
         <div class="search-box" style="flex: 1; max-width: 320px;">
           <input
             type="text"
@@ -35,6 +48,25 @@ import { NotificationService } from '../core/services/notification.service';
             class="pos-input"
             style="width: 100%;"
           />
+        </div>
+
+        <div class="view-toggle-group">
+          <button 
+            type="button" 
+            class="view-toggle-btn" 
+            [class.active]="viewMode === 'list'" 
+            (click)="viewMode = 'list'"
+            title="Ro'yxat ko'rinishi">
+            📋 Ro'yxat
+          </button>
+          <button 
+            type="button" 
+            class="view-toggle-btn" 
+            [class.active]="viewMode === 'grid'" 
+            (click)="viewMode = 'grid'"
+            title="Kartochka ko'rinishi">
+            ▦ Kartochka
+          </button>
         </div>
       </div>
 
@@ -57,7 +89,7 @@ import { NotificationService } from '../core/services/notification.service';
         </button>
       </div>
 
-      <!-- Categories Grid -->
+      <!-- Categories Content Card -->
       <div class="pos-card content-card">
         <div *ngIf="loading && categories.length === 0" class="loading-state">
           <div class="spinner"></div>
@@ -73,7 +105,63 @@ import { NotificationService } from '../core/services/notification.service';
           </button>
         </div>
 
-        <div *ngIf="filteredCategories.length > 0" class="category-grid">
+        <!-- 1. RO'YXAT KO'RINISHI (TABLE VIEW - DEFAULT) -->
+        <div *ngIf="filteredCategories.length > 0 && viewMode === 'list'" class="table-responsive">
+          <table class="pos-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Tartib</th>
+                <th>Kategoriya Nomi</th>
+                <th>Oshxona (KDS Stansiyasi)</th>
+                <th>Mahsulotlar soni</th>
+                <th>Holati</th>
+                <th style="text-align: right;">Amallar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cat of pagedCategories">
+                <td>
+                  <span class="sort-badge">#{{ cat.sortOrder }}</span>
+                </td>
+                <td>
+                  <div class="cat-title-cell">
+                    <span class="color-indicator-bar" [style.background-color]="cat.color || '#6366f1'"></span>
+                    <strong class="cat-name-text">{{ cat.name }}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span class="kitchen-badge-pill">
+                    <span class="station-icon">{{ getKitchenEmoji(cat.kitchenCode) }}</span>
+                    <span>{{ cat.kitchenName || getKitchenName(cat.kitchenId) }}</span>
+                  </span>
+                </td>
+                <td>
+                  <span class="product-count-tag">
+                    📦 {{ cat.productCount || 0 }} ta mahsulot
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge" [class.active]="cat.active !== false" [class.inactive]="cat.active === false">
+                    {{ cat.active !== false ? '● Faol' : '○ Nofaol' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="table-actions">
+                    <button class="pos-btn pos-btn--secondary pos-btn--sm" title="Tahrirlash" (click)="openEditModal(cat)">
+                      ✏️ Tahrirlash
+                    </button>
+                    <button class="pos-btn pos-btn--danger pos-btn--sm" title="O'chirish" (click)="deleteCategory(cat)">
+                      🗑️ O'chirish
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 2. KARTOCHKA KO'RINISHI (GRID VIEW) -->
+        <div *ngIf="filteredCategories.length > 0 && viewMode === 'grid'" class="category-grid">
           <div *ngFor="let cat of pagedCategories" class="category-card">
             <div class="card-top">
               <div class="color-badge" [style.background-color]="cat.color || '#6366f1'"></div>
@@ -119,7 +207,7 @@ import { NotificationService } from '../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL: ADD / EDIT CATEGORY                                     -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+      <div class="modal-overlay" *ngIf="showModal">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <h2 class="modal-title">{{ isEditing ? '✏️ Kategoriyani tahrirlash' : '➕ Yangi Kategoriya' }}</h2>
@@ -216,6 +304,14 @@ import { NotificationService } from '../core/services/notification.service';
         </div>
       </div>
 
+      <!-- EXCEL IMPORT MODAL -->
+      <app-excel-import-modal
+        [visible]="showImportModal"
+        [type]="'categories'"
+        (closed)="showImportModal = false"
+        (imported)="onExcelImported()">
+      </app-excel-import-modal>
+
     </div>
   `,
   styles: [`
@@ -294,6 +390,128 @@ import { NotificationService } from '../core/services/notification.service';
       font-size: 11px;
       background: var(--bg-tertiary);
       color: var(--text-muted);
+    }
+
+    .view-toggle-group {
+      display: flex;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .view-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+
+      &:hover {
+        color: var(--text-primary);
+      }
+
+      &.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: var(--shadow-sm);
+      }
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+
+    .pos-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+
+      th {
+        padding: 12px 16px;
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+
+      td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+        vertical-align: middle;
+      }
+
+      tr:hover td {
+        background: rgba(var(--primary-rgb), 0.02);
+      }
+    }
+
+    .cat-title-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .color-indicator-bar {
+      width: 8px;
+      height: 28px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .cat-name-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .product-count-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+
+      &.active {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+      }
+      &.inactive {
+        background: rgba(239, 68, 68, 0.12);
+        color: #ef4444;
+      }
+    }
+
+    .table-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
     }
 
     .content-card {
@@ -563,6 +781,7 @@ import { NotificationService } from '../core/services/notification.service';
   `]
 })
 export class CategoriesComponent implements OnInit {
+  viewMode: 'list' | 'grid' = 'list';
   categories: Category[] = [];
   kitchens: KitchenStation[] = [];
   selectedKitchenFilter: string | null = null;
@@ -583,12 +802,56 @@ export class CategoriesComponent implements OnInit {
     active: true
   };
 
+  // Excel State
+  showImportModal = false;
+  downloadingTemplate = false;
+  exportingExcel = false;
+
   constructor(
     private categoryService: CategoryService,
     private kitchenService: KitchenService,
+    private excelService: ExcelService,
     private notify: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  downloadTemplate(): void {
+    this.downloadingTemplate = true;
+    this.excelService.downloadCategoryTemplate().subscribe({
+      next: (blob) => {
+        this.downloadingTemplate = false;
+        this.excelService.saveBlob(blob, 'categories_template.xlsx');
+        this.notify.success('Kategoriyalar shabloni yuklab olindi');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.downloadingTemplate = false;
+        this.notify.error('Shablonni yuklab olishda xatolik');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  exportExcel(): void {
+    this.exportingExcel = true;
+    this.excelService.exportCategories().subscribe({
+      next: (blob) => {
+        this.exportingExcel = false;
+        this.excelService.saveBlob(blob, 'categories_export.xlsx');
+        this.notify.success('Kategoriyalar Excel faylga muvaffaqiyatli eksport qilindi');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.exportingExcel = false;
+        this.notify.error('Eksport qilishda xatolik yuz berdi');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onExcelImported(): void {
+    this.loadCategories();
+  }
 
   ngOnInit(): void {
     this.loadData();

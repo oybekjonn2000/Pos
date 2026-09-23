@@ -9,11 +9,13 @@ import java.util.UUID;
 
 @Repository
 public interface EmployeeKitchenRepository extends JpaRepository<EmployeeKitchen, UUID> {
+    List<EmployeeKitchen> findByTenantId(UUID tenantId);
     List<EmployeeKitchen> findByEmployeeId(UUID employeeId);
     List<EmployeeKitchen> findByTenantIdAndEmployeeId(UUID tenantId, UUID employeeId);
     List<EmployeeKitchen> findByKitchenId(UUID kitchenId);
     long countByKitchenId(UUID kitchenId);
     void deleteByEmployeeId(UUID employeeId);
     void deleteByKitchenId(UUID kitchenId);
+    void deleteByKitchenIdAndEmployeeId(UUID kitchenId, UUID employeeId);
     boolean existsByEmployeeIdAndKitchenId(UUID employeeId, UUID kitchenId);
 }

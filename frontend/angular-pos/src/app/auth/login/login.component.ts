@@ -172,7 +172,7 @@ interface QuickAccount {
         <!-- EMPLOYEE PASSWORD / PIN MODAL                            -->
         <!-- ======================================================== -->
         @if (showEmployeePasswordModal() && deviceService.selectedEmployee(); as selectedEmp) {
-          <div class="pos-modal-backdrop" (click)="closeEmployeePasswordModal()">
+          <div class="pos-modal-backdrop">
             <div class="employee-pin-modal" (click)="$event.stopPropagation()">
               <button class="pin-modal-close" (click)="closeEmployeePasswordModal()">✕</button>
 
@@ -225,7 +225,7 @@ interface QuickAccount {
                     (ngModelChange)="employeePasswordInput.set($event)"
                     (keydown.enter)="onEmployeeLoginSubmit()"
                     placeholder="••••"
-                    maxlength="6"
+                    maxlength="4"
                     inputmode="numeric"
                     autofocus
                   />
@@ -1594,7 +1594,7 @@ export class LoginComponent implements OnInit {
     } else if (char === 'DEL') {
       this.employeePasswordInput.update(p => p.slice(0, -1));
     } else {
-      if (this.employeePasswordInput().length < 6) {
+      if (this.employeePasswordInput().length < 4) {
         this.employeePasswordInput.update(p => p + char);
       }
     }

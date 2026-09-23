@@ -12,8 +12,12 @@ import com.restaurantpos.tenants.repository.TenantRepository;
 import com.restaurantpos.users.entity.Role;
 import com.restaurantpos.users.entity.User;
 import com.restaurantpos.users.repository.UserRepository;
+import com.restaurantpos.devices.entity.DeviceInstallation;
+import com.restaurantpos.devices.entity.DeviceInstallationStatus;
+import com.restaurantpos.devices.repository.DeviceInstallationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,13 @@ public class MobilePosService {
     private final AuthService authService;
     private final com.restaurantpos.orders.repository.OrderRepository orderRepository;
     private final com.restaurantpos.kitchen.service.KitchenService kitchenService;
+    private final DeviceInstallationRepository deviceInstallationRepository;
+
+    @Value("${app.server.restaurant-code:}")
+    private String serverRestaurantCode;
+
+    @Value("${app.tenant.id:default}")
+    private String appTenantId;
 
     /**
      * Check connection, verify restaurant existence and MOBILE_APP / Pro subscription access.
@@ -62,6 +73,8 @@ public class MobilePosService {
             }
         } catch (Exception ignored) {}
 
+        List<MobileDto.RestaurantOptionDto> availableRestaurants = getAvailableOperatingRestaurants(tenant.getId());
+
         return MobileDto.ConnectionCheckResponse.builder()
                 .restaurantId(tenant.getId())
                 .restaurantName(tenant.getName())
@@ -71,6 +84,7 @@ public class MobilePosService {
                 .mobileAppEnabled(true)
                 .serverTime(Instant.now().toString())
                 .timestamp(System.currentTimeMillis())
+                .availableRestaurants(availableRestaurants)
                 .build();
     }
 
@@ -171,16 +185,81 @@ public class MobilePosService {
     }
 
     private Tenant resolveTenant(String restaurantCode) {
+        // Priority 1: Restaurant code explicitly passed from mobile client
         if (restaurantCode != null && !restaurantCode.isBlank()) {
-            Optional<Tenant> opt = tenantRepository.findByCodeIgnoreCaseAndDeletedAtIsNull(restaurantCode.trim());
-            if (opt.isPresent()) return opt.get();
-            Optional<Tenant> bySlug = tenantRepository.findBySlugAndDeletedAtIsNull(restaurantCode.trim().toLowerCase(Locale.ROOT));
-            if (bySlug.isPresent()) return bySlug.get();
+            Tenant t = findTenantByCodeOrSlugOrId(restaurantCode.trim());
+            if (t != null) return t;
         }
-        List<Tenant> tenants = tenantRepository.findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+
+        // Priority 2: Server-level configuration in application.properties (e.g. app.server.restaurant-code)
+        if (serverRestaurantCode != null && !serverRestaurantCode.isBlank()) {
+            Tenant t = findTenantByCodeOrSlugOrId(serverRestaurantCode.trim());
+            if (t != null) return t;
+        }
+        if (appTenantId != null && !appTenantId.isBlank() && !"default".equalsIgnoreCase(appTenantId.trim())) {
+            Tenant t = findTenantByCodeOrSlugOrId(appTenantId.trim());
+            if (t != null) return t;
+        }
+
+        // Priority 3: Active terminal dynamically bound on THIS computer server (DeviceInstallation)
+        try {
+            List<DeviceInstallation> activeInstallations = deviceInstallationRepository.findAllWithTenantAndLastUser();
+            for (DeviceInstallation inst : activeInstallations) {
+                if (inst.getStatus() == DeviceInstallationStatus.ACTIVE
+                        && inst.getTenant() != null
+                        && inst.getTenant().isOperating()) {
+                    log.info("Resolved mobile POS tenant to server-bound terminal: {} ({})",
+                            inst.getTenant().getName(), inst.getTenant().getCode());
+                    return inst.getTenant();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to resolve tenant from device installations: {}", e.getMessage());
+        }
+
+        // Priority 4: Primary active tenant on this server (oldest created tenant)
+        List<Tenant> tenants = tenantRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc();
         return tenants.stream().filter(Tenant::isOperating).findFirst().orElse(
                 tenants.isEmpty() ? null : tenants.get(0)
         );
+    }
+
+    private Tenant findTenantByCodeOrSlugOrId(String identifier) {
+        if (identifier == null || identifier.isBlank()) return null;
+        String trimmed = identifier.trim();
+        try {
+            UUID parsedId = UUID.fromString(trimmed);
+            Optional<Tenant> byId = tenantRepository.findById(parsedId);
+            if (byId.isPresent() && byId.get().isOperating()) {
+                return byId.get();
+            }
+        } catch (IllegalArgumentException ignored) {}
+
+        Optional<Tenant> opt = tenantRepository.findByCodeIgnoreCaseAndDeletedAtIsNull(trimmed);
+        if (opt.isPresent() && opt.get().isOperating()) return opt.get();
+
+        Optional<Tenant> bySlug = tenantRepository.findBySlugAndDeletedAtIsNull(trimmed.toLowerCase(Locale.ROOT));
+        if (bySlug.isPresent() && bySlug.get().isOperating()) return bySlug.get();
+
+        return null;
+    }
+
+    private List<MobileDto.RestaurantOptionDto> getAvailableOperatingRestaurants(UUID currentTenantId) {
+        try {
+            return tenantRepository.findAllByDeletedAtIsNullOrderByCreatedAtAsc().stream()
+                    .filter(Tenant::isOperating)
+                    .map(t -> MobileDto.RestaurantOptionDto.builder()
+                            .id(t.getId())
+                            .name(t.getName())
+                            .code(t.getCode())
+                            .slug(t.getSlug())
+                            .isCurrent(t.getId().equals(currentTenantId))
+                            .build())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("Failed to retrieve available operating restaurants: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private boolean isWaiter(User user) {

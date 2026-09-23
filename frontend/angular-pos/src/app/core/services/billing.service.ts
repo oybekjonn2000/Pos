@@ -521,6 +521,43 @@ export class BillingService {
       map(res => res.data)
     );
   }
+
+  // ==========================================
+  // PAYMENT CARD REQUISITES (B2B)
+  // ==========================================
+
+  getPlatformPaymentCard(): Observable<PaymentCardSettings> {
+    return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/payment-card`).pipe(
+      map(res => res.data)
+    );
+  }
+
+  updatePlatformPaymentCard(req: PaymentCardSettingsUpdate): Observable<PaymentCardSettings> {
+    return this.http.put<any>(`${this.apiPrefix}/platform/subscriptions/payment-card`, req).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getClientPaymentCard(): Observable<PaymentCardSettings> {
+    return this.http.get<any>(`${this.apiPrefix}/restaurant/billing/payment-card`).pipe(
+      map(res => res.data)
+    );
+  }
+}
+
+export interface PaymentCardSettings {
+  cardNumber: string;
+  cardHolder: string;
+  bankName: string;
+  instructions: string;
+  updatedAt?: string;
+}
+
+export interface PaymentCardSettingsUpdate {
+  cardNumber: string;
+  cardHolder: string;
+  bankName: string;
+  instructions: string;
 }
 
 export interface SubscriptionRequestResponse {

@@ -58,7 +58,21 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
     <!-- Mobile Bottom Navigation (Visible on screen < 768px, hidden when inside active POS order) -->
     @if (!isInPos()) {
       <nav class="mobile-bottom-nav">
-        @if (auth.isWaiter()) {
+        @if (auth.isSuperAdmin()) {
+          <!-- Super Admin: Platform management links -->
+          <a routerLink="/platform/dashboard" routerLinkActive="active" class="mobile-nav-item">
+            <span class="mobile-nav-icon">📊</span>
+            <span class="mobile-nav-label">Dashboard</span>
+          </a>
+          <a routerLink="/platform/restaurants" routerLinkActive="active" class="mobile-nav-item">
+            <span class="mobile-nav-icon">🏢</span>
+            <span class="mobile-nav-label">Restoranlar</span>
+          </a>
+          <a routerLink="/platform/subscriptions" routerLinkActive="active" class="mobile-nav-item">
+            <span class="mobile-nav-icon">💳</span>
+            <span class="mobile-nav-label">Obunalar</span>
+          </a>
+        } @else if (auth.isWaiter()) {
           <a routerLink="/tables" routerLinkActive="active" class="mobile-nav-item">
             <span class="mobile-nav-icon">🪑</span>
             <span class="mobile-nav-label">Joylar</span>

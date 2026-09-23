@@ -1,13 +1,13 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { SettingsService, AllSettingsResponse, RestaurantSettings, GeneralSettings, ReceiptSettings, PaymentSettings, TaxServiceSettings, OrderSettings, KitchenSettings, NotificationSettings, SecuritySettings, BackupSettings, SystemInfoDto, AuditLogEntry } from '../core/services/settings.service';
 import { PrinterService, Printer, CreatePrinterRequest, UpdatePrinterRequest, TestPrintResult, ExtendedKitchenStation, AvailablePrinter } from '../core/services/printer.service';
 import { ResetService, OrdersResetResult, EntityResetResult, AllResetResult } from '../core/services/reset.service';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
 import { UserService } from '../core/services/user.service';
+import { TableService, RestaurantTable, TableZone } from '../core/services/table.service';
 
 type SettingsCategory = 
   | 'RESTAURANT'
@@ -31,7 +31,7 @@ type SettingsCategory =
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="settings-container fade-in">
       <!-- HEADER -->
@@ -83,16 +83,6 @@ type SettingsCategory =
             <span class="nav-icon">🪑</span>
             <span class="nav-label">Stollar va Zallar</span>
           </button>
-          <button class="nav-item" [class.active]="activeCategory() === 'PRODUCTS'" (click)="setCategory('PRODUCTS')">
-            <span class="nav-icon">🍔</span>
-            <span class="nav-label">Mahsulotlar toifalari</span>
-          </button>
-          <a routerLink="/restaurant/billing" class="nav-item" style="text-decoration: none;">
-            <span class="nav-icon">💳</span>
-            <span class="nav-label">Tarif va Obuna (Billing)</span>
-            <span class="nav-badge" style="background:#6366f1;color:white;font-weight:700;">PRO</span>
-          </a>
-
           <div class="nav-group-title">OSXONA VA PRINTERLAR</div>
           <button class="nav-item" [class.active]="activeCategory() === 'KITCHENS'" (click)="setCategory('KITCHENS')">
             <span class="nav-icon">👨‍🍳</span>
@@ -368,18 +358,48 @@ type SettingsCategory =
                 </div>
                 <div class="stats-cards-row">
                   <div class="stat-box">
-                    <span class="stat-val">10</span>
+                    <span class="stat-val">{{ tables().length }}</span>
                     <span class="stat-lbl">Jami stollar</span>
                   </div>
                   <div class="stat-box">
-                    <span class="stat-val">Asosiy zal</span>
-                    <span class="stat-lbl">Asosiy hudud</span>
+                    <span class="stat-val">{{ zones().length }}</span>
+                    <span class="stat-lbl">Jami zallar</span>
                   </div>
                   <div class="stat-box">
-                    <span class="stat-val">Faol</span>
-                    <span class="stat-lbl">Holati</span>
+                    <span class="stat-val">{{ activeTables() }}</span>
+                    <span class="stat-lbl">Faol stollar</span>
+                  </div>
+                  <div class="stat-box">
+                    <span class="stat-val">{{ activeZones() }}</span>
+                    <span class="stat-lbl">Faol zallar</span>
                   </div>
                 </div>
+                @if (zones().length > 0) {
+                  <table class="pos-table" style="margin-top: 16px;">
+                    <thead>
+                      <tr>
+                        <th>Zal nomi</th>
+                        <th>Stollar soni</th>
+                        <th>Foiz (%)</th>
+                        <th>Holati</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (z of zones(); track z.id) {
+                        <tr>
+                          <td><strong>{{ z.name }}</strong></td>
+                          <td>{{ getTablesInZone(z.id) }} ta stol</td>
+                          <td>{{ z.percentage ? z.percentage + '%' : '—' }}</td>
+                          <td>
+                            <span class="status-pill" [class.active]="z.active !== false">
+                              {{ z.active !== false ? '● Faol' : '○ Nofaol' }}
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                }
                 <div class="info-alert">
                   Stollarni ko'chirish, o'lchamini o'zgartirish va holatini boshqarish uchun chap menyudagi <strong>🪑 Tables</strong> bo'limiga o'ting.
                 </div>
@@ -998,7 +1018,7 @@ type SettingsCategory =
               <div class="category-card" style="margin-top: 20px;">
                 <div class="card-header">
                   <h3>🔢 Admin Shaxsiy PIN-kodini O'zgartirish</h3>
-                  <p>Desktop POS terminaliga tezkor kirish uchun 4–6 xonali shaxsiy PIN kodingizni yangilang.</p>
+                  <p>Desktop POS terminaliga tezkor kirish uchun 1–4 raqamli shaxsiy PIN kodingizni yangilang.</p>
                 </div>
 
                 <div class="form-grid">
@@ -1029,16 +1049,16 @@ type SettingsCategory =
                   </div>
 
                   <div class="form-group">
-                    <label>Yangi PIN (4–6 raqam) *</label>
+                    <label>Yangi PIN (1–4 raqam) *</label>
                     <input
                       type="password"
                       class="pos-input"
                       [(ngModel)]="adminPinForm.newPin"
-                      placeholder="Masalan: 8520"
-                      maxlength="6"
+                      placeholder="Masalan: 1234"
+                      maxlength="4"
                       inputmode="numeric"
                     />
-                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Restoran ichida boshqa xodimlarda bo'lmasligi kerak</span>
+                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">1 tadan 4 tagacha raqam kiriting</span>
                   </div>
 
                   <div class="form-group">
@@ -1048,7 +1068,7 @@ type SettingsCategory =
                       class="pos-input"
                       [(ngModel)]="adminPinForm.confirmPin"
                       placeholder="Yangi PINni qayta kiriting"
-                      maxlength="6"
+                      maxlength="4"
                       inputmode="numeric"
                     />
                   </div>
@@ -2652,6 +2672,12 @@ export class SettingsComponent implements OnInit {
   kitchens = signal<ExtendedKitchenStation[]>([]);
   sysInfo = signal<SystemInfoDto | null>(null);
   auditLogs = signal<AuditLogEntry[]>([]);
+  tables = signal<RestaurantTable[]>([]);
+  zones = signal<TableZone[]>([]);
+
+  // Computed table/zone stats
+  activeTables = computed(() => this.tables().filter(t => t.active !== false).length);
+  activeZones = computed(() => this.zones().filter(z => z.active !== false).length);
 
   // Category Models
   restaurant: RestaurantSettings = { name: '', currency: 'UZS', timezone: 'Asia/Tashkent' };
@@ -2732,6 +2758,7 @@ export class SettingsComponent implements OnInit {
     private printerService: PrinterService,
     private resetService: ResetService,
     private userService: UserService,
+    private tableService: TableService,
     public auth: AuthService,
     public themeService: ThemeService
   ) {}
@@ -2746,8 +2773,8 @@ export class SettingsComponent implements OnInit {
       this.adminPinError.set('Hozirgi parol yoki PIN kodni kiriting.');
       return;
     }
-    if (!newPin || !/^[0-9]{4,6}$/.test(newPin)) {
-      this.adminPinError.set('Yangi PIN faqat 4 tadan 6 tagacha raqamlardan iborat bo‘lishi kerak.');
+    if (!newPin || !/^[0-9]{1,4}$/.test(newPin)) {
+      this.adminPinError.set('Yangi PIN faqat 1 tadan 4 tagacha raqamlardan iborat bo‘lishi kerak.');
       return;
     }
     if (newPin !== confirmPin) {
@@ -2806,6 +2833,28 @@ export class SettingsComponent implements OnInit {
     this.loadKitchens();
     this.loadSysInfo();
     this.loadAuditLogs();
+    this.loadTablesAndZones();
+  }
+
+  loadTablesAndZones(): void {
+    this.tableService.getTables().subscribe({
+      next: res => {
+        if (res.success && res.data) {
+          this.tables.set(res.data);
+        }
+      }
+    });
+    this.tableService.getZones().subscribe({
+      next: res => {
+        if (res.success && res.data) {
+          this.zones.set(res.data);
+        }
+      }
+    });
+  }
+
+  getTablesInZone(zoneId: string): number {
+    return this.tables().filter(t => t.zoneId === zoneId).length;
   }
 
   loadPrinters(): void {

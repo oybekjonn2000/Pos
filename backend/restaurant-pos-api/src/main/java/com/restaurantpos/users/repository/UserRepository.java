@@ -60,4 +60,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByTenantIdAndPinLookupHashAndIdNotAndDeletedAtIsNull(UUID tenantId, String pinLookupHash, UUID id);
 
     Optional<User> findByTenantIdAndPinLookupHashAndDeletedAtIsNull(UUID tenantId, String pinLookupHash);
+
+    long countByTenantIdAndKitchenIdAndDeletedAtIsNull(UUID tenantId, UUID kitchenId);
+
+    java.util.List<User> findByTenantIdAndKitchenIdAndDeletedAtIsNull(UUID tenantId, UUID kitchenId);
 }

@@ -429,7 +429,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL 1: ORDER DETAILS MODAL                                   -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="selectedOrder && showDetailModal" (click)="closeModals()">
+      <div class="modal-overlay" *ngIf="selectedOrder && showDetailModal">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div>
@@ -604,7 +604,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL 2: CASHIER PAYMENT MODAL                                 -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="selectedOrder && showPaymentModal" (click)="closeModals()">
+      <div class="modal-overlay" *ngIf="selectedOrder && showPaymentModal">
         <div class="modal-card modal-card--payment" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div>
@@ -698,7 +698,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL 3: RECEIPT PRINT MODAL                                   -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="selectedOrder && showReceiptModal" (click)="closeModals()">
+      <div class="modal-overlay" *ngIf="selectedOrder && showReceiptModal">
         <div class="modal-card modal-card--receipt" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <h2 class="modal-title">🧾 Chek Chop Etish</h2>
@@ -789,7 +789,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL 4: CANCELLATION CONFIRMATION MODAL                      -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="showCancelModal && selectedOrder" (click)="closeCancelModal()">
+      <div class="modal-overlay" *ngIf="showCancelModal && selectedOrder">
         <div class="modal-card modal-card--cancel" (click)="$event.stopPropagation()">
           <div class="modal-header modal-header--danger">
             <div>
@@ -891,7 +891,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL 5: CANCELLATION RECEIPT MODAL (POS THERMAL 80mm)        -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="showCancelReceiptModal && activeCancelReceipt" (click)="showCancelReceiptModal = false">
+      <div class="modal-overlay" *ngIf="showCancelReceiptModal && activeCancelReceipt">
         <div class="modal-card modal-card--receipt" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <h2 class="modal-title">🧾 Bekor qilish cheki</h2>

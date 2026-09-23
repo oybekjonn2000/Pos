@@ -39,6 +39,10 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     Optional<Product> findByTenantIdAndSkuAndDeletedAtIsNull(UUID tenantId, String sku);
 
+    List<Product> findByTenantIdAndSkuInAndDeletedAtIsNull(UUID tenantId, java.util.Collection<String> skus);
+
+    List<Product> findByTenantIdAndBarcodeInAndDeletedAtIsNull(UUID tenantId, java.util.Collection<String> barcodes);
+
     @Query("SELECT p FROM Product p WHERE p.tenant.id = :tenantId AND p.deletedAt IS NULL AND " +
            "(LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(p.nameUz) LIKE LOWER(CONCAT('%', :query, '%')) OR " +

@@ -8,7 +8,7 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="lan-modal-backdrop" (click)="close()">
+    <div class="lan-modal-backdrop">
       <div class="lan-modal-card" (click)="$event.stopPropagation()">
         
         <!-- Header -->

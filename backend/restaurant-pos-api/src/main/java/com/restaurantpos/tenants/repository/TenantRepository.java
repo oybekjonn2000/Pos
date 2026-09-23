@@ -27,4 +27,6 @@ public interface TenantRepository extends JpaRepository<Tenant, UUID> {
     long countByStatusAndDeletedAtIsNull(com.restaurantpos.tenants.entity.RestaurantStatus status);
 
     java.util.List<Tenant> findAllByDeletedAtIsNullOrderByCreatedAtDesc();
+
+    java.util.List<Tenant> findAllByDeletedAtIsNullOrderByCreatedAtAsc();
 }

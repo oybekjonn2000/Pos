@@ -1,8 +1,10 @@
 package com.restaurantpos.billing.controller;
 
 import com.restaurantpos.billing.dto.BillingDto;
+import com.restaurantpos.billing.dto.PaymentCardSettingsDto;
 import com.restaurantpos.billing.dto.SubscriptionRequestDto;
 import com.restaurantpos.billing.entity.SubscriptionRequestStatus;
+import com.restaurantpos.billing.service.PlatformSettingService;
 import com.restaurantpos.billing.service.SubscriptionRequestService;
 import com.restaurantpos.billing.service.SubscriptionService;
 import com.restaurantpos.common.response.ApiResponse;
@@ -26,6 +28,7 @@ public class PlatformSubscriptionAdminController {
 
     private final SubscriptionService subscriptionService;
     private final SubscriptionRequestService requestService;
+    private final PlatformSettingService platformSettingService;
 
     @GetMapping("/overview")
     @Operation(summary = "Get platform-wide subscription metrics, MRR, and all tenant statuses")
@@ -189,6 +192,25 @@ public class PlatformSubscriptionAdminController {
         UUID adminUserId = TenantContext.getCurrentUserId();
         SubscriptionRequestDto.Response response = requestService.rejectRequest(id, adminUserId, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Obuna so'rovi rad etildi"));
+    }
+
+    // ==========================================
+    // PAYMENT CARD REQUISITES SETTINGS (B2B)
+    // ==========================================
+
+    @GetMapping("/payment-card")
+    @Operation(summary = "Get Super Admin payment card settings for B2B transfers")
+    public ResponseEntity<ApiResponse<PaymentCardSettingsDto.Response>> getPaymentCardSettings() {
+        PaymentCardSettingsDto.Response settings = platformSettingService.getPaymentCardSettings();
+        return ResponseEntity.ok(ApiResponse.success(settings));
+    }
+
+    @PutMapping("/payment-card")
+    @Operation(summary = "Update Super Admin payment card settings for B2B transfers")
+    public ResponseEntity<ApiResponse<PaymentCardSettingsDto.Response>> updatePaymentCardSettings(
+            @RequestBody PaymentCardSettingsDto.UpdateRequest request) {
+        PaymentCardSettingsDto.Response settings = platformSettingService.updatePaymentCardSettings(request);
+        return ResponseEntity.ok(ApiResponse.success(settings, "To'lov kartasi sozlamalari yangilandi"));
     }
 }
 

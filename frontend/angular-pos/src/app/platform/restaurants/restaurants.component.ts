@@ -210,7 +210,7 @@ import { NotificationService } from '../../core/services/notification.service';
 
       <!-- Modal: Yangi Restoran Qo'shish -->
       @if (showCreateModal()) {
-        <div class="modal-backdrop" (click)="closeCreateModal()">
+        <div class="modal-backdrop">
           <div class="modal-dialog" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3 class="modal-title">🏢 Yangi Restoran Ro‘yxatdan O‘tkazish</h3>
@@ -288,7 +288,7 @@ import { NotificationService } from '../../core/services/notification.service';
 
       <!-- Modal: Restoranga Admin Tayinlash -->
       @if (showAdminModal() && selectedRestaurant()) {
-        <div class="modal-backdrop" (click)="closeAdminModal()">
+        <div class="modal-backdrop">
           <div class="modal-dialog" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3 class="modal-title">👤 Restoran Admini Yaratish: {{ selectedRestaurant()?.name }}</h3>

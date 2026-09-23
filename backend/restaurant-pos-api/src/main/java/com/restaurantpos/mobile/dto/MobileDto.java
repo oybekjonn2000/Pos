@@ -26,6 +26,20 @@ public class MobileDto {
         private boolean mobileAppEnabled;
         private String serverTime;
         private long timestamp;
+        private java.util.List<RestaurantOptionDto> availableRestaurants;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "Operating restaurant option for mobile selector")
+    public static class RestaurantOptionDto {
+        private UUID id;
+        private String name;
+        private String code;
+        private String slug;
+        private boolean isCurrent;
     }
 
     @Data

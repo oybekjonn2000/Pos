@@ -6,11 +6,13 @@ import { KitchenService, KitchenStation, CreateKitchenRequest, UpdateKitchenRequ
 import { UserService, Employee } from '../../core/services/user.service';
 import { PrinterService, Printer } from '../../core/services/printer.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ExcelService } from '../../core/services/excel.service';
+import { ExcelImportModalComponent } from '../../shared/components/excel-import-modal/excel-import-modal.component';
 
 @Component({
   selector: 'app-kitchen-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent],
   template: `
     <div class="kitchens-page fade-in">
       <!-- Page Header -->
@@ -23,7 +25,16 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         </div>
 
-        <div class="header-actions">
+        <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" title="Bo'sh Excel shablonini yuklab olish">
+            <span>{{ downloadingTemplate ? 'Yuklanmoqda...' : '📥 Shablon' }}</span>
+          </button>
+          <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" title="Oshxonalarni Excel faylga eksport qilish">
+            <span>{{ exportingExcel ? 'Eksport...' : '📤 Export' }}</span>
+          </button>
+          <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" title="Excel fayldan oshxonalarni yuklash">
+            <span>📥 Import</span>
+          </button>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
             <span class="btn-icon">➕</span>
             <span>Yangi Oshxona Qo'shish</span>
@@ -233,7 +244,7 @@ import { NotificationService } from '../../core/services/notification.service';
       </div>
 
       <!-- CREATE / EDIT MODAL -->
-      <div class="pos-modal-backdrop" *ngIf="showFormModal" (click)="closeFormModal()">
+      <div class="pos-modal-backdrop" *ngIf="showFormModal">
         <div class="pos-modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
@@ -420,65 +431,196 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
       </div>
 
-      <!-- STAFF ASSIGNMENT MODAL -->
-      <div class="pos-modal-backdrop" *ngIf="showStaffModal" (click)="closeStaffModal()">
+      <!-- STAFF MANAGEMENT MODAL (KITCHEN -> EMPLOYEES) -->
+      <div class="pos-modal-backdrop" *ngIf="showStaffModal">
         <div class="pos-modal pos-modal--wide" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
               <span class="modal-icon">👨‍🍳</span>
               <div>
-                <h2>Xodimlarni Oshxonaga Biriktirish</h2>
-                <p class="modal-subtitle">Oshxona: <strong>{{ selectedKitchenForStaff?.name }}</strong></p>
+                <h2>Oshxona Xodimlari (Oshpazlar)</h2>
+                <p class="modal-subtitle">
+                  Oshxona: <strong>{{ selectedKitchenForStaff?.name }}</strong> 
+                  <span class="kitchen-code-tag">({{ selectedKitchenForStaff?.code }})</span>
+                </p>
               </div>
             </div>
             <button class="close-modal-btn" (click)="closeStaffModal()">✕</button>
           </div>
 
-          <div class="modal-body">
-            <p class="section-notice">
-              Ushbu oshxonada buyurtmalarni qabul qiladigan va tayyorlaydigan xodimlarni tanlang.
-              Bir xodim bir nechta oshxonaga biriktirilishi mumkin (Multi-Kitchen).
-            </p>
+          <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Top Controls Row -->
+            <div class="staff-toolbar-row">
+              <div class="staff-summary-badge">
+                <span>👨‍🍳 Biriktirilgan oshpazlar:</span>
+                <strong>{{ assignedCooks.length }} ta</strong>
+              </div>
 
-            <div *ngIf="loadingStaffList" class="state-container">
-              <div class="spinner"></div>
-              <p>Xodimlar ro'yxati yuklanmoqda...</p>
+              <button
+                class="pos-btn pos-btn--primary pos-btn--sm"
+                *ngIf="!showAssignCookSection"
+                (click)="openAssignCookSection()">
+                <span>➕ Oshpaz Biriktirish</span>
+              </button>
             </div>
 
-            <div *ngIf="!loadingStaffList" class="staff-selection-grid">
-              <label
-                *ngFor="let emp of allStaff"
-                class="staff-check-card"
-                [class.selected]="selectedEmployeeIds.has(emp.id)">
-                <input
-                  type="checkbox"
-                  [checked]="selectedEmployeeIds.has(emp.id)"
-                  (change)="toggleStaffSelection(emp.id)"
-                />
-                <div class="staff-info">
-                  <div class="staff-name-row">
-                    <strong class="staff-name">{{ emp.fullName || (emp.firstName + ' ' + (emp.lastName || '')) }}</strong>
-                    <span class="role-badge" [class.role-kitchen]="emp.role === 'KITCHEN'">{{ emp.role }}</span>
-                  </div>
-                  <span class="staff-username">@{{ emp.username }}</span>
+            <!-- INLINE ASSIGN COOK SECTION (When adding a new cook) -->
+            <div *ngIf="showAssignCookSection" class="assign-cook-box fade-in">
+              <div class="assign-box-header">
+                <div>
+                  <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">
+                    ➕ Yangi Oshpaz Biriktirish
+                  </h4>
+                  <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
+                    Faqat oshpazlik roliga ega va bo'sh (oshxonaga biriktirilmagan) xodimlar
+                  </p>
                 </div>
-              </label>
+                <button class="close-assign-btn" (click)="closeAssignCookSection()">✕</button>
+              </div>
+
+              <div *ngIf="loadingAvailableCooks" class="state-container" style="padding: 16px;">
+                <div class="spinner"></div>
+                <p style="font-size: 12px;">Bo'sh oshpazlar qidirilmoqda...</p>
+              </div>
+
+              <div *ngIf="!loadingAvailableCooks && availableCooks.length === 0" class="empty-cooks-notice">
+                <span>ℹ️ Hozirda tizimda bo'sh oshpaz mavjud emas. Barcha oshpazlar allaqachon oshxonalarga biriktirilgan yoki yangi oshpaz ro'yxatga olinmagan.</span>
+              </div>
+
+              <div *ngIf="!loadingAvailableCooks && availableCooks.length > 0" class="cook-selector-row">
+                <select [(ngModel)]="selectedNewCookId" class="pos-input flex-1">
+                  <option [ngValue]="null" disabled>Oshpazni tanlang...</option>
+                  <option *ngFor="let cook of availableCooks" [value]="cook.id">
+                    👨‍🍳 {{ cook.fullName || (cook.firstName + ' ' + (cook.lastName || '')) }} ({{ cook.role || 'Oshpaz' }}) — @{{ cook.username || cook.phone || 'PIN' }}
+                  </option>
+                </select>
+
+                <button
+                  class="pos-btn pos-btn--primary pos-btn--sm"
+                  (click)="confirmAssignCook()"
+                  [disabled]="!selectedNewCookId || assigningCook">
+                  <span>{{ assigningCook ? 'Biriktirilmoqda...' : 'Biriktirish' }}</span>
+                </button>
+                <button
+                  class="pos-btn pos-btn--secondary pos-btn--sm"
+                  (click)="closeAssignCookSection()">
+                  Bekor qilish
+                </button>
+              </div>
+            </div>
+
+            <!-- LOADING SPINNER -->
+            <div *ngIf="loadingStaffList" class="state-container">
+              <div class="spinner"></div>
+              <p>Oshpazlar ro'yxati yuklanmoqda...</p>
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div *ngIf="!loadingStaffList && assignedCooks.length === 0" class="state-container empty-state" style="padding: 32px 20px;">
+              <div class="empty-icon">👨‍🍳</div>
+              <h3>Ushbu oshxonaga oshpaz biriktirilmagan</h3>
+              <p>Ushbu oshxonada buyurtmalar tayyorlanishi uchun yuqoridagi <strong>"➕ Oshpaz Biriktirish"</strong> tugmasi orqali oshpaz biriktiring.</p>
+            </div>
+
+            <!-- ASSIGNED COOKS LIST -->
+            <div *ngIf="!loadingStaffList && assignedCooks.length > 0" class="assigned-cooks-grid">
+              <div *ngFor="let cook of assignedCooks" class="cook-card">
+                <div class="cook-card-left">
+                  <div class="cook-avatar">
+                    {{ (cook.firstName ? cook.firstName[0] : 'O').toUpperCase() }}
+                  </div>
+                  <div class="cook-details">
+                    <strong class="cook-name">
+                      {{ cook.fullName || (cook.firstName + ' ' + (cook.lastName || '')) }}
+                    </strong>
+                    <div class="cook-meta">
+                      <span class="role-badge role-kitchen">{{ cook.role || 'Oshpaz' }}</span>
+                      <span class="cook-sub" *ngIf="cook.username">&#64;{{ cook.username }}</span>
+                      <span class="cook-sub" *ngIf="cook.phone">{{ cook.phone }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cook-card-actions">
+                  <button
+                    class="pos-btn pos-btn--secondary pos-btn--sm"
+                    (click)="openTransferModal(cook)"
+                    title="Boshqa oshxonaga o'tkazish">
+                    <span>🔄 Boshqa oshxonaga o'tkazish</span>
+                  </button>
+                  <button
+                    class="pos-btn pos-btn--danger pos-btn--sm"
+                    (click)="confirmDetachCook(cook)"
+                    [disabled]="detachingEmployeeId === cook.id"
+                    title="Oshxonadan ajratish (tizimdan o'chirilmaydi)">
+                    <span>{{ detachingEmployeeId === cook.id ? 'Ajratilmoqda...' : '❌ Ajratish' }}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button class="pos-btn pos-btn--secondary" (click)="closeStaffModal()" [disabled]="savingStaff">
+            <button class="pos-btn pos-btn--secondary" (click)="closeStaffModal()">
+              Yopish
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRANSFER COOK MODAL -->
+      <div class="pos-modal-backdrop" *ngIf="showTransferModal">
+        <div class="pos-modal pos-modal--sm" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-header-title">
+              <span class="modal-icon">🔄</span>
+              <div>
+                <h2>Oshpazni Ko'chirish</h2>
+                <p class="modal-subtitle">Boshqa oshxonaga o'tkazish</p>
+              </div>
+            </div>
+            <button class="close-modal-btn" (click)="closeTransferModal()">✕</button>
+          </div>
+
+          <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+            <div class="transfer-info-banner">
+              <div><strong>Xodim:</strong> {{ cookToTransfer?.fullName || (cookToTransfer?.firstName + ' ' + (cookToTransfer?.lastName || '')) }}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+                Hozirgi oshxona: <strong>{{ selectedKitchenForStaff?.name }}</strong>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Qaysi oshxonaga o'tkazilsin? <span class="required-star">*</span></label>
+              <select [(ngModel)]="targetTransferKitchenId" class="pos-input" required>
+                <option [ngValue]="null" disabled>Oshxonani tanlang...</option>
+                <option *ngFor="let k of otherActiveKitchens" [value]="k.id">
+                  🥘 {{ k.name }} ({{ k.code }})
+                </option>
+              </select>
+            </div>
+
+            <div *ngIf="otherActiveKitchens.length === 0" class="validation-banner" style="font-size: 12px; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 4px;">
+              ⚠️ O'tkazish uchun boshqa faol oshxona topilmadi. Avval boshqa oshxona yarating yoki faollashtiring.
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="pos-btn pos-btn--secondary" (click)="closeTransferModal()" [disabled]="transferring">
               Bekor Qilish
             </button>
-            <button class="pos-btn pos-btn--primary" (click)="saveStaffAssignments()" [disabled]="savingStaff">
-              <span>{{ savingStaff ? 'Saqlanmoqda...' : 'Biriktirishni Saqlash' }}</span>
+            <button
+              class="pos-btn pos-btn--primary"
+              (click)="executeTransfer()"
+              [disabled]="!targetTransferKitchenId || transferring || otherActiveKitchens.length === 0">
+              <span>{{ transferring ? 'Ko‘chirilmoqda...' : '🔄 Ko‘chirishni Tasdiqlash' }}</span>
             </button>
           </div>
         </div>
       </div>
 
       <!-- CATEGORIES VIEW MODAL -->
-      <div class="pos-modal-backdrop" *ngIf="showCategoriesModal" (click)="closeCategoriesModal()">
+      <div class="pos-modal-backdrop" *ngIf="showCategoriesModal">
         <div class="pos-modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
@@ -521,7 +663,7 @@ import { NotificationService } from '../../core/services/notification.service';
       </div>
 
       <!-- SAFE DELETE / DEACTIVATE CONFIRMATION MODAL -->
-      <div class="pos-modal-backdrop" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+      <div class="pos-modal-backdrop" *ngIf="showDeleteModal">
         <div class="pos-modal" (click)="$event.stopPropagation()">
           <div class="modal-header modal-header--danger">
             <div class="modal-header-title">
@@ -536,7 +678,20 @@ import { NotificationService } from '../../core/services/notification.service';
               Haqiqatan ham <strong>"{{ targetKitchenForDelete?.name }}"</strong> oshxonasini o'chirmoqchimisiz?
             </p>
 
-            <div class="delete-info-box" *ngIf="hasLinkedData(targetKitchenForDelete)">
+            <!-- Employee blocking alert -->
+            <div class="delete-info-box" *ngIf="(targetKitchenForDelete?.assignedEmployeesCount || 0) > 0" style="border-left: 3px solid #ef4444; background: rgba(239, 68, 68, 0.08);">
+              <div class="info-icon">👨‍🍳</div>
+              <div class="info-content">
+                <strong style="color: #ef4444;">Xodimlar biriktirilgan (O'chirish taqiqlanadi):</strong>
+                <p>
+                  Ushbu oshxonaga <strong>{{ targetKitchenForDelete?.assignedEmployeesCount }}</strong> ta xodim biriktirilgan.
+                  Oshxonani o'chirishdan oldin xodimlarni boshqa oshxonaga o'tkazing yoki biriktirishni bekor qiling.
+                </p>
+              </div>
+            </div>
+
+            <!-- Linked category/orders info box -->
+            <div class="delete-info-box" *ngIf="hasLinkedData(targetKitchenForDelete) && (targetKitchenForDelete?.assignedEmployeesCount || 0) === 0">
               <div class="info-icon">🛡️</div>
               <div class="info-content">
                 <strong>Xavfsiz O'chirish (Safe Delete Himoyasi):</strong>
@@ -563,16 +718,25 @@ import { NotificationService } from '../../core/services/notification.service';
               <span>{{ deleting ? 'Bajarilmoqda...' : 'Nofaol (INACTIVE) Qilish' }}</span>
             </button>
 
-            <!-- Attempt soft delete -->
+            <!-- Attempt delete: disabled if employees are attached -->
             <button
               class="pos-btn pos-btn--danger"
               (click)="executeDelete()"
-              [disabled]="deleting">
+              [disabled]="deleting || (targetKitchenForDelete?.assignedEmployeesCount || 0) > 0"
+              [title]="(targetKitchenForDelete?.assignedEmployeesCount || 0) > 0 ? 'Xodimlar biriktirilgan oshxonani o‘chirib bo‘lmaydi' : ''">
               <span>{{ deleting ? 'O‘chirilmoqda...' : 'O‘chirish' }}</span>
             </button>
           </div>
         </div>
       </div>
+
+      <!-- EXCEL IMPORT MODAL -->
+      <app-excel-import-modal
+        [visible]="showImportModal"
+        [type]="'kitchens'"
+        (closed)="showImportModal = false"
+        (imported)="onExcelImported()">
+      </app-excel-import-modal>
     </div>
   `,
   styles: [`
@@ -1335,58 +1499,168 @@ import { NotificationService } from '../../core/services/notification.service';
       border-radius: 4px;
     }
 
-    .staff-selection-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    .staff-toolbar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 10px;
-      max-height: 360px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .staff-summary-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+
+      strong {
+        color: var(--primary);
+        font-weight: 700;
+      }
+    }
+
+    .kitchen-code-tag {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg-secondary);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* Assign cook collapsible box */
+    .assign-cook-box {
+      background: rgba(99, 102, 241, 0.06);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .assign-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .close-assign-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all var(--transition);
+
+      &:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+      }
+    }
+
+    .empty-cooks-notice {
+      font-size: 13px;
+      color: #d97706;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px dashed rgba(245, 158, 11, 0.35);
+      border-radius: 6px;
+      padding: 12px 14px;
+      line-height: 1.4;
+    }
+
+    .cook-selector-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Assigned cooks cards */
+    .assigned-cooks-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
       overflow-y: auto;
       padding-right: 4px;
     }
 
-    .staff-check-card {
+    .cook-card {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 12px;
-      padding: 10px 12px;
+      padding: 12px 14px;
       background: var(--bg-tertiary);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      cursor: pointer;
       transition: all var(--transition);
 
       &:hover {
         border-color: var(--border-light);
-      }
-
-      &.selected {
-        border-color: #f59e0b;
-        background: rgba(245, 158, 11, 0.08);
-      }
-
-      input[type="checkbox"] {
-        accent-color: #f59e0b;
-        width: 16px;
-        height: 16px;
+        background: var(--bg-hover);
       }
     }
 
-    .staff-info {
+    .cook-card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .cook-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .cook-details {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      flex: 1;
+      gap: 3px;
+      min-width: 0;
     }
 
-    .staff-name-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .staff-name {
-      font-size: 13px;
+    .cook-name {
+      font-size: 14px;
       color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cook-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cook-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .cook-card-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
     }
 
     .role-badge {
@@ -1404,9 +1678,13 @@ import { NotificationService } from '../../core/services/notification.service';
       }
     }
 
-    .staff-username {
-      font-size: 11px;
-      color: var(--text-muted);
+    .transfer-info-banner {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-primary);
     }
 
     .assigned-cats-list {
@@ -1568,12 +1846,26 @@ export class KitchenManagementComponent implements OnInit {
     printerId: null
   };
 
-  // Staff Modal State
+  // Staff Modal State (Cooks Management)
   showStaffModal = false;
   selectedKitchenForStaff: KitchenStation | null = null;
-  selectedEmployeeIds = new Set<string>();
+  assignedCooks: AssignedEmployee[] = [];
   loadingStaffList = false;
-  savingStaff = false;
+  detachingEmployeeId: string | null = null;
+
+  // Available cooks for assignment
+  showAssignCookSection = false;
+  availableCooks: AssignedEmployee[] = [];
+  loadingAvailableCooks = false;
+  selectedNewCookId: string | null = null;
+  assigningCook = false;
+
+  // Transfer Modal State
+  showTransferModal = false;
+  cookToTransfer: AssignedEmployee | null = null;
+  targetTransferKitchenId: string | null = null;
+  transferring = false;
+  otherActiveKitchens: KitchenStation[] = [];
 
   // Categories Modal State
   showCategoriesModal = false;
@@ -1592,13 +1884,57 @@ export class KitchenManagementComponent implements OnInit {
   targetKitchenForDelete: KitchenStation | null = null;
   deleting = false;
 
+  // Excel State
+  showImportModal = false;
+  downloadingTemplate = false;
+  exportingExcel = false;
+
   constructor(
     private kitchenService: KitchenService,
     private userService: UserService,
     private printerService: PrinterService,
+    private excelService: ExcelService,
     private notify: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
+
+  downloadTemplate(): void {
+    this.downloadingTemplate = true;
+    this.excelService.downloadKitchenTemplate().subscribe({
+      next: (blob) => {
+        this.downloadingTemplate = false;
+        this.excelService.saveBlob(blob, 'kitchens_template.xlsx');
+        this.notify.success('Oshxonalar shabloni yuklab olindi');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.downloadingTemplate = false;
+        this.notify.error('Shablonni yuklab olishda xatolik');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  exportExcel(): void {
+    this.exportingExcel = true;
+    this.excelService.exportKitchens().subscribe({
+      next: (blob) => {
+        this.exportingExcel = false;
+        this.excelService.saveBlob(blob, 'kitchens_export.xlsx');
+        this.notify.success('Oshxonalar Excel faylga muvaffaqiyatli eksport qilindi');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.exportingExcel = false;
+        this.notify.error('Eksport qilishda xatolik yuz berdi');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onExcelImported(): void {
+    this.loadData();
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -1905,18 +2241,22 @@ export class KitchenManagementComponent implements OnInit {
     });
   }
 
-  // Staff Assignment Modal
+  // Staff (Cooks) Management Modal
   openStaffAssignmentModal(kitchen: KitchenStation): void {
     this.selectedKitchenForStaff = kitchen;
-    this.selectedEmployeeIds.clear();
-    this.loadingStaffList = true;
+    this.assignedCooks = [];
     this.showStaffModal = true;
-    this.cdr.markForCheck();
+    this.showAssignCookSection = false;
+    this.selectedNewCookId = null;
+    this.loadAssignedCooks(kitchen.id);
+  }
 
-    this.kitchenService.getKitchenEmployees(kitchen.id).subscribe({
+  loadAssignedCooks(kitchenId: string): void {
+    this.loadingStaffList = true;
+    this.cdr.markForCheck();
+    this.kitchenService.getKitchenEmployees(kitchenId).subscribe({
       next: (res) => {
-        const assigned = res.data || [];
-        assigned.forEach(a => this.selectedEmployeeIds.add(a.id));
+        this.assignedCooks = res.data || [];
         this.loadingStaffList = false;
         this.cdr.markForCheck();
       },
@@ -1931,16 +2271,141 @@ export class KitchenManagementComponent implements OnInit {
   closeStaffModal(): void {
     this.showStaffModal = false;
     this.selectedKitchenForStaff = null;
-    this.selectedEmployeeIds.clear();
+    this.assignedCooks = [];
+    this.showAssignCookSection = false;
+    this.selectedNewCookId = null;
     this.cdr.markForCheck();
   }
 
-  toggleStaffSelection(empId: string): void {
-    if (this.selectedEmployeeIds.has(empId)) {
-      this.selectedEmployeeIds.delete(empId);
-    } else {
-      this.selectedEmployeeIds.add(empId);
-    }
+  openAssignCookSection(): void {
+    this.showAssignCookSection = true;
+    this.loadingAvailableCooks = true;
+    this.selectedNewCookId = null;
+    this.cdr.markForCheck();
+    this.kitchenService.getAvailableCooks().subscribe({
+      next: (res) => {
+        const rawCooks = res.data || [];
+        // Strict filter: exclude ADMIN, MANAGER, WAITER, CASHIER; only allow cook/kitchen roles
+        this.availableCooks = rawCooks.filter(cook => {
+          const role = (cook.role || '').trim().toUpperCase();
+          if (role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'MANAGER' || role === 'WAITER' || role === 'CASHIER') {
+            return false;
+          }
+          return role === 'KITCHEN' || role.includes('OSHPAZ') || role.includes('COOK') ||
+                 role.includes('CHEF') || role.includes('SOMSA') || role.includes('PIZZA') ||
+                 role.includes('PITSA') || role.includes('LAVASH') || role.includes('HOTDOG') ||
+                 role.includes('BAR') || role.includes('QANDOLAT');
+        });
+        this.loadingAvailableCooks = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Failed to get available cooks', err);
+        this.notify.error('Bo\'sh oshpazlarni yuklashda xatolik yuz berdi');
+        this.loadingAvailableCooks = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  closeAssignCookSection(): void {
+    this.showAssignCookSection = false;
+    this.selectedNewCookId = null;
+    this.cdr.markForCheck();
+  }
+
+  confirmAssignCook(): void {
+    if (!this.selectedKitchenForStaff || !this.selectedNewCookId) return;
+    this.assigningCook = true;
+    this.cdr.markForCheck();
+
+    const currentIds = this.assignedCooks.map(c => c.id);
+    const updatedIds = [...currentIds, this.selectedNewCookId];
+
+    this.kitchenService.assignKitchenEmployees(this.selectedKitchenForStaff.id, updatedIds).subscribe({
+      next: (res) => {
+        this.assigningCook = false;
+        this.notify.success(res.message || 'Oshpaz muvaffaqiyatli biriktirildi');
+        this.closeAssignCookSection();
+        if (this.selectedKitchenForStaff) {
+          this.loadAssignedCooks(this.selectedKitchenForStaff.id);
+        }
+        this.loadData();
+      },
+      error: (err) => {
+        this.assigningCook = false;
+        const msg = err.error?.message || 'Oshpazni biriktirishda xatolik yuz berdi';
+        this.notify.error(msg);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  confirmDetachCook(cook: AssignedEmployee): void {
+    if (!this.selectedKitchenForStaff) return;
+    this.detachingEmployeeId = cook.id;
+    this.cdr.markForCheck();
+
+    this.kitchenService.detachKitchenEmployee(this.selectedKitchenForStaff.id, cook.id).subscribe({
+      next: () => {
+        this.detachingEmployeeId = null;
+        this.notify.success(`"${cook.firstName}" oshxonadan ajratildi (xodim tizimda saqlanib qoldi)`);
+        if (this.selectedKitchenForStaff) {
+          this.loadAssignedCooks(this.selectedKitchenForStaff.id);
+        }
+        this.loadData();
+      },
+      error: (err) => {
+        this.detachingEmployeeId = null;
+        const msg = err.error?.message || 'Oshpazni ajratishda xatolik yuz berdi';
+        this.notify.error(msg);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  openTransferModal(cook: AssignedEmployee): void {
+    this.cookToTransfer = cook;
+    this.targetTransferKitchenId = null;
+    this.otherActiveKitchens = this.kitchens.filter(k => k.id !== this.selectedKitchenForStaff?.id && k.active);
+    this.showTransferModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeTransferModal(): void {
+    this.showTransferModal = false;
+    this.cookToTransfer = null;
+    this.targetTransferKitchenId = null;
+    this.cdr.markForCheck();
+  }
+
+  executeTransfer(): void {
+    if (!this.selectedKitchenForStaff || !this.cookToTransfer || !this.targetTransferKitchenId) return;
+    this.transferring = true;
+    this.cdr.markForCheck();
+
+    this.kitchenService.transferKitchenEmployee(
+      this.selectedKitchenForStaff.id,
+      this.cookToTransfer.id,
+      this.targetTransferKitchenId
+    ).subscribe({
+      next: () => {
+        this.transferring = false;
+        this.notify.success('Oshpaz muvaffaqiyatli boshqa oshxonaga ko‘chirildi');
+        const currentKitchenId = this.selectedKitchenForStaff?.id;
+        this.closeTransferModal();
+        if (currentKitchenId) {
+          this.loadAssignedCooks(currentKitchenId);
+        }
+        this.loadData();
+      },
+      error: (err) => {
+        this.transferring = false;
+        const msg = err.error?.message || 'Oshpazni ko‘chirishda xatolik yuz berdi';
+        this.notify.error(msg);
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   toggleCategorySelection(catId: string): void {
@@ -1949,28 +2414,6 @@ export class KitchenManagementComponent implements OnInit {
     } else {
       this.selectedCategoryIds.add(catId);
     }
-  }
-
-  saveStaffAssignments(): void {
-    if (!this.selectedKitchenForStaff) return;
-    this.savingStaff = true;
-    this.cdr.markForCheck();
-
-    const employeeIds = Array.from(this.selectedEmployeeIds);
-    this.kitchenService.assignKitchenEmployees(this.selectedKitchenForStaff.id, employeeIds).subscribe({
-      next: (res) => {
-        this.savingStaff = false;
-        this.notify.success(res.message || 'Xodimlar muvaffaqiyatli biriktirildi');
-        this.closeStaffModal();
-        this.loadData();
-      },
-      error: (err) => {
-        this.savingStaff = false;
-        const msg = err.error?.message || 'Xodimlarni biriktirishda xatolik yuz berdi';
-        this.notify.error(msg);
-        this.cdr.markForCheck();
-      }
-    });
   }
 
   // Categories Modal
@@ -2005,7 +2448,7 @@ export class KitchenManagementComponent implements OnInit {
   // Delete / Safe Delete Logic
   hasLinkedData(kitchen: KitchenStation | null): boolean {
     if (!kitchen) return false;
-    return (kitchen.assignedCategoriesCount || 0) > 0;
+    return (kitchen.assignedCategoriesCount || 0) > 0 || (kitchen.assignedEmployeesCount || 0) > 0;
   }
 
   confirmDelete(kitchen: KitchenStation): void {

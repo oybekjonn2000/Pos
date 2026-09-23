@@ -25,7 +25,7 @@ public class AuthDto {
     @Setter
     public static class PinLoginRequest {
         @NotBlank(message = "PIN is required")
-        @Size(min = 4, max = 8)
+        @Size(min = 1, max = 4)
         private String pin;
 
         private String deviceId;

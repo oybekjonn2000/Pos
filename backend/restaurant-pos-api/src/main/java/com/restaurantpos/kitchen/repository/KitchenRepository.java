@@ -34,4 +34,6 @@ public interface KitchenRepository extends JpaRepository<Kitchen, UUID> {
     boolean existsByTenantIdAndCodeIgnoreCase(UUID tenantId, String code);
 
     boolean existsByTenantIdAndCodeIgnoreCaseAndIdNot(UUID tenantId, String code, UUID id);
+
+    List<Kitchen> findByTenantIdAndCodeInAndDeletedAtIsNull(UUID tenantId, java.util.Collection<String> codes);
 }

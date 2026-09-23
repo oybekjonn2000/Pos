@@ -96,6 +96,10 @@ public class CategoryService {
         category.setTenant(tenant);
         category.setKitchen(kitchen);
         category.setName(request.getName().trim());
+        String code = request.getCode() != null && !request.getCode().isBlank()
+                ? request.getCode().trim().toUpperCase()
+                : generateCategoryCode(tenantId, request.getName().trim());
+        category.setCode(code);
         category.setNameUz(request.getNameUz());
         category.setNameRu(request.getNameRu());
         category.setNameEn(request.getNameEn());
@@ -126,6 +130,7 @@ public class CategoryService {
         }
 
         if (request.getName() != null) category.setName(request.getName().trim());
+        if (request.getCode() != null && !request.getCode().isBlank()) category.setCode(request.getCode().trim().toUpperCase());
         if (request.getNameUz() != null) category.setNameUz(request.getNameUz());
         if (request.getNameRu() != null) category.setNameRu(request.getNameRu());
         if (request.getNameEn() != null) category.setNameEn(request.getNameEn());
@@ -172,6 +177,7 @@ public class CategoryService {
                 .kitchenName(kName)
                 .kitchenCode(kCode)
                 .name(category.getName())
+                .code(category.getCode())
                 .nameUz(category.getNameUz())
                 .nameRu(category.getNameRu())
                 .nameEn(category.getNameEn())
@@ -185,5 +191,17 @@ public class CategoryService {
                 .productCount(pCount)
                 .createdAt(category.getCreatedAt())
                 .build();
+    }
+
+    private String generateCategoryCode(UUID tenantId, String name) {
+        String base = name.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+        if (base.length() > 10) base = base.substring(0, 10);
+        if (base.isEmpty()) base = "CAT";
+        String code = base;
+        int counter = 1;
+        while (categoryRepository.existsByTenantIdAndCodeIgnoreCaseAndDeletedAtIsNull(tenantId, code)) {
+            code = base + "-" + counter++;
+        }
+        return code;
     }
 }

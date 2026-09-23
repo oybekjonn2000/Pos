@@ -1,753 +1,381 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../environments/environment';
 import {
   BillingService,
   CurrentSubscriptionResponse,
   PlanResponse,
-  CalculatePriceResponse,
-  InvoiceResponse,
-  SubscriptionPeriodResponse,
-  SubscriptionRequestResponse
+  SubscriptionRequestResponse,
+  PaymentCardSettings
 } from '../../core/services/billing.service';
-import { FeatureService } from '../../core/services/feature.service';
 
 @Component({
   selector: 'app-restaurant-billing',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="billing-page">
+    <div class="billing-container">
       <!-- Page Header -->
       <div class="billing-header">
         <div>
-          <h1 class="page-title">Tariflar va Obuna Boshqaruvi</h1>
-          <p class="page-subtitle">Restoraningiz obuna holati, xizmat limitlari va hisob-fakturalar</p>
+          <h1 class="page-title">Obuna va To'lov</h1>
+          <p class="page-subtitle">Restoraningiz uchun qulay tarif va muddatni tanlab, to'g'ridan-to'g'ri to'lov qiling</p>
         </div>
 
-        <div class="header-actions">
-          <button class="btn btn-warning-dark" (click)="openRequestModal()">
-            📝 Obunaga Ariza Berish (Bank / Chek)
-          </button>
-          <button class="btn btn-primary" (click)="openCheckoutModal()">
-            ⚡ Tezkor To'lov (Online)
-          </button>
-        </div>
+        @if (currentSub()) {
+          <div class="current-sub-pill" [class.active-pill]="currentSub()!.operating">
+            <span class="dot"></span>
+            <span>Joriy tarif: <strong>{{ currentSub()!.planName }}</strong></span>
+            <span class="divider">|</span>
+            <span>{{ currentSub()!.daysRemaining }} kun qoldi</span>
+          </div>
+        }
       </div>
 
-      <!-- Pending or Rejected Subscription Request Banner -->
-      @if (latestRequest() && latestRequest()!.status === 'PENDING_APPROVAL') {
-        <div class="banner banner-pending-request">
-          <div class="banner-icon">🟡</div>
-          <div class="banner-content">
-            <h3>Obuna arizangiz ko'rib chiqilmoqda!</h3>
-            <p>
-              Tanlangan tarif: <strong>{{ latestRequest()!.planName }}</strong> ({{ latestRequest()!.durationMonths }} oy, {{ formatPrice(latestRequest()!.amount) }} {{ latestRequest()!.currency }}).
-              To'lov usuli: <strong>{{ getPaymentMethodLabel(latestRequest()!.paymentMethod) }}</strong>.
-              Ariza yuborilgan vaqt: {{ formatDate(latestRequest()!.createdAt) }}.
-              Super Admin to'lovni tekshirib tasdiqlashi bilan obuna avtomatik ravishda faollashadi.
-            </p>
-          </div>
-          <button class="btn btn-sm btn-outline-danger" (click)="cancelCurrentRequest(latestRequest()!.id)">
-            Bekor qilish
-          </button>
-        </div>
-      } @else if (latestRequest() && latestRequest()!.status === 'REJECTED') {
-        <div class="banner banner-rejected-request">
-          <div class="banner-icon">❌</div>
-          <div class="banner-content">
-            <h3>Obuna so'rovi rad etildi</h3>
-            <p>
-              Rad etish sababi: <strong>{{ latestRequest()!.rejectionReason || 'To\'lov tasdiqlanmadi' }}</strong>.
-              Iltimos, ma'lumotlarni tekshirib qayta ariza yuboring.
-            </p>
-          </div>
-          <button class="btn btn-sm btn-warning-dark" (click)="openRequestModal()">
-            Qayta ariza berish
-          </button>
-        </div>
-      }
+      <!-- TABS NAVIGATION: NEW REQUEST vs HISTORY -->
+      <div class="billing-tabs-nav">
+        <button 
+          type="button" 
+          class="billing-tab-btn" 
+          [class.active]="activeTab === 'form'"
+          (click)="activeTab = 'form'"
+        >
+          📝 Obunaga Ariza Berish
+        </button>
+        <button 
+          type="button" 
+          class="billing-tab-btn" 
+          [class.active]="activeTab === 'history'"
+          (click)="activeTab = 'history'; loadHistory()"
+        >
+          📜 Arizalar Tarixi
+          @if (requestHistory().length > 0) {
+            <span class="tab-badge">{{ requestHistory().length }}</span>
+          }
+        </button>
+      </div>
 
-      <!-- Warning Banners based on Subscription Expiry & Warnings -->
-      @if (sub()) {
-        <!-- Expired Banner -->
-        @if (sub()!.status === 'EXPIRED') {
-          <div class="banner banner-expired">
-            <div class="banner-icon">🚫</div>
-            <div class="banner-content">
-              <h3>Obunangiz muddati tugagan!</h3>
-              <p>
-                Yangi buyurtmalar va asosiy POS operatsiyalari to'xtatildi. 
-                Ma'lumotlaringiz xavfsiz saqlanmoqda. POS xizmatidan to'liq foydalanish uchun obunani uzaytiring.
+      <!-- ======================================================== -->
+      <!-- TAB 1: NEW REQUEST FORM -->
+      <!-- ======================================================== -->
+      @if (activeTab === 'form') {
+        <!-- STATUS BANNER: PENDING APPROVAL -->
+        @if (latestRequest() && latestRequest()!.status === 'PENDING_APPROVAL') {
+          <div class="status-banner banner-pending">
+            <div class="banner-icon-col">
+              <div class="pulse-ring">
+                <span class="icon-pulse">⏳</span>
+              </div>
+            </div>
+            <div class="banner-body">
+              <div class="banner-badge">ARIZA KUTILMOQDA</div>
+              <h3 class="banner-title">Sizning arizangiz ko'rib chiqilmoqda</h3>
+              <p class="banner-desc">
+                Super admin to'lovni tasdiqlashi bilan tizim avtomatik ishga tushadi va obunangiz faollashadi.
               </p>
-            </div>
-            <button class="btn btn-danger-dark" (click)="openCheckoutModal()">
-              Hoziroq uzaytirish
-            </button>
-          </div>
-        }
-
-        <!-- 1 Day Remaining Banner -->
-        @if (sub()!.warningLevel === '1_DAY' && sub()!.status !== 'EXPIRED') {
-          <div class="banner banner-urgent">
-            <div class="banner-icon">⏰</div>
-            <div class="banner-content">
-              <h3>Obunangiz ertaga tugaydi!</h3>
-              <p>Xizmatingiz to'xtab qolmasligi uchun bugun obunani uzaytirishni tavsiya qilamiz.</p>
-            </div>
-            <button class="btn btn-warning-dark" (click)="openCheckoutModal()">
-              Uzaytirish
-            </button>
-          </div>
-        }
-
-        <!-- 3 Days Remaining Banner -->
-        @if (sub()!.warningLevel === '3_DAYS') {
-          <div class="banner banner-warning">
-            <div class="banner-icon">⚠️</div>
-            <div class="banner-content">
-              <h3>Obunangiz 3 kundan keyin tugaydi!</h3>
-              <p>Uzluksiz xizmat uchun to'lovni oldindan amalga oshirishingiz mumkin.</p>
-            </div>
-            <button class="btn btn-warning-dark" (click)="openCheckoutModal()">
-              Tarifni uzaytirish
-            </button>
-          </div>
-        }
-
-        <!-- 7 Days Remaining Banner -->
-        @if (sub()!.warningLevel === '7_DAYS') {
-          <div class="banner banner-info">
-            <div class="banner-icon">ℹ️</div>
-            <div class="banner-content">
-              <h3>Obunangiz 7 kundan keyin tugaydi.</h3>
-              <p>Obuna muddatini uzaytirish yoki yuqori tarifga o'tishingiz mumkin.</p>
-            </div>
-            <button class="btn btn-outline" (click)="openCheckoutModal()">
-              Batafsil
-            </button>
-          </div>
-        }
-
-        <!-- Trial Banner -->
-        @if (sub()!.status === 'TRIAL') {
-          <div class="banner banner-trial">
-            <div class="banner-icon">✨</div>
-            <div class="banner-content">
-              <h3>Siz bepul sinov (Trial) davridasiz!</h3>
-              <p>
-                Sinov muddati tugashiga <strong>{{ sub()!.daysRemaining }} kun</strong> qoldi.
-                Chegirmali obuna tariflaridan birini tanlang.
-              </p>
-            </div>
-            <button class="btn btn-trial-action" (click)="openCheckoutModal()">
-              Tarif tanlash
-            </button>
-          </div>
-        }
-
-        <!-- Scheduled Downgrade Notice -->
-        @if (sub()!.hasScheduledDowngrade) {
-          <div class="banner banner-info">
-            <div class="banner-icon">🔄</div>
-            <div class="banner-content">
-              <h3>Rejalashtirilgan tarif o'zgarishi: {{ sub()!.nextPlanName }}</h3>
-              <p>
-                Joriy billing muddati ({{ formatDate(sub()!.endDate) }}) tugagach, 
-                avtomatik ravishda yangi tarif kuchga kiradi.
-              </p>
-            </div>
-          </div>
-        }
-      }
-
-      @if (loading()) {
-        <div class="loading-box">
-          <div class="spinner"></div>
-          <p>Obuna ma'lumotlari yuklanmoqda...</p>
-        </div>
-      } @else if (sub()) {
-        <!-- Main Stats Grid -->
-        <div class="billing-grid">
-          <!-- Card 1: Current Plan Overview -->
-          <div class="card plan-overview-card">
-            <div class="card-header">
-              <span class="card-title">Joriy Tarif</span>
-              <span class="status-badge" [ngClass]="getStatusBadgeClass(sub()!.status)">
-                {{ getStatusLabel(sub()!.status) }}
-              </span>
-            </div>
-
-            <div class="plan-price-row">
-              <div>
-                <h2 class="plan-name">{{ sub()!.planName }}</h2>
-                <span class="plan-code-badge">{{ sub()!.planCode }}</span>
+              <div class="pending-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Tanlangan tarif:</span>
+                  <span class="meta-val">{{ latestRequest()!.planName }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Muddat:</span>
+                  <span class="meta-val">{{ latestRequest()!.durationMonths }} oy</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">To'lov summasi:</span>
+                  <span class="meta-val highlight">{{ formatPrice(latestRequest()!.amount) }} {{ latestRequest()!.currency }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Yuborilgan vaqti:</span>
+                  <span class="meta-val">{{ formatDate(latestRequest()!.createdAt) }}</span>
+                </div>
               </div>
-              <div class="price-wrap">
-                <span class="price-val">{{ formatPrice(sub()!.price) }}</span>
-                <span class="price-cur">so'm / oy</span>
-              </div>
+              @if (latestRequest()!.receiptUrl) {
+                <div class="receipt-link-row">
+                  <a [href]="resolveReceiptUrl(latestRequest()!.receiptUrl)" target="_blank" class="receipt-preview-btn">
+                    📄 Yuklangan to'lov chekini ko'rish
+                  </a>
+                </div>
+              }
             </div>
-
-            <div class="plan-details-list">
-              <div class="detail-row">
-                <span class="label">Boshlangan sana:</span>
-                <span class="val">{{ formatDate(sub()!.startDate) }}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Tugash sanasi:</span>
-                <span class="val">{{ formatDate(sub()!.endDate) }}</span>
-              </div>
-              <div class="detail-row highlight">
-                <span class="label">Qolgan muddat:</span>
-                <span class="val days-val">{{ sub()!.daysRemaining }} kun</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Tizim holati:</span>
-                <span class="val" [class.text-success]="sub()!.operating" [class.text-danger]="!sub()!.operating">
-                  {{ sub()!.operating ? 'Faol (Operatsiyalar ruxsat etilgan)' : 'Bloklangan (Faqat ko‘rish rejimi)' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="card-footer-actions">
-              <button class="btn btn-outline-primary" (click)="openCheckoutModal()">
-                ⚡ Tarifni Yangilash / Muddatni Uzaytirish
+            <div class="banner-actions">
+              <button class="btn btn-outline-danger" (click)="cancelRequest()" [disabled]="cancelling()">
+                {{ cancelling() ? 'Bekor qilinmoqda...' : 'Arizani bekor qilish' }}
               </button>
             </div>
           </div>
+        }
 
-          <!-- Card 2: Resource Limits & Usage (Unlimited Architecture) -->
-          <div class="card usage-card">
-            <div class="card-header">
-              <div>
-                <span class="card-title">Resurs Limitlari va Ishlatilishi</span>
-                <span class="unlimited-pill">♾️ Barcha Tariflarda Cheksiz</span>
-              </div>
-              <span class="card-subtitle">Haqiqiy ishlatilgan miqdor</span>
+        <!-- STATUS BANNER: REJECTED -->
+        @if (latestRequest() && latestRequest()!.status === 'REJECTED') {
+          <div class="status-banner banner-rejected">
+            <div class="banner-icon-col">
+              <span class="icon-static">❌</span>
             </div>
-
-            <div class="unlimited-notice">
-              <span class="notice-icon">✨</span>
-              <span>Tizimda hech qanday resurs cheklovi yo'q. Istalgancha xodim, stol, mahsulot va buyurtmalar yaratishingiz mumkin.</span>
+            <div class="banner-body">
+              <div class="banner-badge red">RAD ETILDI</div>
+              <h3 class="banner-title">Oldingi obuna arizangiz rad etilgan</h3>
+              <p class="banner-desc">
+                Sababi: <strong>{{ latestRequest()!.rejectionReason || 'To‘lov cheki tasdiqlanmadi' }}</strong>
+              </p>
+              <p class="banner-subtext">Quyidagi formadan to'lov rekvizitlarini qayta tekshirib, yangi ariza yuborishingiz mumkin.</p>
             </div>
-
-            <div class="resource-grid">
-              <!-- Users / Employees -->
-              <div class="resource-item">
-                <div class="res-icon">👥</div>
-                <div class="res-body">
-                  <span class="res-name">Xodimlar (Foydalanuvchilar)</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentUsers || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Waiters -->
-              <div class="resource-item">
-                <div class="res-icon">🍽️</div>
-                <div class="res-body">
-                  <span class="res-name">Ofitsiantlar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentWaiters || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Chefs -->
-              <div class="resource-item">
-                <div class="res-icon">👨‍🍳</div>
-                <div class="res-body">
-                  <span class="res-name">Oshpazlar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentChefs || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tables -->
-              <div class="resource-item">
-                <div class="res-icon">🪑</div>
-                <div class="res-body">
-                  <span class="res-name">Stollar soni</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentTables || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Halls / Zones -->
-              <div class="resource-item">
-                <div class="res-icon">🏛️</div>
-                <div class="res-body">
-                  <span class="res-name">Zallar / Hududlar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentHalls || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Products -->
-              <div class="resource-item">
-                <div class="res-icon">🍔</div>
-                <div class="res-body">
-                  <span class="res-name">Mahsulotlar katalogi</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentProducts || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Categories -->
-              <div class="resource-item">
-                <div class="res-icon">🏷️</div>
-                <div class="res-body">
-                  <span class="res-name">Kategoriyalar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentCategories || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Kitchens -->
-              <div class="resource-item">
-                <div class="res-icon">🍳</div>
-                <div class="res-body">
-                  <span class="res-name">Oshxonalar / Sexlar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentKitchens || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Orders -->
-              <div class="resource-item">
-                <div class="res-icon">🧾</div>
-                <div class="res-body">
-                  <span class="res-name">Buyurtmalar</span>
-                  <div class="res-stat">
-                    <strong>{{ (sub()!.currentOrders ?? sub()!.currentMonthOrders) || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Printers -->
-              <div class="resource-item">
-                <div class="res-icon">🖨️</div>
-                <div class="res-body">
-                  <span class="res-name">Printerlar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentPrinters || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Devices -->
-              <div class="resource-item">
-                <div class="res-icon">📱</div>
-                <div class="res-body">
-                  <span class="res-name">Ulangan Qurilmalar</span>
-                  <div class="res-stat">
-                    <strong>{{ sub()!.currentDevices || 0 }} ta</strong> ishlatilgan
-                    <span class="badge-infinite">Cheksiz</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Navigation Tabs for Invoices & History -->
-        <div class="tabs-nav">
-          <button class="tab-btn" [class.active]="activeTab === 'invoices'" (click)="activeTab = 'invoices'">
-            🧾 Hisob-fakturalar ({{ invoices().length }})
-          </button>
-          <button class="tab-btn" [class.active]="activeTab === 'periods'" (click)="activeTab = 'periods'">
-            📅 Obunalar Tarixi ({{ periods().length }})
-          </button>
-          <button class="tab-btn" [class.active]="activeTab === 'requests'" (click)="activeTab = 'requests'">
-            📑 Obuna Arizalari ({{ requestHistory().length }})
-          </button>
-        </div>
-
-        <!-- Tab 1: Invoices -->
-        @if (activeTab === 'invoices') {
-          <div class="card table-card">
-            <div class="card-header">
-              <span class="card-title">Hisob-fakturalar ro'yxati</span>
-              <button class="btn btn-sm btn-outline" (click)="loadInvoices()">Yangilash</button>
-            </div>
-
-            @if (invoices().length === 0) {
-              <div class="empty-state">
-                <p>Hozircha hisob-fakturalar mavjud emas.</p>
-              </div>
-            } @else {
-              <div class="table-responsive">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Hisob-faktura #</th>
-                      <th>Tarif</th>
-                      <th>Muddat</th>
-                      <th>Asosiy Summa</th>
-                      <th>Chegirma</th>
-                      <th>Yakuniy Summa</th>
-                      <th>Holat</th>
-                      <th>Sana</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (inv of invoices(); track inv.id) {
-                      <tr>
-                        <td class="code-cell"><strong>{{ inv.invoiceNumber }}</strong></td>
-                        <td>{{ inv.planName }}</td>
-                        <td>{{ inv.durationMonths }} oy</td>
-                        <td>{{ formatPrice(inv.baseAmount) }} {{ inv.currency }}</td>
-                        <td class="text-success">
-                          {{ inv.discountPercent > 0 ? '-' + inv.discountPercent + '% (-' + formatPrice(inv.discountAmount) + ')' : '-' }}
-                        </td>
-                        <td class="amount-cell">{{ formatPrice(inv.finalAmount) }} {{ inv.currency }}</td>
-                        <td>
-                          <span class="status-badge" [ngClass]="getInvoiceBadgeClass(inv.status)">
-                            {{ inv.status }}
-                          </span>
-                        </td>
-                        <td>{{ formatDate(inv.createdAt) }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
           </div>
         }
 
-        <!-- Tab 2: Subscription Periods History -->
-        @if (activeTab === 'periods') {
-          <div class="card table-card">
-            <div class="card-header">
-              <span class="card-title">Obunalar Davrlari Tarixi</span>
-              <button class="btn btn-sm btn-outline" (click)="loadPeriods()">Yangilash</button>
-            </div>
-
-            @if (periods().length === 0) {
-              <div class="empty-state">
-                <p>Hozircha davrlar tarixi mavjud emas.</p>
-              </div>
-            } @else {
-              <div class="table-responsive">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Tarif</th>
-                      <th>Tur (Turi)</th>
-                      <th>Boshlanish</th>
-                      <th>Tugash</th>
-                      <th>Hisob-faktura</th>
-                      <th>Yaratilgan vaqt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (per of periods(); track per.id) {
-                      <tr>
-                        <td><strong>{{ per.planName }}</strong> ({{ per.planCode }})</td>
-                        <td>
-                          <span class="provider-badge">{{ per.periodType }}</span>
-                        </td>
-                        <td>{{ formatDate(per.startDate) }}</td>
-                        <td>{{ formatDate(per.endDate) }}</td>
-                        <td class="code-cell">{{ per.invoiceNumber || '-' }}</td>
-                        <td>{{ formatDate(per.createdAt) }}</td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-        }
-
-        <!-- Tab 3: Subscription Requests History -->
-        @if (activeTab === 'requests') {
-          <div class="card table-card">
-            <div class="card-header">
-              <span class="card-title">Obunaga Yuborilgan Arizalar Tarixi</span>
-              <div class="card-actions">
-                <button class="btn btn-sm btn-warning-dark" (click)="openRequestModal()">
-                  ➕ Yangi Ariza Berish
-                </button>
-                <button class="btn btn-sm btn-outline" (click)="loadSubscriptionRequests()">
-                  Yangilash
-                </button>
-              </div>
-            </div>
-
-            @if (requestHistory().length === 0) {
-              <div class="empty-state">
-                <p>Hozircha arizalar yuborilmagan.</p>
-              </div>
-            } @else {
-              <div class="table-responsive">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Tarif</th>
-                      <th>Muddat</th>
-                      <th>Summa</th>
-                      <th>To'lov Usuli</th>
-                      <th>To'lov Cheki</th>
-                      <th>Holat</th>
-                      <th>Izoh / Sabab</th>
-                      <th>Yuborilgan Vaqt</th>
-                      <th>Amal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (req of requestHistory(); track req.id) {
-                      <tr>
-                        <td><strong>{{ req.planName }}</strong> ({{ req.planCode }})</td>
-                        <td>{{ req.durationMonths }} oy</td>
-                        <td class="amount-cell">{{ formatPrice(req.amount) }} {{ req.currency }}</td>
-                        <td>
-                          <span class="provider-badge">{{ getPaymentMethodLabel(req.paymentMethod) }}</span>
-                        </td>
-                        <td>
-                          @if (req.receiptUrl) {
-                            <a [href]="req.receiptUrl" target="_blank" class="receipt-link">📎 Chekni ko'rish</a>
-                          } @else {
-                            <span class="text-muted">-</span>
-                          }
-                        </td>
-                        <td>
-                          <span class="status-badge" [ngClass]="getRequestStatusBadge(req.status)">
-                            {{ getRequestStatusLabel(req.status) }}
-                          </span>
-                        </td>
-                        <td>
-                          @if (req.rejectionReason) {
-                            <span class="text-danger">Rad sababi: {{ req.rejectionReason }}</span>
-                          } @else if (req.adminNotes) {
-                            <span>{{ req.adminNotes }}</span>
-                          } @else if (req.clientNotes) {
-                            <span class="text-muted">{{ req.clientNotes }}</span>
-                          } @else {
-                            <span class="text-muted">-</span>
-                          }
-                        </td>
-                        <td>{{ formatDate(req.createdAt) }}</td>
-                        <td>
-                          @if (req.status === 'PENDING_APPROVAL') {
-                            <button class="btn btn-xs btn-outline-danger" (click)="cancelCurrentRequest(req.id)">
-                              Bekor qilish
-                            </button>
-                          }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-          </div>
-        }
-      }
-
-      <!-- Checkout / Upgrade Modal with Real-time Calculation -->
-      @if (showCheckoutModal()) {
-        <div class="modal-overlay" (click)="closeCheckoutModal()">
-          <div class="modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h2>Tarif Tanlash va Hisob-faktura Yaratish</h2>
-              <button class="btn-close" (click)="closeCheckoutModal()">✕</button>
-            </div>
-
-            <div class="modal-body">
-              @if (!checkoutCreatedInvoice()) {
-                <!-- Step 1: Select Plan -->
-                <div class="step-section">
-                  <label class="section-label">1. Tarif rejasini tanlang:</label>
-                  <div class="plans-selection">
-                    @for (plan of availablePlans(); track plan.code) {
-                      <div class="modal-plan-card" 
-                           [class.active]="selectedPlanCode() === plan.code"
-                           [class.pro-card]="plan.code === 'PRO'"
-                           (click)="selectPlan(plan.code)">
-                        <div class="p-header">
-                          <div class="p-name">{{ plan.name }}</div>
-                          @if (plan.code === 'PRO') {
-                            <span class="pro-tag">⚡ Tavsiya etiladi</span>
-                          }
-                        </div>
-                        <div class="p-price">{{ formatPrice(plan.price) }} so'm <small>/ oy</small></div>
-                        <div class="p-features-summary">
-                          @if (plan.code === 'PRO') {
-                            <div class="feat-badge feat-pro">✅ Barcha Standard + Oshxona Ekrani (KDS) + Mobil Ilova</div>
-                          } @else {
-                            <div class="feat-badge feat-std">Barcha POS funksiyalari (❌ KDS va Mobil Ilovasiz)</div>
-                          }
-                        </div>
-                        <div class="p-limit">
-                          ♾️ Barcha resurslar to'liq cheksiz
-                        </div>
-                      </div>
-                    }
-                  </div>
+        <!-- MAIN SUBSCRIPTION FORM -->
+        <div class="order-form-grid">
+          <!-- LEFT: PLAN SELECTION & DURATION -->
+          <div class="form-col left-col">
+            <!-- STEP 1: SELECT PLAN -->
+            <div class="card form-section-card">
+              <div class="section-title-row">
+                <span class="step-num">1</span>
+                <div>
+                  <h2 class="section-title">Tarifni tanlang</h2>
+                  <p class="section-hint">Restoraningiz miqyosiga mos tarifni tanlang</p>
                 </div>
+              </div>
 
-                <!-- Step 2: Select Duration -->
-                <div class="step-section">
-                  <label class="section-label">2. Obuna muddatini tanlang:</label>
-                  <div class="months-selection">
-                    @for (opt of monthOptions; track opt.value) {
-                      <div class="month-card" 
-                           [class.active]="selectedMonths() === opt.value"
-                           (click)="selectMonths(opt.value)">
-                        @if (opt.badge) {
-                          <span class="month-badge">{{ opt.badge }}</span>
-                        }
-                        <div class="month-label">{{ opt.label }}</div>
-                        <div class="month-price-hint">{{ opt.hint }}</div>
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Calculation Summary Box -->
-                @if (calculating()) {
-                  <div class="calc-loading">Narx hisoblanmoqda...</div>
-                } @else if (calcResult()) {
-                  <div class="price-summary-box">
-                    <div class="price-summary-row">
-                      <span>Tarif:</span>
-                      <strong>{{ calcResult()!.planName }}</strong>
-                    </div>
-                    <div class="price-summary-row">
-                      <span>Tanlangan davr:</span>
-                      <span>{{ calcResult()!.months }} oy ({{ formatPrice(calcResult()!.monthlyPrice) }} so'm / oy)</span>
-                    </div>
-                    <div class="price-summary-row">
-                      <span>Asosiy summa:</span>
-                      <span>{{ formatPrice(calcResult()!.baseAmount) }} so'm</span>
+              <div class="plans-grid">
+                @for (plan of availablePlans(); track plan.id) {
+                  <div 
+                    class="plan-card"
+                    [class.selected]="selectedPlan()?.id === plan.id"
+                    (click)="selectPlan(plan)"
+                  >
+                    <div class="plan-card-top">
+                      <span class="plan-tag" [class.tag-pro]="plan.code === 'PRO'">
+                        {{ plan.code === 'PRO' ? 'TAVSIYA ETILADI' : 'BAZAVIY' }}
+                      </span>
+                      <div class="radio-circle" [class.checked]="selectedPlan()?.id === plan.id"></div>
                     </div>
 
-                    @if (calcResult()!.discountAmount > 0) {
-                      <div class="price-summary-row discount-row">
-                        <span>Chegirma ({{ calcResult()!.discountPercent }}%):</span>
-                        <span class="text-success">-{{ formatPrice(calcResult()!.discountAmount) }} so'm</span>
-                      </div>
-                    }
+                    <h3 class="plan-name">{{ plan.name }}</h3>
+                    <p class="plan-desc">{{ plan.description || 'Restoran uchun toliq avtomatlashtirish' }}</p>
 
-                    @if (calcResult()!.adjustmentAmount !== 0) {
-                      <div class="price-summary-row">
-                        <span>Qayta hisob-kitob (Adjustment):</span>
-                        <span>{{ formatPrice(calcResult()!.adjustmentAmount) }} so'm</span>
-                      </div>
-                    }
-
-                    <div class="price-summary-total">
-                      <span>To'lanadigan yakuniy summa:</span>
-                      <strong>{{ formatPrice(calcResult()!.finalAmount) }} so'm</strong>
+                    <div class="plan-price-block">
+                      <span class="plan-amount">{{ formatPrice(plan.price) }}</span>
+                      <span class="plan-period">UZS / oy</span>
                     </div>
 
-                    @if (calcResult()!.isDowngrade) {
-                      <div class="notice-box notice-warning">
-                        ℹ️ <strong>Tarif pasaytirilishi (Downgrade):</strong> Yangi tarif joriy billing davri tugagandan keyin kuchga kiradi.
-                      </div>
-                    }
-
-                    @if (calcResult()!.isUpgrade) {
-                      <div class="notice-box notice-info">
-                        ⚡ <strong>Upgrade:</strong> Yangi tarif to'lov tasdiqlanishi bilan darhol faollashadi.
-                      </div>
-                    }
+                    <div class="plan-features-mini">
+                      <div class="feat-item">✓ Cheksiz buyurtmalar</div>
+                      <div class="feat-item">✓ KDS Oshxona tizimi</div>
+                      <div class="feat-item">✓ Hisobotlar & Statistika</div>
+                    </div>
                   </div>
                 }
+              </div>
+            </div>
 
-                @if (checkoutError()) {
-                  <div class="alert alert-error">{{ checkoutError() }}</div>
+            <!-- STEP 2: SELECT DURATION -->
+            <div class="card form-section-card">
+              <div class="section-title-row">
+                <span class="step-num">2</span>
+                <div>
+                  <h2 class="section-title">Obuna muddatini tanlang</h2>
+                  <p class="section-hint">Muddat qancha uzoq bo'lsa, xizmat uzluksiz ishlaydi</p>
+                </div>
+              </div>
+
+              <div class="duration-pills">
+                @for (m of durationOptions; track m.months) {
+                  <button 
+                    type="button" 
+                    class="duration-pill"
+                    [class.active]="selectedMonths() === m.months"
+                    (click)="selectedMonths.set(m.months)"
+                  >
+                    <span class="pill-months">{{ m.label }}</span>
+                    @if (m.badge) {
+                      <span class="pill-badge">{{ m.badge }}</span>
+                    }
+                  </button>
                 }
+              </div>
 
-                <div class="modal-actions">
-                  <button class="btn btn-outline" (click)="closeCheckoutModal()">Bekor qilish</button>
-                  <button class="btn btn-primary" [disabled]="initiatingCheckout() || calculating()" (click)="confirmCheckout()">
-                    @if (initiatingCheckout()) {
-                      <span>Yaratilmoqda...</span>
+              <!-- TOTAL SUMMARY DISPLAY -->
+              <div class="total-calc-box">
+                <div class="calc-row">
+                  <span class="calc-label">Tanlangan tarif:</span>
+                  <span class="calc-value">{{ selectedPlan()?.name || 'Tarif tanlanmagan' }}</span>
+                </div>
+                <div class="calc-row">
+                  <span class="calc-label">Muddat:</span>
+                  <span class="calc-value">{{ selectedMonths() }} oy</span>
+                </div>
+                <div class="calc-divider"></div>
+                <div class="calc-row total-row">
+                  <span class="total-label">Jami to'lov summasi:</span>
+                  <span class="total-amount">{{ formatPrice(totalAmount()) }} <small>UZS</small></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: PAYMENT REQUISITES & RECEIPT UPLOAD -->
+          <div class="form-col right-col">
+            <!-- STEP 3: PAYMENT CARD REQUISITES -->
+            <div class="card form-section-card">
+              <div class="section-title-row">
+                <span class="step-num">3</span>
+                <div>
+                  <h2 class="section-title">To'lov rekvizitlari</h2>
+                  <p class="section-hint">Quyidagi karta raqamiga to'lov qiling</p>
+                </div>
+              </div>
+
+              <!-- CREDIT CARD MOCKUP -->
+              <div class="credit-card-mockup">
+                <div class="card-bg-glow"></div>
+                
+                <div class="card-top-row">
+                  <div class="bank-brand-title">{{ paymentCard()?.bankName || 'O‘zbekiston Banki' }}</div>
+                  <div class="contactless-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+                      <path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+                      <path d="M12 10c-1.1 0-2 .9-2 2s.9 2 2 2" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- CHIP ICON -->
+                <div class="card-chip">
+                  <div class="chip-line"></div>
+                  <div class="chip-line"></div>
+                </div>
+
+                <!-- CARD NUMBER WITH COPY BUTTON -->
+                <div class="card-number-wrapper">
+                  <div class="card-number">{{ formatCardNumber(paymentCard()?.cardNumber) }}</div>
+                  <button 
+                    type="button" 
+                    class="btn-copy-card" 
+                    (click)="copyCardNumber(paymentCard()?.cardNumber)"
+                    [title]="'Karta raqamini nusxalash'"
+                  >
+                    @if (copied()) {
+                      <span class="copied-indicator">✓ Nusxalandi!</span>
                     } @else {
-                      <span>Hisob-faktura Yaratish →</span>
+                      <span class="copy-text">📋 Nusxa olish</span>
                     }
                   </button>
                 </div>
-              } @else {
-                <!-- Invoice Confirmation Screen & Interactive Mock Simulator -->
-                <div class="invoice-created-box">
-                  <div class="invoice-icon">🧾</div>
-                  <h3>Hisob-faktura Muvaffaqiyatli Yaratildi!</h3>
-                  <div class="invoice-number-pill">{{ checkoutCreatedInvoice()!.invoiceNumber }}</div>
 
-                  <p class="invoice-amount-desc">
-                    To'lanadigan summa: <strong>{{ formatPrice(checkoutCreatedInvoice()!.finalAmount) }} {{ checkoutCreatedInvoice()!.currency }}</strong>
-                  </p>
+                <!-- CARD BOTTOM INFO -->
+                <div class="card-bottom-row">
+                  <div class="card-holder-col">
+                    <span class="holder-label">KARTA EGASI</span>
+                    <span class="holder-name">{{ paymentCard()?.cardHolder || 'Platform Administrator' }}</span>
+                  </div>
+                  <div class="payment-system-tag">
+                    <span class="sys-text">HUMO / UZCARD</span>
+                  </div>
+                </div>
+              </div>
 
-                  <!-- Real-time Test Payment Simulator (Mock Gateway) -->
-                  <div class="mock-simulator-box">
-                    <div class="simulator-header">
-                      <span class="simulator-badge">🧪 To'lov Simulyatori (Mock Gateway)</span>
-                      <p class="simulator-desc">
-                        SaaS obunani darhol faollashtirish va imkoniyatlarni ochish uchun test to'lovini amalga oshiring:
-                      </p>
+              <!-- INSTRUCTIONS BOX -->
+              <div class="instructions-box">
+                <div class="inst-icon">💡</div>
+                <div class="inst-text">
+                  <strong>To'lov izohi:</strong>
+                  {{ paymentCard()?.instructions || 'To‘lov qilgach, chek skrinshotini quyida biriktiring va ariza yuboring.' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 4: RECEIPT UPLOAD & SUBMIT -->
+            <div class="card form-section-card">
+              <div class="section-title-row">
+                <span class="step-num">4</span>
+                <div>
+                  <h2 class="section-title">To'lov chekini yuklash</h2>
+                  <p class="section-hint">To'lov qilinganligini tasdiqlovchi chek rasmi yoki PDF fayli</p>
+                </div>
+              </div>
+
+              <!-- DROPZONE -->
+              <div 
+                class="receipt-dropzone"
+                [class.has-file]="!!selectedFile"
+                (click)="fileInput.click()"
+                (dragover)="onDragOver($event)"
+                (drop)="onFileDrop($event)"
+              >
+                <input 
+                  #fileInput 
+                  type="file" 
+                  accept="image/png,image/jpeg,image/webp,application/pdf"
+                  class="hidden-file-input" 
+                  (change)="onFileSelected($event)" 
+                />
+
+                @if (!selectedFile) {
+                  <div class="dropzone-empty">
+                    <div class="upload-icon-circle">📤</div>
+                    <div class="dropzone-text">
+                      <strong>Chek faylini tanlash</strong> yoki shu yerga tashlang
                     </div>
-
-                    <div class="mock-btn-group">
-                      <button class="btn btn-mock-success" [disabled]="processingPayment()" (click)="handleMockPayment('SUCCESS')">
-                        🟢 Test To'lov: Muvaffaqiyatli (Success)
-                      </button>
-                      <button class="btn btn-mock-fail" [disabled]="processingPayment()" (click)="handleMockPayment('FAILED')">
-                        🔴 Test To'lov: Xatolik (Failed)
-                      </button>
-                      <button class="btn btn-mock-cancel" [disabled]="processingPayment()" (click)="handleMockPayment('CANCELLED')">
-                        ⚪ Bekor Qilish (Cancel)
-                      </button>
+                    <span class="dropzone-sub">PNG, JPG, WEBP yoki PDF (Maksimal 10 MB)</span>
+                  </div>
+                } @else {
+                  <div class="dropzone-filled" (click)="$event.stopPropagation()">
+                    <div class="file-preview-row">
+                      @if (previewUrl) {
+                        <img [src]="previewUrl" alt="Chek preview" class="preview-thumbnail" />
+                      } @else {
+                        <div class="pdf-icon-box">📄</div>
+                      }
+                      <div class="file-details">
+                        <span class="file-name">{{ selectedFile.name }}</span>
+                        <span class="file-size">{{ formatFileSize(selectedFile.size) }}</span>
+                      </div>
+                      <button type="button" class="btn-remove-file" (click)="removeFile($event)">✕</button>
                     </div>
-
-                    @if (processingPayment()) {
-                      <div class="simulator-spinner-row">
-                        <div class="spinner-sm"></div>
-                        <span>To'lov qayta ishlanmoqda...</span>
-                      </div>
-                    }
-
-                    @if (paymentMessage()) {
-                      <div class="simulator-alert" [class.alert-success]="paymentSuccess()" [class.alert-error]="!paymentSuccess()">
-                        {{ paymentMessage() }}
-                      </div>
-                    }
                   </div>
+                }
+              </div>
 
-                  <div class="manual-instruction-alert">
-                    <p><strong>To'lov tizimlari:</strong></p>
-                    <p>
-                      Super Admin tomonidan Click, Payme, Uzcard va Humo sozlanishi mumkin. 
-                      Hisob-faktura raqami: <code>{{ checkoutCreatedInvoice()!.invoiceNumber }}</code>
-                    </p>
-                  </div>
+              <!-- CLIENT NOTES (OPTIONAL) -->
+              <div class="form-group notes-group">
+                <label for="clientNotes" class="form-label">Qo'shimcha izoh (ixtiyoriy):</label>
+                <input 
+                  id="clientNotes"
+                  type="text" 
+                  [(ngModel)]="clientNotes" 
+                  placeholder="Masalan: Paymedan to'landi, Tel: +998 90 123 45 67" 
+                  class="form-control" 
+                />
+              </div>
 
-                  <div class="modal-actions">
-                    <button class="btn btn-primary" (click)="closeCheckoutModal()">
-                      Tushunarli, Yopish
-                    </button>
-                  </div>
+              <!-- SUBMIT BUTTON -->
+              <div class="submit-action-box">
+                <button 
+                  type="button" 
+                  class="btn-submit-request" 
+                  [disabled]="submitting() || !selectedPlan() || !selectedFile"
+                  (click)="submitSubscriptionRequest()"
+                >
+                  @if (submitting()) {
+                    <span class="spinner-sm"></span>
+                    <span>Ariza yuborilmoqda...</span>
+                  } @else {
+                    <span>🚀 Ariza Yuborish ({{ formatPrice(totalAmount()) }} UZS)</span>
+                  }
+                </button>
+
+                @if (!selectedFile) {
+                  <p class="submit-warning">⚠️ Iltimos, arizani yuborish uchun to'lov chekini biriktiring</p>
+                }
+              </div>
+
+              @if (errorMessage()) {
+                <div class="alert alert-danger mt-3">
+                  {{ errorMessage() }}
                 </div>
               }
             </div>
@@ -755,213 +383,142 @@ import { FeatureService } from '../../core/services/feature.service';
         </div>
       }
 
-      <!-- Manual B2B Subscription Request Modal -->
-      @if (showRequestModal()) {
-        <div class="modal-overlay" (click)="closeRequestModal()">
-          <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <h2>Obunaga Ariza Berish (B2B / Bank / Chek)</h2>
-              <button class="btn-close" (click)="closeRequestModal()">✕</button>
+      <!-- ======================================================== -->
+      <!-- TAB 2: REQUESTS HISTORY TABLE -->
+      <!-- ======================================================== -->
+      @if (activeTab === 'history') {
+        <div class="card content-card history-card">
+          <div class="card-header-clean">
+            <div>
+              <h2 class="history-title">Arizalar Tarixi</h2>
+              <p class="history-subtitle">Restoraningiz tomonidan yuborilgan barcha obuna so'rovlari va ularning holati</p>
             </div>
+            <button class="btn btn-sm btn-outline-refresh" (click)="loadHistory()" [disabled]="loadingHistory()">
+              🔄 Yangilash
+            </button>
+          </div>
 
-            <div class="modal-body">
-              <!-- Step 1: Select Plan -->
-              <div class="step-section">
-                <label class="section-label">1. Tarif rejasini tanlang:</label>
-                <div class="plans-selection">
-                  @for (plan of availablePlans(); track plan.code) {
-                    <div class="modal-plan-card" 
-                         [class.active]="requestPlanCode() === plan.code"
-                         [class.pro-card]="plan.code === 'PRO'"
-                         (click)="selectRequestPlan(plan)">
-                      <div class="p-header">
-                        <div class="p-name">{{ plan.name }}</div>
-                        @if (plan.code === 'PRO') {
-                          <span class="pro-tag">⚡ Tavsiya etiladi</span>
-                        }
-                      </div>
-                      <div class="p-price">{{ formatPrice(plan.price) }} so'm <small>/ oy</small></div>
-                      <div class="p-features-summary">
-                        @if (plan.code === 'PRO') {
-                          <div class="feat-badge feat-pro">✅ Barcha Standard + Oshxona Ekrani (KDS) + Mobil Ilova</div>
+          @if (loadingHistory()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Tarix yuklanmoqda...</p>
+            </div>
+          } @else if (requestHistory().length === 0) {
+            <div class="empty-state">
+              <span class="empty-icon">📭</span>
+              <p>Hozircha hech qanday ariza topshirilmagan.</p>
+              <button class="btn btn-primary-sm mt-3" (click)="activeTab = 'form'">
+                + Yangi Ariza Berish
+              </button>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="styled-table">
+                <thead>
+                  <tr>
+                    <th>Tarif</th>
+                    <th>Muddat</th>
+                    <th>To'lov Summasi</th>
+                    <th>To'lov Cheki</th>
+                    <th>Yuborilgan Sana</th>
+                    <th>Holati</th>
+                    <th>Izoh / Ko'rib chiqish</th>
+                    <th class="text-right">Amal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (req of requestHistory(); track req.id) {
+                    <tr [class.highlight-row]="req.status === 'PENDING_APPROVAL'">
+                      <td>
+                        <span class="plan-badge" [class.badge-pro]="req.planCode === 'PRO'">
+                          {{ req.planName }}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="duration-text">{{ req.durationMonths }} oy</span>
+                      </td>
+                      <td>
+                        <strong class="amount-text">{{ formatPrice(req.amount) }}</strong>
+                        <small class="currency-text">{{ req.currency }}</small>
+                      </td>
+                      <td>
+                        @if (req.receiptUrl) {
+                          @if (isImage(req.receiptUrl)) {
+                            <div class="receipt-thumb-wrapper" (click)="openReceiptModal(resolveReceiptUrl(req.receiptUrl))">
+                              <img [src]="resolveReceiptUrl(req.receiptUrl)" alt="Chek" class="receipt-thumb" />
+                              <span class="thumb-hover-overlay">🔍</span>
+                            </div>
+                          } @else {
+                            <a [href]="resolveReceiptUrl(req.receiptUrl)" target="_blank" class="receipt-pdf-link">
+                              📄 PDF Chek
+                            </a>
+                          }
                         } @else {
-                          <div class="feat-badge feat-std">Barcha POS funksiyalari (❌ KDS va Mobil Ilovasiz)</div>
+                          <span class="text-muted">—</span>
                         }
-                      </div>
-                      <div class="p-limit">♾️ Barcha resurslar cheksiz</div>
-                    </div>
+                      </td>
+                      <td>
+                        <span class="date-text">{{ formatDate(req.createdAt) }}</span>
+                      </td>
+                      <td>
+                        <span class="status-badge" [ngClass]="getStatusBadgeClass(req.status)">
+                          {{ getStatusLabel(req.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (req.status === 'REJECTED' && req.rejectionReason) {
+                          <span class="reject-reason-text">Sabab: {{ req.rejectionReason }}</span>
+                        } @else if (req.status === 'APPROVED' && req.reviewedAt) {
+                          <span class="approved-date-text">Tasdiqlandi: {{ formatDate(req.reviewedAt) }}</span>
+                        } @else if (req.clientNotes) {
+                          <span class="client-notes-text">"{{ req.clientNotes }}"</span>
+                        } @else {
+                          <span class="text-muted">—</span>
+                        }
+                      </td>
+                      <td class="text-right">
+                        @if (req.status === 'PENDING_APPROVAL') {
+                          <button 
+                            type="button" 
+                            class="btn btn-sm btn-outline-danger" 
+                            (click)="cancelSpecificRequest(req.id)"
+                            [disabled]="cancelling()"
+                          >
+                            Bekor qilish
+                          </button>
+                        } @else {
+                          <span class="text-muted">—</span>
+                        }
+                      </td>
+                    </tr>
                   }
-                </div>
-              </div>
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
 
-              <!-- Step 2: Select Duration -->
-              <div class="step-section">
-                <label class="section-label">2. Obuna muddatini tanlang:</label>
-                <div class="months-selection">
-                  @for (opt of monthOptions; track opt.value) {
-                    <div class="month-card" 
-                         [class.active]="requestMonths() === opt.value"
-                         (click)="selectRequestMonths(opt.value)">
-                      @if (opt.badge) {
-                        <span class="month-badge">{{ opt.badge }}</span>
-                      }
-                      <div class="month-label">{{ opt.label }}</div>
-                      <div class="month-price-hint">{{ opt.hint }}</div>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              <!-- Step 3: Select Payment Method -->
-              <div class="step-section">
-                <label class="section-label">3. To'lov turini tanlang:</label>
-                <div class="payment-methods-grid">
-                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'BANK_TRANSFER'" (click)="requestPaymentMethod.set('BANK_TRANSFER')">
-                    <div class="pm-icon">🏦</div>
-                    <div class="pm-info">
-                      <div class="pm-title">Bank Hisob-Raqamiga (Perechislenie)</div>
-                      <div class="pm-desc">Yuridik shaxslar uchun to'lov topshirig'i (schet-faktura)</div>
-                    </div>
-                  </div>
-
-                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'CARD_TRANSFER'" (click)="requestPaymentMethod.set('CARD_TRANSFER')">
-                    <div class="pm-icon">💳</div>
-                    <div class="pm-info">
-                      <div class="pm-title">Karta Raqamiga O'tkazma</div>
-                      <div class="pm-desc">Uzcard / Humo orqali to'lov cheki bilan</div>
-                    </div>
-                  </div>
-
-                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'CLICK_PAYME_MANUAL'" (click)="requestPaymentMethod.set('CLICK_PAYME_MANUAL')">
-                    <div class="pm-icon">📱</div>
-                    <div class="pm-info">
-                      <div class="pm-title">Click / Payme (Kvitansiya)</div>
-                      <div class="pm-desc">Ilova orqali to'langan kvitansiya skrinshoti bilan</div>
-                    </div>
-                  </div>
-
-                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'CASH'" (click)="requestPaymentMethod.set('CASH')">
-                    <div class="pm-icon">💵</div>
-                    <div class="pm-info">
-                      <div class="pm-title">Naqd To'lov (Kassaga)</div>
-                      <div class="pm-desc">Ofis yoki vakilga naqd to'lov qilish</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Company Bank Details Card -->
-              <div class="bank-details-box">
-                <div class="bd-header">
-                  <span class="bd-title">📋 Rasmiy To'lov Rekvizitlari</span>
-                  <span class="bd-tag">Kompaniya</span>
-                </div>
-                <div class="bd-grid">
-                  <div class="bd-item">
-                    <span class="bd-lbl">Qabul qiluvchi:</span>
-                    <strong>"RESTAURANT POS INNOVATION" MCHJ</strong>
-                  </div>
-                  <div class="bd-item">
-                    <span class="bd-lbl">H/R (Hisob raqam):</span>
-                    <strong class="code-font">2020 8000 9005 1234 5678</strong>
-                  </div>
-                  <div class="bd-item">
-                    <span class="bd-lbl">Bank:</span>
-                    <span>ATIB "Ipoteka Bank" Toshkent sh. filiali</span>
-                  </div>
-                  <div class="bd-item">
-                    <span class="bd-lbl">MFO:</span>
-                    <strong class="code-font">00423</strong>
-                  </div>
-                  <div class="bd-item">
-                    <span class="bd-lbl">STIR / INN:</span>
-                    <strong class="code-font">308 123 456</strong>
-                  </div>
-                  <div class="bd-item">
-                    <span class="bd-lbl">Karta raqami (Karta o'tkazmasi uchun):</span>
-                    <strong class="code-font">9860 3501 2345 6789</strong> (Humo)
-                  </div>
-                </div>
-              </div>
-
-              <!-- Step 4: Upload Receipt -->
-              <div class="step-section">
-                <label class="section-label">4. To'lov cheki yoki kvitansiya fayli (Ixtiyoriy lekin tavsiya etiladi):</label>
-                <div class="receipt-upload-box">
-                  <input type="file" #receiptInput accept="image/png,image/jpeg,image/webp,application/pdf" (change)="onReceiptFileSelected($event)" style="display: none" />
-                  
-                  @if (uploadingReceipt()) {
-                    <div class="upload-progress">
-                      <div class="spinner-sm"></div>
-                      <span>Fayl serverga yuklanmoqda...</span>
-                    </div>
-                  } @else if (requestReceiptUrl()) {
-                    <div class="receipt-preview">
-                      <span class="receipt-check">✅ To'lov cheki yuklandi</span>
-                      <a [href]="requestReceiptUrl()" target="_blank" class="receipt-link">📎 Chekni ko'rish</a>
-                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="requestReceiptUrl.set('')">O'chirish</button>
-                    </div>
-                  } @else {
-                    <button type="button" class="btn btn-outline" (click)="receiptInput.click()">
-                      📎 Chek yoki kvitansiya faylini yuklash (JPG, PNG, PDF)
-                    </button>
-                    <span class="upload-hint">Maksimal hajm: 10 MB</span>
-                  }
-                </div>
-              </div>
-
-              <!-- Step 5: Notes -->
-              <div class="step-section">
-                <label class="section-label">5. Qo'shimcha izoh yoki to'lovchi rekviziti (Ixtiyoriy):</label>
-                <textarea [(ngModel)]="requestClientNotes" class="form-control" rows="2" placeholder="Masalan: To'lov Ipoteka bank ilovasidan o'tkazildi, to'lovchi: Rustamov A."></textarea>
-              </div>
-
-              <!-- Price Summary -->
-              @if (requestCalcResult()) {
-                <div class="price-summary-box">
-                  <div class="price-summary-row">
-                    <span>Tanlangan tarif:</span>
-                    <strong>{{ requestCalcResult()!.planName }}</strong>
-                  </div>
-                  <div class="price-summary-row">
-                    <span>Muddat:</span>
-                    <span>{{ requestCalcResult()!.months }} oy</span>
-                  </div>
-                  <div class="price-summary-row">
-                    <span>Asosiy narx:</span>
-                    <span>{{ formatPrice(requestCalcResult()!.baseAmount) }} so'm</span>
-                  </div>
-                  @if (requestCalcResult()!.discountAmount > 0) {
-                    <div class="price-summary-row discount-row">
-                      <span>Muddat chegirmasi ({{ requestCalcResult()!.discountPercent }}%):</span>
-                      <span class="text-success">-{{ formatPrice(requestCalcResult()!.discountAmount) }} so'm</span>
-                    </div>
-                  }
-                  <div class="price-summary-total">
-                    <span>To'lanadigan yakuniy summa:</span>
-                    <strong>{{ formatPrice(requestCalcResult()!.finalAmount) }} so'm</strong>
-                  </div>
-                </div>
-              }
-
-              @if (requestError()) {
-                <div class="alert alert-error">{{ requestError() }}</div>
-              }
-
-              @if (requestSuccessMessage()) {
-                <div class="alert alert-success">{{ requestSuccessMessage() }}</div>
-              }
-
-              <div class="modal-actions">
-                <button class="btn btn-outline" (click)="closeRequestModal()">Bekor qilish</button>
-                <button class="btn btn-primary" [disabled]="submittingRequest() || uploadingReceipt()" (click)="submitSubscriptionRequest()">
-                  @if (submittingRequest()) {
-                    <span>Yuborilmoqda...</span>
-                  } @else {
-                    <span>Ariza Yuborish →</span>
-                  }
-                </button>
-              </div>
+      <!-- ======================================================== -->
+      <!-- MODAL: RECEIPT IMAGE LIGHTBOX -->
+      <!-- ======================================================== -->
+      @if (activeReceiptModal()) {
+        <div class="modal-backdrop" (click)="activeReceiptModal.set(null)">
+          <div class="modal-card receipt-modal-card" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3 class="modal-title">To'lov Cheki Skrinshoti</h3>
+              <button type="button" class="btn-close-modal" (click)="activeReceiptModal.set(null)">✕</button>
+            </div>
+            <div class="modal-body-img">
+              <img [src]="resolveReceiptUrl(activeReceiptModal())" alt="Chek to'liq rasm" class="full-receipt-img" />
+            </div>
+            <div class="modal-footer">
+              <a [href]="resolveReceiptUrl(activeReceiptModal())" target="_blank" class="btn btn-outline-primary">
+                Alohida oynada ochish ↗
+              </a>
+              <button type="button" class="btn btn-secondary" (click)="activeReceiptModal.set(null)">
+                Yopish
+              </button>
             </div>
           </div>
         </div>
@@ -969,1433 +526,1515 @@ import { FeatureService } from '../../core/services/feature.service';
     </div>
   `,
   styles: [`
-    .billing-page {
-      padding: 24px;
+    .billing-container {
       max-width: 1200px;
       margin: 0 auto;
-      color: var(--text-primary, #f8fafc);
+      padding: 1.5rem 1rem 3rem 1rem;
+      color: var(--text-color, #1f2937);
+      font-family: inherit;
     }
 
     .billing-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
       flex-wrap: wrap;
-      gap: 16px;
-
-      .page-title {
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 4px;
-      }
-
-      .page-subtitle {
-        font-size: 14px;
-        color: var(--text-secondary, #94a3b8);
-      }
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
 
-    .banner {
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin: 0 0 0.25rem 0;
+      letter-spacing: -0.025em;
+    }
+
+    .page-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted, #6b7280);
+      margin: 0;
+    }
+
+    .current-sub-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #065f46;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+
+    .divider {
+      color: rgba(6, 95, 70, 0.4);
+    }
+
+    /* TABS NAV */
+    .billing-tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+    }
+
+    .billing-tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 16px 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      margin-bottom: -2px;
+    }
 
-      .banner-icon { font-size: 26px; }
-      .banner-content {
-        flex: 1;
-        h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
-        p { font-size: 13px; margin: 0; line-height: 1.4; }
-      }
+    .billing-tab-btn:hover {
+      color: #1e293b;
+    }
 
-      &-expired {
-        background: rgba(239, 68, 68, 0.15);
-        border: 1px solid rgba(239, 68, 68, 0.4);
-        color: #fca5a5;
-        h3 { color: #ef4444; }
-      }
+    .billing-tab-btn.active {
+      color: #4f46e5;
+      border-bottom-color: #4f46e5;
+    }
 
-      &-urgent {
-        background: rgba(239, 68, 68, 0.12);
-        border: 1px solid rgba(239, 68, 68, 0.35);
-        color: #fca5a5;
-        h3 { color: #f87171; }
-      }
+    .tab-badge {
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 0.75rem;
+      font-weight: 800;
+      border-radius: 9999px;
+      padding: 0.15rem 0.5rem;
+    }
 
-      &-warning {
-        background: rgba(245, 158, 11, 0.15);
-        border: 1px solid rgba(245, 158, 11, 0.4);
-        color: #fcd34d;
-        h3 { color: #f59e0b; }
-      }
+    /* STATUS BANNERS */
+    .status-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.3s ease-out;
+    }
 
-      &-info {
-        background: rgba(99, 102, 241, 0.12);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        color: #c7d2fe;
-        h3 { color: #818cf8; }
-      }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-      &-trial {
-        background: rgba(245, 158, 11, 0.15);
-        border: 1px solid rgba(245, 158, 11, 0.35);
-        color: #fcd34d;
-        h3 { color: #f59e0b; }
+    .banner-pending {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 1.5px solid #f59e0b;
+      color: #78350f;
+    }
+
+    .banner-rejected {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border: 1.5px solid #ef4444;
+      color: #7f1d1d;
+    }
+
+    .banner-icon-col {
+      flex-shrink: 0;
+    }
+
+    .pulse-ring {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #fde68a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      position: relative;
+    }
+
+    .icon-static {
+      font-size: 2rem;
+      display: block;
+    }
+
+    .banner-body {
+      flex: 1;
+    }
+
+    .banner-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      background: #d97706;
+      color: white;
+      margin-bottom: 0.35rem;
+    }
+
+    .banner-badge.red {
+      background: #dc2626;
+    }
+
+    .banner-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .banner-desc {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    .pending-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .meta-item {
+      font-size: 0.875rem;
+    }
+
+    .meta-label {
+      color: #92400e;
+      margin-right: 0.4rem;
+    }
+
+    .meta-val {
+      font-weight: 700;
+      color: #78350f;
+    }
+
+    .meta-val.highlight {
+      color: #b45309;
+      font-size: 0.95rem;
+    }
+
+    .receipt-link-row {
+      margin-top: 0.75rem;
+    }
+
+    .receipt-preview-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
+    .banner-actions {
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    /* GRID FORM */
+    .order-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .order-form-grid {
+        grid-template-columns: 1fr;
       }
     }
 
-    .billing-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 24px;
-
-      @media (max-width: 850px) {
-        grid-template-columns: 1fr;
-      }
+    .form-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
     }
 
     .card {
-      background: var(--bg-secondary, #1e293b);
-      border: 1px solid var(--border, #334155);
-      border-radius: 14px;
-      padding: 24px;
-
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--border, #334155);
-
-        .card-title {
-          font-size: 16px;
-          font-weight: 700;
-        }
-        .card-subtitle {
-          font-size: 12px;
-          color: var(--text-muted, #64748b);
-        }
-      }
+      background: #ffffff;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(229, 231, 235, 0.8);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      padding: 1.5rem;
     }
 
-    .plan-price-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 20px;
-
-      .plan-name {
-        font-size: 24px;
-        font-weight: 800;
-        color: #6366f1;
-        margin-bottom: 4px;
-      }
-
-      .plan-code-badge {
-        font-size: 11px;
-        font-weight: 700;
-        background: rgba(99, 102, 241, 0.15);
-        color: #818cf8;
-        padding: 2px 8px;
-        border-radius: 4px;
-      }
-
-      .price-wrap {
-        .price-val { font-size: 24px; font-weight: 800; }
-        .price-cur { font-size: 12px; color: var(--text-secondary, #94a3b8); margin-left: 4px; }
-      }
-    }
-
-    .plan-details-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
-
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-
-        .label { color: var(--text-secondary, #94a3b8); }
-        .val { font-weight: 600; color: var(--text-primary, #f8fafc); }
-
-        &.highlight {
-          background: rgba(99, 102, 241, 0.1);
-          padding: 8px 12px;
-          border-radius: 6px;
-          .days-val { color: #818cf8; font-weight: 700; }
-        }
-      }
-    }
-    .unlimited-pill {
-      font-size: 11px;
-      font-weight: 700;
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
-      padding: 3px 8px;
-      border-radius: 9999px;
-      display: inline-block;
-      margin-left: 8px;
-      vertical-align: middle;
-    }
-
-    .unlimited-notice {
+    .section-title-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      background: rgba(99, 102, 241, 0.08);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 8px;
-      padding: 10px 14px;
-      margin-bottom: 16px;
-      font-size: 12px;
-      color: #c7d2fe;
-
-      .notice-icon { font-size: 16px; }
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
     }
 
-    .resource-grid {
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      font-weight: 800;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+    }
+
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .section-hint {
+      font-size: 0.825rem;
+      color: #6b7280;
+      margin: 0.15rem 0 0 0;
+    }
+
+    /* PLANS */
+    .plans-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 1rem;
+    }
 
-      @media (max-width: 600px) {
+    @media (max-width: 600px) {
+      .plans-grid {
         grid-template-columns: 1fr;
       }
     }
 
-    .resource-item {
+    .plan-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      background: #fafafa;
+    }
+
+    .plan-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+
+    .plan-card.selected {
+      border-color: #6366f1;
+      background: linear-gradient(180deg, #f5f3ff 0%, #ffffff 100%);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.15);
+    }
+
+    .plan-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .plan-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: #e2e8f0;
+      color: #475569;
+      letter-spacing: 0.05em;
+    }
+
+    .plan-tag.tag-pro {
+      background: #fef08a;
+      color: #854d0e;
+    }
+
+    .radio-circle {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .radio-circle.checked {
+      border-color: #6366f1;
+      background: #6366f1;
+    }
+
+    .radio-circle.checked::after {
+      content: '';
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .plan-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .plan-desc {
+      font-size: 0.785rem;
+      color: #64748b;
+      margin: 0 0 0.85rem 0;
+      line-height: 1.35;
+      min-height: 2rem;
+    }
+
+    .plan-price-block {
+      margin-bottom: 0.85rem;
+    }
+
+    .plan-amount {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #1e1b4b;
+    }
+
+    .plan-period {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-left: 0.25rem;
+    }
+
+    .plan-features-mini {
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .feat-item {
+      font-size: 0.75rem;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    /* DURATION PILLS */
+    .duration-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.65rem;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 500px) {
+      .duration-pills {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .duration-pill {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 0.75rem 0.5rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      transition: all 0.2s;
+    }
+
+    .duration-pill:hover {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+    }
+
+    .duration-pill.active {
+      border-color: #6366f1;
+      background: #eef2ff;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+    }
+
+    .pill-months {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .duration-pill.active .pill-months {
+      color: #4338ca;
+    }
+
+    .pill-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #059669;
+      background: #d1fae5;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    /* CALC BOX */
+    .total-calc-box {
+      background: #f8fafc;
+      border-radius: 0.85rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid #e2e8f0;
+    }
+
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      font-size: 0.875rem;
+    }
+
+    .calc-label {
+      color: #64748b;
+    }
+
+    .calc-value {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .calc-divider {
+      height: 1px;
+      background: #e2e8f0;
+      margin: 0.6rem 0;
+    }
+
+    .total-row {
+      margin-bottom: 0;
+    }
+
+    .total-label {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .total-amount {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #4338ca;
+    }
+
+    /* CREDIT CARD MOCKUP */
+    .credit-card-mockup {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e1b4b 100%);
+      color: white;
+      border-radius: 1.25rem;
+      padding: 1.5rem;
+      box-shadow: 0 12px 30px rgba(49, 46, 129, 0.35);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .card-bg-glow {
+      position: absolute;
+      top: -30%;
+      right: -30%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(129, 140, 248, 0.3) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .bank-brand-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #e0e7ff;
+    }
+
+    .card-chip {
+      width: 44px;
+      height: 32px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding: 4px;
+      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .chip-line {
+      height: 1px;
+      background: rgba(0, 0, 0, 0.3);
+      width: 100%;
+    }
+
+    .card-number-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .card-number {
+      font-size: 1.35rem;
+      font-family: monospace;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-copy-card {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      border-radius: 8px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-copy-card:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .copied-indicator {
+      color: #4ade80;
+      font-weight: 700;
+    }
+
+    .card-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .holder-label {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      margin-bottom: 0.2rem;
+    }
+
+    .holder-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .payment-system-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: #cbd5e1;
+    }
+
+    /* INSTRUCTIONS */
+    .instructions-box {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      background: #f1f5f9;
+      border-left: 4px solid #6366f1;
+      padding: 0.85rem 1rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.85rem;
+      line-height: 1.45;
+      color: #334155;
+    }
+
+    .inst-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    /* RECEIPT DROPZONE */
+    .receipt-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafafa;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .receipt-dropzone:hover {
+      border-color: #6366f1;
+      background: #f5f3ff;
+    }
+
+    .receipt-dropzone.has-file {
+      border-color: #10b981;
+      background: #f0fdf4;
+      border-style: solid;
+    }
+
+    .hidden-file-input {
+      display: none;
+    }
+
+    .upload-icon-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #eef2ff;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      background: var(--bg-primary, #0f172a);
-      border: 1px solid var(--border, #334155);
-      border-radius: 8px;
-      transition: border-color 0.2s;
-
-      &:hover {
-        border-color: rgba(99, 102, 241, 0.5);
-      }
-
-      .res-icon {
-        font-size: 20px;
-        flex-shrink: 0;
-      }
-
-      .res-body {
-        flex: 1;
-        overflow: hidden;
-      }
-
-      .res-name {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-secondary, #94a3b8);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 2px;
-      }
-
-      .res-stat {
-        font-size: 12px;
-        color: var(--text-primary, #f8fafc);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-
-        strong {
-          color: #f8fafc;
-          font-weight: 700;
-        }
-      }
-
-      .badge-infinite {
-        font-size: 10px;
-        font-weight: 700;
-        background: rgba(16, 185, 129, 0.15);
-        color: #34d399;
-        padding: 1px 6px;
-        border-radius: 4px;
-        display: inline-block;
-      }
+      justify-content: center;
+      font-size: 1.5rem;
+      margin: 0 auto 0.75rem auto;
     }
 
-    .tabs-nav {
+    .dropzone-text {
+      font-size: 0.95rem;
+      color: #334155;
+      margin-bottom: 0.25rem;
+    }
+
+    .dropzone-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+
+    .file-preview-row {
       display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-
-      .tab-btn {
-        padding: 10px 18px;
-        background: var(--bg-secondary, #1e293b);
-        border: 1px solid var(--border, #334155);
-        color: var(--text-secondary, #94a3b8);
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-
-        &:hover {
-          color: white;
-          border-color: #6366f1;
-        }
-
-        &.active {
-          background: #6366f1;
-          color: white;
-          border-color: #6366f1;
-        }
-      }
+      align-items: center;
+      gap: 0.75rem;
+      text-align: left;
     }
 
-    .data-table {
+    .preview-thumbnail {
+      width: 52px;
+      height: 52px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .pdf-icon-box {
+      width: 52px;
+      height: 52px;
+      background: #fee2e2;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .file-details {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .file-name {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    .btn-remove-file {
+      background: none;
+      border: none;
+      color: #ef4444;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+
+    .notes-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 0.35rem;
+    }
+
+    .form-control {
+      width: 100%;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 0.65rem;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    /* SUBMIT BUTTON */
+    .submit-action-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .btn-submit-request {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      border-radius: 0.85rem;
+      padding: 1rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-submit-request:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+    }
+
+    .btn-submit-request:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .submit-warning {
+      font-size: 0.775rem;
+      color: #92400e;
+      text-align: center;
+      margin: 0;
+    }
+
+    .spinner-sm {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-outline-danger {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline-danger:hover:not(:disabled) {
+      background: #ef4444;
+      color: white;
+    }
+
+    .alert {
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .alert-danger {
+      background: #fee2e2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+    }
+
+    /* HISTORY TAB STYLES */
+    .history-card {
+      margin-top: 0.5rem;
+    }
+
+    .card-header-clean {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .history-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .history-subtitle {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .btn-outline-refresh {
+      background: transparent;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #475569;
+      transition: all 0.2s;
+    }
+
+    .btn-outline-refresh:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    /* TABLE */
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .styled-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 0.875rem;
+    }
 
-      th, td {
-        padding: 12px 16px;
-        text-align: left;
-        border-bottom: 1px solid var(--border, #334155);
-      }
+    .styled-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+    }
 
-      th {
-        color: var(--text-muted, #64748b);
-        font-weight: 600;
-        font-size: 12px;
-        text-transform: uppercase;
-      }
+    .styled-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
 
-      .amount-cell {
-        font-weight: 700;
-        color: var(--text-primary, #f8fafc);
-      }
+    .highlight-row {
+      background: #fffbeb;
+    }
 
-      .provider-badge {
-        background: rgba(255,255,255,0.06);
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-      }
+    .plan-badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      background: #e2e8f0;
+      color: #334155;
+    }
 
-      .code-cell {
-        font-family: monospace;
-        color: var(--text-muted, #94a3b8);
-        font-size: 12px;
-      }
+    .plan-badge.badge-pro {
+      background: #fef08a;
+      color: #854d0e;
+    }
+
+    .duration-text {
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .amount-text {
+      font-weight: 800;
+      color: #1e1b4b;
+    }
+
+    .currency-text {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-left: 0.25rem;
+    }
+
+    .receipt-thumb-wrapper {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+    }
+
+    .receipt-thumb {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .thumb-hover-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .receipt-thumb-wrapper:hover .thumb-hover-overlay {
+      opacity: 1;
+    }
+
+    .receipt-pdf-link {
+      font-weight: 600;
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
+    .date-text {
+      color: #475569;
+      font-size: 0.8rem;
+      white-space: nowrap;
     }
 
     .status-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-size: 11px;
+      display: inline-block;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
       font-weight: 700;
-      text-transform: uppercase;
-
-      &.status-active { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-      &.status-trial { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-      &.status-expiring { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-      &.status-expired { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-      &.status-paid { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-      &.status-pending { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
-      &.status-cancelled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+      white-space: nowrap;
     }
 
-    .modal-overlay {
+    .badge-pending {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+
+    .badge-approved {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+
+    .badge-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+
+    .reject-reason-text {
+      font-size: 0.75rem;
+      color: #dc2626;
+      font-weight: 500;
+    }
+
+    .approved-date-text {
+      font-size: 0.75rem;
+      color: #059669;
+      font-weight: 500;
+    }
+
+    .client-notes-text {
+      font-size: 0.75rem;
+      color: #0284c7;
+      font-style: italic;
+    }
+
+    .text-muted {
+      color: #94a3b8;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.785rem;
+    }
+
+    .btn-primary-sm {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .loading-state, .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #64748b;
+    }
+
+    .empty-icon {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #4f46e5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 0.75rem auto;
+    }
+
+    /* MODAL */
+    .modal-backdrop {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
       backdrop-filter: blur(4px);
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
       z-index: 1000;
-      padding: 20px;
-      overflow-y: auto;
+      padding: 1rem;
     }
 
     .modal-card {
-      background: var(--bg-secondary, #1e293b);
-      border: 1px solid var(--border, #334155);
-      border-radius: 16px;
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
       width: 100%;
-      max-width: 620px;
-      padding: 24px;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-      margin: auto;
+      max-width: 600px;
+      overflow: hidden;
+      animation: modalIn 0.2s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-
-      h2 { font-size: 18px; font-weight: 700; margin: 0; }
-      .btn-close {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary, #94a3b8);
-        font-size: 18px;
-        cursor: pointer;
-        &:hover { color: white; }
-      }
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #e2e8f0;
     }
 
-    .modal-body {
-      overflow-y: auto;
-      max-height: calc(85vh - 80px);
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0;
     }
 
-    .step-section {
-      margin-bottom: 20px;
-
-      .section-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary, #cbd5e1);
-        display: block;
-        margin-bottom: 10px;
-      }
-    }
-
-    .plans-selection {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-
-      @media (max-width: 550px) {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .modal-plan-card {
-      background: var(--bg-primary, #0f172a);
-      border: 2px solid var(--border, #334155);
-      border-radius: 12px;
-      padding: 16px;
+    .btn-close-modal {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
       cursor: pointer;
-      text-align: left;
-      transition: all 0.2s;
-      position: relative;
-
-      &:hover { border-color: #6366f1; }
-      &.active {
-        border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.08);
-        box-shadow: 0 0 0 1px #6366f1;
-      }
-
-      &.pro-card {
-        border-color: rgba(245, 158, 11, 0.4);
-        &.active {
-          border-color: #f59e0b;
-          background: rgba(245, 158, 11, 0.08);
-          box-shadow: 0 0 0 1px #f59e0b;
-        }
-      }
-
-      .p-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 6px;
-      }
-
-      .p-name { font-size: 15px; font-weight: 800; }
-      .pro-tag {
-        font-size: 10px;
-        font-weight: 700;
-        background: rgba(245, 158, 11, 0.2);
-        color: #f59e0b;
-        padding: 2px 6px;
-        border-radius: 4px;
-      }
-
-      .p-price {
-        font-size: 16px;
-        font-weight: 800;
-        color: #10b981;
-        margin-bottom: 8px;
-        small { font-size: 11px; font-weight: 500; color: var(--text-muted, #94a3b8); }
-      }
-
-      .p-features-summary {
-        margin-bottom: 8px;
-      }
-
-      .feat-badge {
-        font-size: 11px;
-        line-height: 1.4;
-        padding: 4px 8px;
-        border-radius: 6px;
-
-        &.feat-std {
-          background: rgba(255, 255, 255, 0.04);
-          color: var(--text-secondary, #94a3b8);
-        }
-
-        &.feat-pro {
-          background: rgba(99, 102, 241, 0.15);
-          color: #c7d2fe;
-          font-weight: 600;
-        }
-      }
-
-      .p-limit {
-        font-size: 11px;
-        color: #10b981;
-        font-weight: 600;
-      }
+      color: #64748b;
     }
 
-    .months-selection {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-
-      @media (max-width: 500px) {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    .month-card {
-      background: var(--bg-primary, #0f172a);
-      border: 2px solid var(--border, #334155);
-      border-radius: 10px;
-      padding: 12px 8px;
-      cursor: pointer;
+    .modal-body-img {
+      max-height: 70vh;
+      overflow: auto;
       text-align: center;
-      transition: all 0.2s;
-      position: relative;
-
-      &:hover { border-color: #6366f1; }
-      &.active {
-        border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.12);
-      }
-
-      .month-badge {
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #10b981;
-        color: white;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 9999px;
-        white-space: nowrap;
-      }
-
-      .month-label { font-size: 14px; font-weight: 700; margin-bottom: 4px; padding-top: 4px; }
-      .month-price-hint { font-size: 10px; color: var(--text-muted, #64748b); }
+      background: #0f172a;
+      padding: 1rem;
     }
 
-    .price-summary-box {
-      background: rgba(16, 185, 129, 0.06);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-
-      .price-summary-row {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13px;
-        color: var(--text-secondary, #cbd5e1);
-      }
-
-      .price-summary-total {
-        display: flex;
-        justify-content: space-between;
-        font-size: 15px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(16, 185, 129, 0.2);
-        color: var(--text-primary, #f8fafc);
-
-        strong { color: #10b981; font-size: 18px; font-weight: 800; }
-      }
+    .full-receipt-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
     }
 
-    .notice-box {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 12px;
-
-      &.notice-warning {
-        background: rgba(245, 158, 11, 0.1);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        color: #fcd34d;
-      }
-
-      &.notice-info {
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        color: #c7d2fe;
-      }
-    }
-
-    .invoice-created-box {
-      text-align: center;
-      padding: 16px;
-
-      .invoice-icon { font-size: 40px; margin-bottom: 10px; }
-      h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
-      .invoice-number-pill {
-        display: inline-block;
-        padding: 6px 14px;
-        background: rgba(99, 102, 241, 0.15);
-        color: #818cf8;
-        font-family: monospace;
-        font-size: 14px;
-        font-weight: 700;
-        border-radius: 6px;
-        margin-bottom: 12px;
-      }
-      .invoice-amount-desc {
-        font-size: 16px;
-        margin-bottom: 16px;
-        strong { color: #10b981; }
-      }
-      .manual-instruction-alert {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border, #334155);
-        border-radius: 8px;
-        padding: 12px;
-        text-align: left;
-        font-size: 12px;
-        color: var(--text-secondary, #94a3b8);
-        line-height: 1.5;
-        margin-bottom: 16px;
-        p { margin: 0 0 4px 0; &:last-child { margin: 0; } }
-      }
-    }
-
-    .mock-simulator-box {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.08));
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin: 16px 0;
-      text-align: left;
-
-      .simulator-header {
-        margin-bottom: 12px;
-      }
-
-      .simulator-badge {
-        display: inline-block;
-        font-size: 11px;
-        font-weight: 700;
-        background: #6366f1;
-        color: white;
-        padding: 3px 10px;
-        border-radius: 9999px;
-        margin-bottom: 6px;
-      }
-
-      .simulator-desc {
-        font-size: 12px;
-        color: var(--text-secondary, #cbd5e1);
-        margin: 0;
-        line-height: 1.4;
-      }
-
-      .mock-btn-group {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-      }
-
-      .btn-mock-success {
-        background: #10b981;
-        color: white;
-        flex: 1;
-        min-width: 140px;
-        &:hover { background: #059669; }
-      }
-
-      .btn-mock-fail {
-        background: #ef4444;
-        color: white;
-        flex: 1;
-        min-width: 140px;
-        &:hover { background: #dc2626; }
-      }
-
-      .btn-mock-cancel {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid var(--border, #334155);
-        color: var(--text-secondary, #cbd5e1);
-        &:hover { background: rgba(255, 255, 255, 0.15); }
-      }
-
-      .simulator-spinner-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 10px;
-        font-size: 12px;
-        color: #818cf8;
-      }
-
-      .spinner-sm {
-        width: 16px;
-        height: 16px;
-        border: 2px solid var(--border, #334155);
-        border-top-color: #6366f1;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-
-      .simulator-alert {
-        margin-top: 10px;
-        padding: 10px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 600;
-
-        &.alert-success {
-          background: rgba(16, 185, 129, 0.15);
-          border: 1px solid rgba(16, 185, 129, 0.3);
-          color: #34d399;
-        }
-
-        &.alert-error {
-          background: rgba(239, 68, 68, 0.15);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          color: #f87171;
-        }
-      }
-    }
-
-    .modal-actions {
+    .modal-footer {
       display: flex;
       justify-content: flex-end;
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .banner-pending-request {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fcd34d;
-      margin-bottom: 24px;
-      h3 { color: #f59e0b; }
-    }
-
-    .banner-rejected-request {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      margin-bottom: 24px;
-      h3 { color: #f87171; }
-    }
-
-    .modal-lg {
-      max-width: 760px;
-    }
-
-    .payment-methods-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-
-      @media (max-width: 600px) {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .pm-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 12px 14px;
-      background: var(--bg-primary, #0f172a);
-      border: 1px solid var(--border, #334155);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover {
-        border-color: rgba(99, 102, 241, 0.5);
-      }
-
-      &.active {
-        border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.1);
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
-      }
-
-      .pm-icon {
-        font-size: 24px;
-        flex-shrink: 0;
-      }
-
-      .pm-info {
-        flex: 1;
-      }
-
-      .pm-title {
-        font-size: 13px;
-        font-weight: 700;
-        color: var(--text-primary, #f8fafc);
-        margin-bottom: 2px;
-      }
-
-      .pm-desc {
-        font-size: 11px;
-        color: var(--text-muted, #94a3b8);
-        line-height: 1.3;
-      }
-    }
-
-    .bank-details-box {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-
-      .bd-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
-        .bd-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: #c7d2fe;
-        }
-
-        .bd-tag {
-          font-size: 10px;
-          font-weight: 700;
-          padding: 2px 6px;
-          background: rgba(99, 102, 241, 0.2);
-          color: #818cf8;
-          border-radius: 4px;
-        }
-      }
-
-      .bd-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px 16px;
-
-        @media (max-width: 600px) {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .bd-item {
-        font-size: 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
-        .bd-lbl {
-          font-size: 11px;
-          color: var(--text-muted, #94a3b8);
-        }
-
-        .code-font {
-          font-family: monospace;
-          color: #38bdf8;
-          letter-spacing: 0.5px;
-        }
-      }
-    }
-
-    .receipt-upload-box {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-
-      .upload-hint {
-        font-size: 11px;
-        color: var(--text-muted, #94a3b8);
-      }
-
-      .receipt-preview {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        border-radius: 6px;
-        font-size: 12px;
-
-        .receipt-check {
-          color: #10b981;
-          font-weight: 600;
-        }
-
-        .receipt-link {
-          color: #38bdf8;
-          text-decoration: underline;
-        }
-      }
-
-      .upload-progress {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: #818cf8;
-      }
-    }
-
-    .spinner-sm {
-      width: 18px;
-      height: 18px;
-      border: 2px solid rgba(99, 102, 241, 0.3);
-      border-top-color: #6366f1;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    .btn-xs {
-      padding: 4px 8px;
-      font-size: 11px;
-      border-radius: 4px;
-    }
-
-    .btn-outline-danger {
-      background: transparent;
-      border: 1px solid #ef4444;
-      color: #f87171;
-      &:hover {
-        background: rgba(239, 68, 68, 0.1);
-      }
-    }
-
-    .receipt-link {
-      color: #38bdf8;
-      font-size: 12px;
-      text-decoration: none;
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-
-      &.status-pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-      &.status-active, &.status-paid { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-      &.status-expired, &.status-cancelled { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-    }
-
-    .card-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
     }
 
     .btn {
-      padding: 10px 18px;
-      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 0.875rem;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: 1px solid transparent;
-
-      &-primary { background: #6366f1; color: white; &:hover { background: #4f46e5; } }
-      &-outline { background: transparent; border-color: var(--border, #334155); color: var(--text-primary, #f8fafc); }
-      &-outline-primary { background: transparent; border-color: #6366f1; color: #818cf8; width: 100%; &:hover { background: rgba(99, 102, 241, 0.1); } }
-      &-danger-dark { background: #ef4444; color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
-      &-warning-dark { background: #f59e0b; color: #1e1b4b; font-weight: 700; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
-      &-trial-action { background: #f59e0b; color: #1e1b4b; font-weight: 700; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
-      &-sm { padding: 6px 12px; font-size: 12px; }
+      border: none;
     }
 
-    .text-success { color: #10b981; }
-    .text-danger { color: #ef4444; }
-
-    .loading-box { text-align: center; padding: 40px; color: var(--text-secondary, #94a3b8); }
-    .spinner {
-      width: 36px; height: 36px; border: 3px solid var(--border, #334155);
-      border-top-color: #6366f1; border-radius: 50%;
-      animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-outline-primary {
+      background: transparent;
+      border: 1px solid #4f46e5;
+      color: #4f46e5;
+    }
   `]
 })
 export class RestaurantBillingComponent implements OnInit {
   private billingService = inject(BillingService);
-  private featureService = inject(FeatureService);
 
-  sub = signal<CurrentSubscriptionResponse | null>(null);
-  invoices = signal<InvoiceResponse[]>([]);
-  periods = signal<SubscriptionPeriodResponse[]>([]);
+  // Active Tab
+  activeTab: 'form' | 'history' = 'form';
+
+  // SIGNALS
+  currentSub = signal<CurrentSubscriptionResponse | null>(null);
   availablePlans = signal<PlanResponse[]>([]);
-  loading = signal(true);
-  activeTab: 'invoices' | 'periods' | 'requests' = 'invoices';
-
-  // Subscription Requests states
   latestRequest = signal<SubscriptionRequestResponse | null>(null);
   requestHistory = signal<SubscriptionRequestResponse[]>([]);
-  showRequestModal = signal(false);
-  requestPlanCode = signal<string>('STANDARD');
-  requestPlanId = signal<string>('');
-  requestMonths = signal<number>(1);
-  requestPaymentMethod = signal<string>('BANK_TRANSFER');
-  requestReceiptUrl = signal<string>('');
-  requestClientNotes = '';
-  requestCalcResult = signal<CalculatePriceResponse | null>(null);
-  submittingRequest = signal(false);
-  uploadingReceipt = signal(false);
-  requestError = signal<string | null>(null);
-  requestSuccessMessage = signal<string | null>(null);
+  paymentCard = signal<PaymentCardSettings | null>(null);
 
-  // Checkout modal
-  showCheckoutModal = signal(false);
-  selectedPlanCode = signal<string>('STANDARD');
+  selectedPlan = signal<PlanResponse | null>(null);
   selectedMonths = signal<number>(1);
-  calculating = signal(false);
-  calcResult = signal<CalculatePriceResponse | null>(null);
-  initiatingCheckout = signal(false);
-  checkoutCreatedInvoice = signal<any | null>(null);
-  checkoutError = signal<string | null>(null);
+  submitting = signal<boolean>(false);
+  cancelling = signal<boolean>(false);
+  loadingHistory = signal<boolean>(false);
+  copied = signal<boolean>(false);
+  errorMessage = signal<string>('');
+  activeReceiptModal = signal<string | null>(null);
 
-  // Mock Payment Simulator states
-  processingPayment = signal(false);
-  paymentMessage = signal<string | null>(null);
-  paymentSuccess = signal(false);
-
-  readonly monthOptions = [
-    { value: 1,  label: '1 oy',   hint: 'Standart narx', badge: '' },
-    { value: 3,  label: '3 oy',   hint: '5% chegirma',   badge: '-5%' },
-    { value: 6,  label: '6 oy',   hint: '10% chegirma',  badge: '-10%' },
-    { value: 12, label: '12 oy',  hint: '20% chegirma',  badge: '-20%' },
+  durationOptions = [
+    { months: 1, label: '1 oy', badge: '' },
+    { months: 3, label: '3 oy', badge: '' },
+    { months: 6, label: '6 oy', badge: 'Tavsiya' },
+    { months: 12, label: '1 yil', badge: 'Foydali' }
   ];
 
+  selectedFile: File | null = null;
+  previewUrl: string | null = null;
+  clientNotes: string = '';
+
   ngOnInit(): void {
-    this.loadCurrentSubscription();
-    this.loadInvoices();
-    this.loadPeriods();
-    this.loadPlans();
-    this.loadSubscriptionRequests();
+    this.loadAll();
   }
 
-  loadCurrentSubscription(): void {
-    this.loading.set(true);
+  loadAll(): void {
+    // 1. Current Subscription
     this.billingService.getCurrentSubscription().subscribe({
-      next: (data) => {
-        this.sub.set(data);
-        this.loading.set(false);
-        this.featureService.refreshFeatures().subscribe();
-      },
-      error: () => this.loading.set(false)
+      next: (sub) => this.currentSub.set(sub),
+      error: () => {}
     });
-  }
 
-  loadInvoices(): void {
-    this.billingService.getInvoices().subscribe({
-      next: (items) => this.invoices.set(items)
-    });
-  }
-
-  loadPeriods(): void {
-    this.billingService.getPeriods().subscribe({
-      next: (items) => this.periods.set(items)
-    });
-  }
-
-  loadPlans(): void {
+    // 2. Available Plans
     this.billingService.getPublicPlans().subscribe({
       next: (plans) => {
-        this.availablePlans.set(plans.filter(p => p.code !== 'TRIAL'));
-      }
+        const active = (plans || []).filter(p => p.active && !p.archived && p.code !== 'TRIAL');
+        this.availablePlans.set(active);
+        if (active.length > 0 && !this.selectedPlan()) {
+          const pro = active.find(p => p.code === 'PRO') || active[0];
+          this.selectedPlan.set(pro);
+        }
+      },
+      error: () => {}
+    });
+
+    // 3. Payment Card Settings
+    this.billingService.getClientPaymentCard().subscribe({
+      next: (card) => this.paymentCard.set(card),
+      error: () => {}
+    });
+
+    // 4. Latest Subscription Request
+    this.billingService.getLatestSubscriptionRequest().subscribe({
+      next: (req) => this.latestRequest.set(req),
+      error: () => {}
+    });
+
+    // 5. Request History
+    this.loadHistory();
+  }
+
+  loadHistory(): void {
+    this.loadingHistory.set(true);
+    this.billingService.getSubscriptionRequestHistory().subscribe({
+      next: (history) => {
+        this.requestHistory.set(history || []);
+        this.loadingHistory.set(false);
+      },
+      error: () => this.loadingHistory.set(false)
     });
   }
 
-  calcPercentage(current: number, max: number): number {
-    if (!max || max <= 0) return 20;
-    return Math.min(Math.round((current / max) * 100), 100);
+  selectPlan(plan: PlanResponse): void {
+    this.selectedPlan.set(plan);
   }
 
-  isLimitReached(current: number, max: number): boolean {
-    if (!max || max <= 0) return false;
-    return current >= max;
+  totalAmount(): number {
+    const plan = this.selectedPlan();
+    if (!plan) return 0;
+    return (plan.price || 0) * (this.selectedMonths() || 1);
   }
 
-  formatPrice(price: number): string {
-    return new Intl.NumberFormat('uz-UZ').format(price || 0);
+  formatPrice(val?: number): string {
+    if (val === undefined || val === null) return '0';
+    return Number(val).toLocaleString('uz-UZ');
   }
 
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '-';
+  formatCardNumber(card?: string): string {
+    if (!card) return '8600 0000 0000 0000';
+    const clean = card.replace(/\s+/g, '');
+    const parts = clean.match(/.{1,4}/g);
+    return parts ? parts.join(' ') : card;
+  }
+
+  copyCardNumber(card?: string): void {
+    if (!card) return;
+    const clean = card.replace(/\s+/g, '');
+    navigator.clipboard.writeText(clean).then(() => {
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2500);
+    });
+  }
+
+  formatDate(dateStr?: string): string {
+    if (!dateStr) return '';
     try {
       const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return '-';
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = d.getFullYear();
-      const hours = String(d.getHours()).padStart(2, '0');
-      const minutes = String(d.getMinutes()).padStart(2, '0');
-      return `${day}.${month}.${year}, ${hours}:${minutes}`;
+      return d.toLocaleString('uz-UZ', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     } catch {
       return dateStr;
     }
   }
 
-  getStatusLabel(status: string): string {
-    switch (status) {
-      case 'TRIAL': return 'Sinov davri (Trial)';
-      case 'ACTIVE': return 'Faol (Active)';
-      case 'EXPIRING_SOON': return 'Yaqinda tugaydi (Expiring Soon)';
-      case 'EXPIRED': return 'Muddati tugagan (Expired)';
-      case 'SUSPENDED': return 'To‘xtatilgan (Suspended)';
-      case 'PENDING_PAYMENT': return 'To‘lov kutilmoqda (Pending)';
-      default: return status;
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files?.[0];
+    if (file) {
+      this.handleFile(file);
     }
   }
 
-  getStatusBadgeClass(status: string): string {
-    switch (status) {
-      case 'ACTIVE': return 'status-active';
-      case 'TRIAL': return 'status-trial';
-      case 'EXPIRING_SOON': return 'status-expiring';
-      case 'EXPIRED': return 'status-expired';
-      case 'SUSPENDED': return 'status-cancelled';
-      case 'PENDING_PAYMENT': return 'status-pending';
-      default: return 'status-pending';
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  onFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      this.handleFile(file);
     }
   }
 
-  getInvoiceBadgeClass(status: string): string {
-    switch (status) {
-      case 'PAID': return 'status-paid';
-      case 'PENDING': return 'status-pending';
-      case 'CANCELLED': return 'status-cancelled';
-      case 'EXPIRED': return 'status-expired';
-      default: return 'status-pending';
-    }
-  }
-
-  openCheckoutModal(): void {
-    this.checkoutCreatedInvoice.set(null);
-    this.checkoutError.set(null);
-    this.paymentMessage.set(null);
-    this.processingPayment.set(false);
-    this.selectedMonths.set(1);
-    if (this.sub()) {
-      const currentCode = this.sub()!.planCode;
-      const initialCode = (!currentCode || currentCode === 'TRIAL' || currentCode === 'STARTER') ? 'STANDARD' : currentCode;
-      this.selectedPlanCode.set(initialCode);
-    } else {
-      this.selectedPlanCode.set('STANDARD');
-    }
-    this.showCheckoutModal.set(true);
-    this.triggerCalculate();
-  }
-
-  closeCheckoutModal(): void {
-    this.showCheckoutModal.set(false);
-    this.checkoutCreatedInvoice.set(null);
-    this.checkoutError.set(null);
-    this.paymentMessage.set(null);
-    this.processingPayment.set(false);
-  }
-
-  selectPlan(planCode: string): void {
-    this.selectedPlanCode.set(planCode);
-    this.triggerCalculate();
-  }
-
-  selectMonths(months: number): void {
-    this.selectedMonths.set(months);
-    this.triggerCalculate();
-  }
-
-  triggerCalculate(): void {
-    this.calculating.set(true);
-    this.calcResult.set(null);
-    this.checkoutError.set(null);
-
-    this.billingService.calculatePrice({
-      planCode: this.selectedPlanCode(),
-      months: this.selectedMonths()
-    }).subscribe({
-      next: (res) => {
-        this.calcResult.set(res);
-        this.calculating.set(false);
-      },
-      error: (err) => {
-        this.calculating.set(false);
-        this.checkoutError.set(err?.error?.message || 'Narxni hisoblashda xatolik yuz berdi');
-      }
-    });
-  }
-
-  confirmCheckout(): void {
-    this.initiatingCheckout.set(true);
-    this.checkoutError.set(null);
-
-    this.billingService.initiateCheckout({
-      planCode: this.selectedPlanCode(),
-      months: this.selectedMonths(),
-      provider: 'MANUAL'
-    }).subscribe({
-      next: (res) => {
-        this.initiatingCheckout.set(false);
-        this.checkoutCreatedInvoice.set(res);
-        this.loadInvoices();
-        this.loadCurrentSubscription();
-      },
-      error: (err) => {
-        this.initiatingCheckout.set(false);
-        this.checkoutError.set(err?.error?.message || 'Hisob-faktura yaratishda xatolik yuz berdi');
-      }
-    });
-  }
-
-  handleMockPayment(outcome: 'SUCCESS' | 'FAILED' | 'CANCELLED'): void {
-    const inv = this.checkoutCreatedInvoice();
-    if (!inv || !inv.paymentId) {
-      this.paymentSuccess.set(false);
-      this.paymentMessage.set('To‘lov identifikatori topilmadi.');
+  handleFile(file: File): void {
+    this.errorMessage.set('');
+    if (file.size > 10 * 1024 * 1024) {
+      this.errorMessage.set('Fayl hajmi 10 MB dan oshmasligi kerak!');
       return;
     }
+    this.selectedFile = file;
 
-    this.processingPayment.set(true);
-    this.paymentMessage.set(null);
-
-    this.billingService.processMockPayment(inv.paymentId, outcome).subscribe({
-      next: () => {
-        this.processingPayment.set(false);
-        if (outcome === 'SUCCESS') {
-          this.paymentSuccess.set(true);
-          this.paymentMessage.set('✅ To‘lov muvaffaqiyatli qabul qilindi! Obuna darhol faollashtirildi.');
-          this.loadCurrentSubscription();
-          this.loadInvoices();
-          this.loadPeriods();
-          this.featureService.refreshFeatures().subscribe();
-          setTimeout(() => {
-            this.closeCheckoutModal();
-          }, 1800);
-        } else if (outcome === 'FAILED') {
-          this.paymentSuccess.set(false);
-          this.paymentMessage.set('❌ To‘lov rad etildi (Xatolik simulyatsiya qilindi).');
-          this.loadInvoices();
-        } else {
-          this.paymentSuccess.set(false);
-          this.paymentMessage.set('⚪ To‘lov bekor qilindi.');
-          this.loadInvoices();
-        }
-      },
-      error: (err) => {
-        this.processingPayment.set(false);
-        this.paymentSuccess.set(false);
-        this.paymentMessage.set(err?.error?.message || 'Mock to‘lovni amalga oshirishda xatolik yuz berdi.');
-      }
-    });
-  }
-
-  // ==========================================
-  // SUBSCRIPTION REQUESTS (B2B APPROVAL FLOW)
-  // ==========================================
-
-  loadSubscriptionRequests(): void {
-    this.billingService.getLatestSubscriptionRequest().subscribe({
-      next: (req) => this.latestRequest.set(req)
-    });
-    this.billingService.getSubscriptionRequestHistory().subscribe({
-      next: (history) => this.requestHistory.set(history)
-    });
-  }
-
-  openRequestModal(preselectPlanCode?: string): void {
-    this.requestError.set(null);
-    this.requestSuccessMessage.set(null);
-    this.submittingRequest.set(false);
-    this.uploadingReceipt.set(false);
-    this.requestReceiptUrl.set('');
-    this.requestClientNotes = '';
-    this.requestMonths.set(1);
-    this.requestPaymentMethod.set('BANK_TRANSFER');
-
-    const code = preselectPlanCode || this.sub()?.planCode || 'STANDARD';
-    const plan = this.availablePlans().find(p => p.code === code) || this.availablePlans()[0];
-    if (plan) {
-      this.requestPlanCode.set(plan.code);
-      this.requestPlanId.set(plan.id);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.previewUrl = e.target.result;
+      };
+      reader.readAsDataURL(file);
     } else {
-      this.requestPlanCode.set('STANDARD');
-      this.requestPlanId.set('');
+      this.previewUrl = null;
     }
-
-    this.showRequestModal.set(true);
-    this.triggerRequestCalculate();
   }
 
-  closeRequestModal(): void {
-    this.showRequestModal.set(false);
-    this.requestError.set(null);
-    this.requestSuccessMessage.set(null);
-  }
-
-  selectRequestPlan(plan: PlanResponse): void {
-    this.requestPlanCode.set(plan.code);
-    this.requestPlanId.set(plan.id);
-    this.triggerRequestCalculate();
-  }
-
-  selectRequestMonths(months: number): void {
-    this.requestMonths.set(months);
-    this.triggerRequestCalculate();
-  }
-
-  triggerRequestCalculate(): void {
-    const planId = this.requestPlanId();
-    const planCode = this.requestPlanCode();
-    const months = this.requestMonths();
-
-    this.billingService.calculatePrice({
-      planId: planId || undefined,
-      planCode: !planId ? planCode : undefined,
-      months: months
-    }).subscribe({
-      next: (res) => this.requestCalcResult.set(res),
-      error: () => this.requestCalcResult.set(null)
-    });
-  }
-
-  onReceiptFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-      this.uploadingReceipt.set(true);
-      this.requestError.set(null);
-
-      this.billingService.uploadReceipt(file).subscribe({
-        next: (url) => {
-          this.uploadingReceipt.set(false);
-          this.requestReceiptUrl.set(url);
-        },
-        error: (err) => {
-          this.uploadingReceipt.set(false);
-          this.requestError.set(err?.error?.message || 'Chekni yuklashda xatolik yuz berdi');
-        }
-      });
-    }
+  removeFile(event: Event): void {
+    event.stopPropagation();
+    this.selectedFile = null;
+    this.previewUrl = null;
   }
 
   submitSubscriptionRequest(): void {
-    const plan = this.availablePlans().find(p => p.code === this.requestPlanCode()) || this.availablePlans()[0];
+    const plan = this.selectedPlan();
     if (!plan) {
-      this.requestError.set('Iltimos, tarif rejasini tanlang!');
+      this.errorMessage.set('Iltimos, tarifni tanlang!');
+      return;
+    }
+    if (!this.selectedFile) {
+      this.errorMessage.set('Iltimos, to‘lov chekini yuklang!');
       return;
     }
 
-    this.submittingRequest.set(true);
-    this.requestError.set(null);
-    this.requestSuccessMessage.set(null);
+    this.submitting.set(true);
+    this.errorMessage.set('');
 
-    this.billingService.createSubscriptionRequest({
-      planId: plan.id,
-      billingPeriod: this.requestMonths() === 12 ? 'ANNUAL' : (this.requestMonths() === 6 ? 'SEMI_ANNUAL' : (this.requestMonths() === 3 ? 'QUARTERLY' : 'MONTHLY')),
-      durationMonths: this.requestMonths(),
-      paymentMethod: this.requestPaymentMethod(),
-      receiptUrl: this.requestReceiptUrl() || undefined,
-      clientNotes: this.requestClientNotes ? this.requestClientNotes.trim() : undefined
-    }).subscribe({
-      next: (res) => {
-        this.submittingRequest.set(false);
-        this.requestSuccessMessage.set('✅ Arizangiz qabul qilindi va Super Adminga yuborildi. Tez orada ko\'rib chiqiladi!');
-        this.latestRequest.set(res);
-        this.loadSubscriptionRequests();
-        setTimeout(() => {
-          this.closeRequestModal();
-        }, 1600);
+    // Step 1: Upload receipt file
+    this.billingService.uploadReceipt(this.selectedFile).subscribe({
+      next: (receiptUrl) => {
+        // Step 2: Create subscription request
+        this.billingService.createSubscriptionRequest({
+          planId: plan.id,
+          billingPeriod: 'MONTHLY',
+          durationMonths: this.selectedMonths(),
+          paymentMethod: 'CARD_TRANSFER',
+          receiptUrl: receiptUrl,
+          clientNotes: this.clientNotes.trim()
+        }).subscribe({
+          next: (req) => {
+            this.submitting.set(false);
+            this.latestRequest.set(req);
+            this.loadHistory();
+            this.selectedFile = null;
+            this.previewUrl = null;
+            this.clientNotes = '';
+          },
+          error: (err) => {
+            this.submitting.set(false);
+            this.errorMessage.set(err?.error?.message || 'Ariza yuborishda xatolik yuz berdi!');
+          }
+        });
       },
       error: (err) => {
-        this.submittingRequest.set(false);
-        this.requestError.set(err?.error?.message || 'Arizani yuborishda xatolik yuz berdi');
+        this.submitting.set(false);
+        this.errorMessage.set(err?.error?.message || 'Chek faylini yuklashda xatolik yuz berdi!');
       }
     });
   }
 
-  cancelCurrentRequest(requestId: string): void {
-    if (!confirm('Haqiqatan ham ushbu obuna arizasini bekor qilmoqchimisiz?')) {
+  cancelRequest(): void {
+    const req = this.latestRequest();
+    if (!req) return;
+    this.cancelSpecificRequest(req.id);
+  }
+
+  cancelSpecificRequest(requestId: string): void {
+    if (!confirm('Haqiqatan ham ushbu arizani bekor qilmoqchimisiz?')) {
       return;
     }
 
+    this.cancelling.set(true);
     this.billingService.cancelSubscriptionRequest(requestId).subscribe({
-      next: () => {
-        this.loadSubscriptionRequests();
+      next: (updated) => {
+        this.cancelling.set(false);
+        this.latestRequest.set(updated);
+        this.loadHistory();
       },
       error: (err) => {
-        alert(err?.error?.message || 'Arizani bekor qilishda xatolik yuz berdi');
+        this.cancelling.set(false);
+        alert(err?.error?.message || 'Bekor qilishda xatolik!');
       }
     });
   }
 
-  getPaymentMethodLabel(method: string): string {
-    switch (method) {
-      case 'BANK_TRANSFER': return '🏦 Bank (Perechislenie)';
-      case 'CARD_TRANSFER': return '💳 Karta O\'tkazmasi';
-      case 'CLICK_PAYME_MANUAL': return '📱 Click / Payme';
-      case 'CASH': return '💵 Naqd Pul';
-      default: return method || 'Boshqa';
+  openReceiptModal(url: string): void {
+    this.activeReceiptModal.set(url);
+  }
+
+  isImage(url?: string): boolean {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp');
+  }
+
+  resolveReceiptUrl(url?: string | null): string {
+    if (!url || !url.trim()) return '';
+    const trimmed = url.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+      return trimmed;
+    }
+    const base = environment.apiUrl ? environment.apiUrl.replace(/\/api\/?$/, '') : 'http://localhost:8080';
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `${base}${cleanPath}`;
+  }
+
+  getStatusBadgeClass(status?: string): string {
+    switch (status) {
+      case 'PENDING_APPROVAL': return 'badge-pending';
+      case 'APPROVED': return 'badge-approved';
+      case 'REJECTED': return 'badge-rejected';
+      default: return '';
     }
   }
 
-  getRequestStatusLabel(status: string): string {
+  getStatusLabel(status?: string): string {
     switch (status) {
       case 'PENDING_APPROVAL': return '🟡 Kutilmoqda';
-      case 'APPROVED': return '✅ Tasdiqlangan';
+      case 'APPROVED': return '✅ Faollashtirilgan';
       case 'REJECTED': return '❌ Rad etilgan';
-      case 'CANCELLED': return '⚪ Bekor qilingan';
-      default: return status;
-    }
-  }
-
-  getRequestStatusBadge(status: string): string {
-    switch (status) {
-      case 'PENDING_APPROVAL': return 'status-pending';
-      case 'APPROVED': return 'status-active';
-      case 'REJECTED': return 'status-expired';
-      case 'CANCELLED': return 'status-cancelled';
-      default: return 'status-pending';
+      case 'CANCELLED': return 'Bekor qilingan';
+      default: return status || '';
     }
   }
 }
-

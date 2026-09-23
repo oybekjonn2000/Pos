@@ -333,7 +333,7 @@ export interface PosCartItem {
 
       <!-- Cancel Item Modal -->
       @if (showCancelModal()) {
-        <div class="modal-backdrop" (click)="closeCancelModal()">
+        <div class="modal-backdrop">
           <div class="modal-card modal-card--cancel" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -413,7 +413,7 @@ export interface PosCartItem {
 
       <!-- Kitchen Batches / Order Rounds History Modal -->
       @if (showRoundsModal()) {
-        <div class="modal-backdrop" (click)="showRoundsModal.set(false)">
+        <div class="modal-backdrop">
           <div class="modal-card rounds-modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3>📦 Oshxona Partiyalari Tarixi (Order Rounds)</h3>

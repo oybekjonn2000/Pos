@@ -30,4 +30,10 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     List<Category> findByTenantIdAndIdInAndDeletedAtIsNull(UUID tenantId, Collection<UUID> ids);
 
     long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
+
+    Optional<Category> findByTenantIdAndCodeIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String code);
+
+    List<Category> findByTenantIdAndCodeInAndDeletedAtIsNull(UUID tenantId, Collection<String> codes);
+
+    boolean existsByTenantIdAndCodeIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String code);
 }

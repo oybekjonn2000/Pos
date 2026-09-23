@@ -22,6 +22,7 @@ public class CategoryDto {
         private String kitchenName;
         private String kitchenCode;
         private String name;
+        private String code;
         private String nameUz;
         private String nameRu;
         private String nameEn;
@@ -46,6 +47,7 @@ public class CategoryDto {
         @NotBlank(message = "Category name is required")
         private String name;
 
+        private String code;
         private String nameUz;
         private String nameRu;
         private String nameEn;
@@ -63,6 +65,7 @@ public class CategoryDto {
     public static class UpdateRequest {
         private UUID kitchenId;
         private String name;
+        private String code;
         private String nameUz;
         private String nameRu;
         private String nameEn;

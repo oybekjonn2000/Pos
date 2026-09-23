@@ -1,9 +1,11 @@
 package com.restaurantpos.billing.controller;
 
 import com.restaurantpos.billing.dto.BillingDto;
+import com.restaurantpos.billing.dto.PaymentCardSettingsDto;
 import com.restaurantpos.billing.dto.SubscriptionRequestDto;
 import com.restaurantpos.billing.entity.SubscriptionPayment;
 import com.restaurantpos.billing.repository.SubscriptionPaymentRepository;
+import com.restaurantpos.billing.service.PlatformSettingService;
 import com.restaurantpos.billing.service.SubscriptionRequestService;
 import com.restaurantpos.billing.service.SubscriptionService;
 import com.restaurantpos.common.exception.PosException;
@@ -34,6 +36,7 @@ public class ClientBillingController {
     private final SubscriptionService subscriptionService;
     private final SubscriptionRequestService requestService;
     private final SubscriptionPaymentRepository paymentRepository;
+    private final PlatformSettingService platformSettingService;
 
     @GetMapping("/current")
     @Operation(summary = "Get current restaurant subscription, plan limits, and usage")
@@ -183,6 +186,13 @@ public class ClientBillingController {
             @RequestParam("file") MultipartFile file) {
         String receiptUrl = requestService.uploadReceipt(file);
         return ResponseEntity.ok(ApiResponse.success(Map.of("receiptUrl", receiptUrl), "To'lov cheki muvaffaqiyatli yuklandi"));
+    }
+
+    @GetMapping("/payment-card")
+    @Operation(summary = "Get Super Admin payment card requisites for bank transfer")
+    public ResponseEntity<ApiResponse<PaymentCardSettingsDto.Response>> getPaymentCardSettings() {
+        PaymentCardSettingsDto.Response settings = platformSettingService.getPaymentCardSettings();
+        return ResponseEntity.ok(ApiResponse.success(settings));
     }
 }
 

@@ -7,11 +7,13 @@ import { CategoryService, Category } from '../core/services/category.service';
 import { KitchenService, KitchenStation } from '../core/services/kitchen.service';
 import { getProductImageUrl, handleImageError } from '../core/utils/product-image.util';
 import { NotificationService } from '../core/services/notification.service';
+import { ExcelService } from '../core/services/excel.service';
+import { ExcelImportModalComponent } from '../shared/components/excel-import-modal/excel-import-modal.component';
 
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent],
   template: `
     <div class="products-page fade-in">
       <!-- Page Header -->
@@ -34,6 +36,16 @@ import { NotificationService } from '../core/services/notification.service';
               class="pos-input"
             />
           </div>
+
+          <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" title="Bo'sh Excel shablonini yuklab olish">
+            <span>{{ downloadingTemplate ? 'Yuklanmoqda...' : '📥 Shablon' }}</span>
+          </button>
+          <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" title="Mahsulotlarni Excel faylga eksport qilish">
+            <span>{{ exportingExcel ? 'Eksport...' : '📤 Export' }}</span>
+          </button>
+          <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" title="Excel fayldan mahsulotlarni yuklash">
+            <span>📥 Import</span>
+          </button>
 
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
             <span>➕ Yangi Mahsulot</span>
@@ -184,7 +196,7 @@ import { NotificationService } from '../core/services/notification.service';
       <!-- ============================================================ -->
       <!-- MODAL: ADD / EDIT PRODUCT                                      -->
       <!-- ============================================================ -->
-      <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+      <div class="modal-overlay" *ngIf="showModal">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <h2 class="modal-title">{{ isEditing ? '✏️ Mahsulotni tahrirlash' : '➕ Yangi Mahsulot Qo‘shish' }}</h2>
@@ -354,6 +366,14 @@ import { NotificationService } from '../core/services/notification.service';
           </div>
         </div>
       </div>
+
+      <!-- EXCEL IMPORT MODAL -->
+      <app-excel-import-modal
+        [visible]="showImportModal"
+        [type]="'products'"
+        (closed)="showImportModal = false"
+        (imported)="onExcelImported()">
+      </app-excel-import-modal>
 
     </div>
   `,
@@ -907,15 +927,59 @@ export class ProductsComponent implements OnInit {
     imageUrl: ''
   };
 
+  // Excel State
+  showImportModal = false;
+  downloadingTemplate = false;
+  exportingExcel = false;
+
   constructor(
     private productService: ProductService,
     private categoryService: CategoryService,
     private kitchenService: KitchenService,
+    private excelService: ExcelService,
     private notify: NotificationService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    this.loadData();
+  }
+
+  downloadTemplate(): void {
+    this.downloadingTemplate = true;
+    this.excelService.downloadProductTemplate().subscribe({
+      next: (blob) => {
+        this.downloadingTemplate = false;
+        this.excelService.saveBlob(blob, 'products_template.xlsx');
+        this.notify.success('Mahsulotlar shabloni yuklab olindi');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.downloadingTemplate = false;
+        this.notify.error('Shablonni yuklab olishda xatolik');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  exportExcel(): void {
+    this.exportingExcel = true;
+    this.excelService.exportProducts().subscribe({
+      next: (blob) => {
+        this.exportingExcel = false;
+        this.excelService.saveBlob(blob, 'products_export.xlsx');
+        this.notify.success('Mahsulotlar Excel faylga muvaffaqiyatli eksport qilindi');
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.exportingExcel = false;
+        this.notify.error('Eksport qilishda xatolik yuz berdi');
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onExcelImported(): void {
     this.loadData();
   }
 

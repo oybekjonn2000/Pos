@@ -61,7 +61,10 @@ export interface AssignedEmployee {
   firstName: string;
   lastName?: string;
   fullName?: string;
+  phone?: string;
+  email?: string;
   role?: string;
+  active?: boolean;
 }
 
 export interface AssignedCategory {
@@ -168,6 +171,19 @@ export class KitchenService {
 
   assignKitchenEmployees(id: string, employeeIds: string[]): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${environment.apiUrl}/kitchens/${id}/employees`, { employeeIds });
+  }
+
+  detachKitchenEmployee(kitchenId: string, employeeId: string): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${environment.apiUrl}/kitchens/${kitchenId}/employees/${employeeId}`);
+  }
+
+  getAvailableCooks(): Observable<ApiResponse<AssignedEmployee[]>> {
+    return this.http.get<ApiResponse<AssignedEmployee[]>>(`${environment.apiUrl}/kitchens/available-cooks`);
+  }
+
+  transferKitchenEmployee(sourceKitchenId: string, employeeId: string, targetKitchenId: string): Observable<ApiResponse<void>> {
+    const params = new HttpParams().set('targetKitchenId', targetKitchenId);
+    return this.http.post<ApiResponse<void>>(`${environment.apiUrl}/kitchens/${sourceKitchenId}/employees/${employeeId}/transfer`, null, { params });
   }
 
   getKitchenCategories(id: string): Observable<ApiResponse<AssignedCategory[]>> {

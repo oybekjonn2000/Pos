@@ -136,6 +136,39 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(null, "Xodimlar oshxonaga muvaffaqiyatli biriktirildi"));
     }
 
+    @DeleteMapping("/api/kitchens/{id}/employees/{employeeId}")
+    @PreAuthorize("hasAuthority('MANAGE_SETTINGS') or hasAuthority('MANAGE_USERS') or hasAuthority('MANAGE_PRODUCTS') or hasRole('ADMIN') or hasRole('MANAGER')")
+    @Operation(summary = "Detach employee from kitchen station")
+    public ResponseEntity<ApiResponse<Void>> detachKitchenEmployee(
+            @PathVariable UUID id,
+            @PathVariable UUID employeeId,
+            @AuthenticationPrincipal UserPrincipal user) {
+        kitchenService.detachEmployee(user.getTenantId(), id, employeeId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Xodim oshxonadan muvaffaqiyatli ajratildi"));
+    }
+
+    @PostMapping("/api/kitchens/{id}/employees/{employeeId}/transfer")
+    @PreAuthorize("hasAuthority('MANAGE_SETTINGS') or hasAuthority('MANAGE_USERS') or hasAuthority('MANAGE_PRODUCTS') or hasRole('ADMIN') or hasRole('MANAGER')")
+    @Operation(summary = "Transfer cook from current kitchen station to another target kitchen station")
+    public ResponseEntity<ApiResponse<Void>> transferKitchenEmployee(
+            @PathVariable UUID id,
+            @PathVariable UUID employeeId,
+            @RequestParam UUID targetKitchenId,
+            @AuthenticationPrincipal UserPrincipal user) {
+        kitchenService.transferEmployee(user.getTenantId(), id, employeeId, targetKitchenId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Xodim boshqa oshxonaga muvaffaqiyatli ko'chirildi"));
+    }
+
+    @GetMapping("/api/kitchens/available-cooks")
+    @PreAuthorize("hasAuthority('MANAGE_SETTINGS') or hasAuthority('MANAGE_USERS') or hasAuthority('MANAGE_PRODUCTS') or hasRole('ADMIN') or hasRole('MANAGER')")
+    @Operation(summary = "Get active cook staff who are not yet assigned to any kitchen")
+    public ResponseEntity<ApiResponse<List<com.restaurantpos.users.dto.UserDto.Response>>> getAvailableCooks(
+            @AuthenticationPrincipal UserPrincipal user) {
+        List<com.restaurantpos.users.dto.UserDto.Response> cooks = kitchenService.getAvailableCooks(user.getTenantId());
+        return ResponseEntity.ok(ApiResponse.success(cooks));
+    }
+
+
     @GetMapping("/api/kitchens/{id}/categories")
     @Operation(summary = "Get categories assigned to kitchen station")
     public ResponseEntity<ApiResponse<List<com.restaurantpos.products.dto.CategoryDto.Response>>> getKitchenCategories(

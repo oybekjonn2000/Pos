@@ -74,8 +74,8 @@ public class UserService {
     }
 
     public static void validatePinFormat(String pin) {
-        if (pin == null || !pin.trim().matches("^[0-9]{4,6}$")) {
-            throw PosException.badRequest("PIN kod faqat 4 dan 6 tagacha raqamlardan iborat bo'lishi kerak.");
+        if (pin == null || !pin.trim().matches("^[0-9]{1,4}$")) {
+            throw PosException.badRequest("PIN kod 1 tadan 4 tagacha raqamdan iborat bo'lishi kerak.");
         }
     }
 
@@ -125,15 +125,11 @@ public class UserService {
                 throw PosException.badRequest("Admin uchun PIN kod kiritilishi shart.");
             }
             validatePinFormat(request.getPin());
-            String pinLookupHash = computePinLookupHash(tenantId, request.getPin());
-            if (userRepository.existsByTenantIdAndPinLookupHashAndDeletedAtIsNull(tenantId, pinLookupHash)) {
-                throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
-            }
 
             user.setUsername(request.getUsername().trim().toLowerCase());
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
-            user.setPinLookupHash(pinLookupHash);
+            user.setPinLookupHash(computePinLookupHash(tenantId, request.getPin()));
             user.setAuthenticationType(com.restaurantpos.users.entity.AuthenticationType.PASSWORD_AND_PIN);
         } else {
             // Ordinary staff: NO username, NO password, PIN is required
@@ -145,32 +141,9 @@ public class UserService {
                 throw PosException.badRequest("Xodim uchun PIN kod kiritilishi shart.");
             }
             validatePinFormat(request.getPin());
-            String pinLookupHash = computePinLookupHash(tenantId, request.getPin());
-            if (userRepository.existsByTenantIdAndPinLookupHashAndDeletedAtIsNull(tenantId, pinLookupHash)) {
-                throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
-            }
 
             user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
-            user.setPinLookupHash(pinLookupHash);
-        }
-
-        boolean isCreateKitchenRole = "KITCHEN".equalsIgnoreCase(createRoleName);
-        if (isCreateKitchenRole) {
-            if (request.getKitchenIds() == null || request.getKitchenIds().isEmpty()) {
-                throw PosException.badRequest("Oshpaz kamida bitta oshxonaga biriktirilishi kerak.");
-            }
-            Set<UUID> uniqueKitchenIds = new LinkedHashSet<>(request.getKitchenIds());
-            for (UUID kId : uniqueKitchenIds) {
-                Kitchen kitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(kId, tenantId)
-                        .orElseThrow(() -> PosException.notFound("Oshxona topilmadi: " + kId));
-                if (!kitchen.isActive()) {
-                    throw PosException.badRequest("Faol bo'lmagan (INACTIVE) oshxonaga xodim biriktirib bo'lmaydi: " + kitchen.getName());
-                }
-                user.getEmployeeKitchens().add(new EmployeeKitchen(tenant, user, kitchen));
-            }
-            if (!user.getEmployeeKitchens().isEmpty()) {
-                user.setKitchen(user.getEmployeeKitchens().iterator().next().getKitchen());
-            }
+            user.setPinLookupHash(computePinLookupHash(tenantId, request.getPin()));
         }
 
         User saved = userRepository.save(user);
@@ -200,12 +173,8 @@ public class UserService {
 
         if (request.getPin() != null && !request.getPin().isBlank()) {
             validatePinFormat(request.getPin());
-            String pinLookupHash = computePinLookupHash(tenantId, request.getPin());
-            if (userRepository.existsByTenantIdAndPinLookupHashAndIdNotAndDeletedAtIsNull(tenantId, pinLookupHash, id)) {
-                throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
-            }
             user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
-            user.setPinLookupHash(pinLookupHash);
+            user.setPinLookupHash(computePinLookupHash(tenantId, request.getPin()));
         }
 
         if (request.getRoleId() != null) {
@@ -220,40 +189,14 @@ public class UserService {
         }
 
         String editRoleName = user.getRoles().isEmpty() ? (request.getRole() != null ? request.getRole().toUpperCase() : "STAFF") : user.getRoles().iterator().next().getName();
-        boolean isEditKitchenRole = "KITCHEN".equalsIgnoreCase(editRoleName);
+        boolean isEditKitchenRole = "KITCHEN".equalsIgnoreCase(editRoleName) ||
+                (editRoleName != null && (editRoleName.contains("KITCHEN") || editRoleName.contains("OSHPAZ")));
 
-        if (isEditKitchenRole) {
-            if (request.getKitchenIds() == null || request.getKitchenIds().isEmpty()) {
-                throw PosException.badRequest("Oshpaz kamida bitta oshxonaga biriktirilishi kerak.");
+        if (request.getRole() != null || request.getRoleId() != null) {
+            if (!isEditKitchenRole) {
+                user.getEmployeeKitchens().clear();
+                user.setKitchen(null);
             }
-            Set<UUID> uniqueKitchenIds = new LinkedHashSet<>(request.getKitchenIds());
-
-            // Remove any kitchen assignments that are no longer selected
-            user.getEmployeeKitchens().removeIf(ek -> !uniqueKitchenIds.contains(ek.getKitchen().getId()));
-
-            // Identify kitchens that are already assigned
-            Set<UUID> existingKitchenIds = user.getEmployeeKitchens().stream()
-                    .map(ek -> ek.getKitchen().getId())
-                    .collect(Collectors.toSet());
-
-            // Add newly selected kitchens
-            for (UUID kId : uniqueKitchenIds) {
-                if (!existingKitchenIds.contains(kId)) {
-                    Kitchen kitchen = kitchenRepository.findByIdAndTenantIdAndDeletedAtIsNull(kId, tenantId)
-                            .orElseThrow(() -> PosException.notFound("Oshxona topilmadi: " + kId));
-                    if (!kitchen.isActive()) {
-                        throw PosException.badRequest("Faol bo'lmagan (INACTIVE) oshxonaga xodim biriktirib bo'lmaydi: " + kitchen.getName());
-                    }
-                    user.getEmployeeKitchens().add(new EmployeeKitchen(user.getTenant(), user, kitchen));
-                }
-            }
-
-            if (!user.getEmployeeKitchens().isEmpty()) {
-                user.setKitchen(user.getEmployeeKitchens().iterator().next().getKitchen());
-            }
-        } else if (request.getRole() != null || request.getRoleId() != null) {
-            user.getEmployeeKitchens().clear();
-            user.setKitchen(null);
         }
 
         User updated = userRepository.save(user);
@@ -318,9 +261,6 @@ public class UserService {
         }
 
         String lookupHash = computePinLookupHash(tenantId, request.getNewPin().trim());
-        if (userRepository.existsByTenantIdAndPinLookupHashAndIdNotAndDeletedAtIsNull(tenantId, lookupHash, userId)) {
-            throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
-        }
 
         user.setPinHash(passwordEncoder.encode(request.getNewPin().trim()));
         user.setPinLookupHash(lookupHash);
@@ -364,6 +304,10 @@ public class UserService {
                     .build());
         }
 
+        UUID singleKitchenId = user.getKitchen() != null ? user.getKitchen().getId() : null;
+        String singleKitchenName = user.getKitchen() != null ? user.getKitchen().getName() : null;
+        String singleKitchenCode = user.getKitchen() != null ? user.getKitchen().getCode() : null;
+
         return UserDto.Response.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -378,6 +322,9 @@ public class UserService {
                 .authenticationType(user.getAuthenticationType() != null ? user.getAuthenticationType().name() : "PIN_ONLY")
                 .hasPin(user.getPinHash() != null)
                 .permissions(permissions)
+                .kitchenId(singleKitchenId)
+                .kitchenName(singleKitchenName)
+                .kitchenCode(singleKitchenCode)
                 .kitchenIds(kitchenIds)
                 .kitchens(kitchens)
                 .lastLoginAt(user.getLastLoginAt())

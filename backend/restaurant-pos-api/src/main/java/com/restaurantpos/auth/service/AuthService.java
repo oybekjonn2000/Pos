@@ -230,7 +230,7 @@ public class AuthService {
         user.setActive(true);
         user.setAuthenticationType(com.restaurantpos.users.entity.AuthenticationType.PASSWORD_AND_PIN);
         String adminPin = (request.getPin() != null && !request.getPin().isBlank()) ? request.getPin().trim() : "1111";
-        if (!adminPin.matches("^[0-9]{4,6}$")) {
+        if (!adminPin.matches("^[0-9]{1,4}$")) {
             adminPin = "1111";
         }
         user.setPinHash(passwordEncoder.encode(adminPin));

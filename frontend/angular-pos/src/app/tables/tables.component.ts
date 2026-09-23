@@ -194,7 +194,7 @@ import { WebsocketService } from '../core/services/websocket.service';
 
       <!-- Add Table Modal -->
       @if (showAddModal() && canManageTables()) {
-        <div class="modal-backdrop" (click)="closeModal()">
+        <div class="modal-backdrop">
           <div class="modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div>
@@ -269,7 +269,7 @@ import { WebsocketService } from '../core/services/websocket.service';
 
       <!-- Zone Add/Edit Modal -->
       @if (showZoneModal() && canManageTables()) {
-        <div class="modal-backdrop" (click)="closeZoneModal()">
+        <div class="modal-backdrop">
           <div class="modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div>
