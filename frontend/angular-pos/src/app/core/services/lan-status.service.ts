@@ -39,12 +39,28 @@ export function isDesktopRuntime(): boolean {
   return false;
 }
 
+/**
+ * Detects whether the application is running in Client Mode
+ * (e.g. lightweight waiter/kitchen terminal without local database/backend).
+ */
+export function isClientModeRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  if ((window as any).__POS_APP_MODE__ === 'client') return true;
+  try {
+    if (localStorage.getItem('pos_app_mode') === 'client') return true;
+    if (window.location && window.location.search.includes('client=true')) return true;
+    if (window.location && window.location.search.includes('mode=client')) return true;
+  } catch (e) {}
+  return false;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LanStatusService implements OnDestroy {
   private http = inject(HttpClient);
   private ws = inject(WebsocketService);
 
   readonly isDesktop = signal<boolean>(isDesktopRuntime());
+  readonly isClientMode = signal<boolean>(isClientModeRuntime());
   readonly connectionState = signal<LanConnectionState>('ONLINE');
   readonly currentServerUrl = signal<string>(environment.baseUrl);
   readonly serverInfo = signal<ServerLanInfo | null>(null);
@@ -69,8 +85,26 @@ export class LanStatusService implements OnDestroy {
     this.isDesktop.set(enabled);
   }
 
+  setClientMode(enabled: boolean): void {
+    try {
+      localStorage.setItem('pos_app_mode', enabled ? 'client' : 'server');
+    } catch (e) {}
+    this.isClientMode.set(enabled);
+  }
+
   constructor() {
     this.startHeartbeat();
+
+    // Query Electron main process for active application mode
+    if (typeof (window as any).electronAPI?.getServerMode === 'function') {
+      (window as any).electronAPI.getServerMode().then((mode: string) => {
+        const isClient = mode === 'client';
+        this.isClientMode.set(isClient);
+        try {
+          localStorage.setItem('pos_app_mode', mode);
+        } catch (e) {}
+      }).catch(() => {});
+    }
 
     // Listen to browser network events
     if (typeof window !== 'undefined') {

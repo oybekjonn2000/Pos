@@ -46,7 +46,8 @@ Name: "{commonappdata}\RestaurantPOS\logs"; Permissions: users-full
 Source: "..\dist\desktop\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "backend,backend\*"
 
 ; 2. Client Mode Configuration Template
-Source: "config\app-mode-client.json"; DestDir: "{commonappdata}\RestaurantPOS\config"; DestName: "app-mode.json"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "config\app-mode-client.json"; DestDir: "{app}"; DestName: "app-mode.json"; Flags: ignoreversion
+Source: "config\app-mode-client.json"; DestDir: "{commonappdata}\RestaurantPOS\config"; DestName: "app-mode.json"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#AppName}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"
@@ -71,5 +72,15 @@ begin
     DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Local Storage'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Session Storage'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Local Storage'), True, True, True);
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ResultCode: Integer;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    Exec('taskkill.exe', '/f /im RestaurantPOS.exe /t', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
 end;

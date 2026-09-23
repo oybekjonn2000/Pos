@@ -1,0 +1,12 @@
+{
+  "appId": "com.restaurantpos.waiter",
+  "appName": "Restaurant POS - Ofitsiant",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

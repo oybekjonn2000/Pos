@@ -68,7 +68,7 @@ public class OrderController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('CREATE_ORDER')")
+    @PreAuthorize("hasAnyAuthority('CREATE_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
     @Operation(summary = "Create new order")
     public ResponseEntity<ApiResponse<OrderDto.Response>> createOrder(
             @Valid @RequestBody OrderDto.CreateRequest request,
@@ -78,7 +78,7 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/items")
-    @PreAuthorize("hasAuthority('EDIT_ORDER')")
+    @PreAuthorize("hasAnyAuthority('EDIT_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
     @Operation(summary = "Add items to existing order")
     public ResponseEntity<ApiResponse<OrderDto.Response>> addItems(
             @PathVariable UUID id,
@@ -119,7 +119,7 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}/items/{itemId}")
-    @PreAuthorize("hasAuthority('EDIT_ORDER')")
+    @PreAuthorize("hasAnyAuthority('EDIT_ORDER', 'DELETE_ORDER', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER')")
     @Operation(summary = "Void an item from order with reason")
     public ResponseEntity<ApiResponse<OrderDto.Response>> voidItem(
             @PathVariable UUID id,

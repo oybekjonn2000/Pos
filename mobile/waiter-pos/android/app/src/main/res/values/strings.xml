@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Restaurant POS - Ofitsiant</string>
+    <string name="title_activity_main">Restaurant POS - Ofitsiant</string>
+    <string name="package_name">com.restaurantpos.waiter</string>
+    <string name="custom_url_scheme">com.restaurantpos.waiter</string>
+</resources>

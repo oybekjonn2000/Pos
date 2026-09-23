@@ -20,6 +20,16 @@ logs/
 *.iml
 .vscode/
 
+# Mobile (Android & Capacitor)
+mobile/waiter-pos/node_modules/
+mobile/waiter-pos/android/.gradle/
+mobile/waiter-pos/android/build/
+mobile/waiter-pos/android/app/build/
+mobile/waiter-pos/android/local.properties
+mobile/waiter-pos/android/.idea/
+mobile/waiter-pos/android/*.iml
+mobile/waiter-pos/android/captures/
+
 # OS
 .DS_Store
 Thumbs.db

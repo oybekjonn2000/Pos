@@ -11,7 +11,7 @@
  * 6. Graceful shutdown of all backend processes on exit
  */
 
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu, session } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu, session, Tray, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -20,6 +20,17 @@ const net = require('net');
 const dgram = require('dgram');
 const os = require('os');
 const { spawn, execSync } = require('child_process');
+
+// ============================================================
+// 0. Single Instance Lock Enforcement
+// ============================================================
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  console.log('[SingleInstance] Boshqa POS dasturi allaqachon ishlayapti. Yangi nusxa to‘xtatildi.');
+  app.quit();
+  process.exit(0);
+}
 
 // ============================================================
 // Paths and Configuration
@@ -33,14 +44,37 @@ const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
 const HEALTH_URL = `${BACKEND_URL}/actuator/health`;
 const STARTUP_TIMEOUT_MS = 120000; // 2 minutes max
 
+const isAutostart = process.argv.includes('--autostart') || process.argv.includes('--minimized') || process.argv.includes('--hidden');
+
 let splashWindow = null;
 let mainWindow = null;
+let tray = null;
+let isQuitting = false;
 let backendProcess = null;
 let startedPgLocally = false;
 let backendReady = false;
 let activeServerUrl = BACKEND_URL;
 let currentAppMode = 'server';
 let discoverySocket = null;
+let crashRestartCount = 0;
+let lastCrashTime = 0;
+
+// Re-activate existing window if user runs another .exe
+app.on('second-instance', (event, commandLine, workingDirectory) => {
+  console.log('[SingleInstance] Takroriy ishga tushirish aniqlandi. Mavjud oynani ekranga chiqarish...');
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    if (!mainWindow.isVisible()) mainWindow.show();
+    mainWindow.maximize();
+    mainWindow.focus();
+    mainWindow.webContents.focus();
+  } else if (splashWindow && !splashWindow.isDestroyed()) {
+    splashWindow.show();
+    splashWindow.focus();
+  } else {
+    createMainWindow();
+  }
+});
 
 // Ensure base application data directories exist
 ensureDirectories();
@@ -103,8 +137,11 @@ function findJavaBinary() {
     path.join(process.resourcesPath, 'jre', 'bin', 'java.exe'),
     path.join(appDir, 'resources', 'jre', 'bin', 'java.exe'),
     path.join(__dirname, '..', '..', 'dist', 'staging', 'jre', 'bin', 'java.exe'),
+    process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', 'java.exe') : null,
+    'C:\\Users\\User\\.jdks\\jbr-21.0.11\\bin\\java.exe',
+    'C:\\Program Files\\Java\\jdk-21.0.12\\bin\\java.exe',
     'C:\\Program Files\\Java\\jdk-21.0.12.1\\bin\\java.exe'
-  ];
+  ].filter(Boolean);
   for (const loc of locations) {
     if (fs.existsSync(loc)) return loc;
   }
@@ -200,7 +237,34 @@ function buildAppMenu() {
     {
       label: 'Fayl',
       submenu: [
-        { role: 'quit', label: 'Chiqish' }
+        {
+          label: 'System Tray\'ga yashirish',
+          click: () => {
+            if (mainWindow) mainWindow.hide();
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Dasturni butunlay yopish',
+          click: () => {
+            const choice = dialog.showMessageBoxSync(mainWindow, {
+              type: 'warning',
+              title: 'Dasturni butunlay yopish',
+              message: 'POS server to‘liq to‘xtatiladi va LAN tarmog‘idagi ofitsiantlar, oshxona (KDS) serverga ulana olmay qoladi.\n\nDasturdan chiqishni tasdiqlaysizmi?',
+              buttons: ['Ha, butunlay yopish', 'Bekor qilish'],
+              defaultId: 1,
+              cancelId: 1
+            });
+            if (choice === 0) {
+              isQuitting = true;
+              if (tray) {
+                try { tray.destroy(); } catch (e) {}
+                tray = null;
+              }
+              app.quit();
+            }
+          }
+        }
       ]
     },
     {
@@ -272,9 +336,11 @@ function createMainWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(`
       window.__POS_SERVER_URL__ = '${targetUrl}';
+      window.__POS_APP_MODE__ = '${currentAppMode}';
       try {
         localStorage.setItem('pos_server_url', '${targetUrl}');
         localStorage.setItem('pos_is_desktop', 'true');
+        localStorage.setItem('pos_app_mode', '${currentAppMode}');
       } catch(e) {}
     `);
   });
@@ -309,6 +375,24 @@ function createMainWindow() {
     if (input.control && input.key.toLowerCase() === 'r') {
       mainWindow.webContents.reload();
       event.preventDefault();
+    }
+  });
+
+  // Intercept X button to hide to tray instead of quitting
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+      if (tray) {
+        try {
+          tray.displayBalloon({
+            title: 'Restaurant POS',
+            content: 'Dastur System Tray\'da ishlashda davom etmoqda. Server va mobil aloqa faol.',
+            iconType: 'info'
+          });
+        } catch (e) {}
+      }
+      return false;
     }
   });
 
@@ -491,6 +575,43 @@ async function startSpringBoot() {
     console.log('Spring Boot process exited with code:', code);
     backendProcess = null;
     backendReady = false;
+
+    // Backend Crash Recovery: if server crashes unexpectedly and we are not quitting
+    if (!isQuitting && currentAppMode === 'server') {
+      const now = Date.now();
+      if (now - lastCrashTime > 60000) {
+        crashRestartCount = 0; // reset counter after 1 min of stable run
+      }
+      lastCrashTime = now;
+      crashRestartCount++;
+
+      if (crashRestartCount <= 5) {
+        console.warn(`[Crash Recovery] Spring Boot server kutilmaganda to‘xtadi (code: ${code}). Qayta ishga tushirilmoqda (${crashRestartCount}/5)...`);
+        setTimeout(async () => {
+          try {
+            await startSpringBoot();
+            await waitForBackendReady();
+            console.log('[Crash Recovery] Spring Boot server muvaffaqiyatli qayta tiklandi!');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('backend-recovered');
+            }
+            if (tray) {
+              try {
+                tray.displayBalloon({
+                  title: 'Restaurant POS (Avtomatik Tiklash)',
+                  content: 'Server avtomatik qayta ishga tushirildi va aloqa tiklandi.',
+                  iconType: 'info'
+                });
+              } catch (e) {}
+            }
+          } catch (recErr) {
+            console.error('[Crash Recovery] Qayta tiklash xatosi:', recErr);
+          }
+        }, 2000);
+      } else {
+        console.error('[Crash Recovery] Qisqa vaqt ichida juda ko‘p crash bo‘ldi. Avtomatik qayta ishga tushirish to‘xtatildi.');
+      }
+    }
   });
 }
 
@@ -544,6 +665,163 @@ async function waitForBackendReady() {
   }
 
   throw new Error("POS serveri belgilangan vaqt ichida ishga tushmadi. Iltimos, logs/app.log faylini tekshiring.");
+}
+
+/**
+ * Manually restarts the Spring Boot backend
+ */
+async function restartBackendService() {
+  console.log('[Backend] Restarting Spring Boot backend service...');
+  try {
+    if (backendProcess) {
+      try { backendProcess.kill('SIGTERM'); } catch (e) {}
+      backendProcess = null;
+      backendReady = false;
+    }
+    await new Promise(r => setTimeout(r, 2000));
+    await startSpringBoot();
+    await waitForBackendReady();
+    if (tray) {
+      try {
+        tray.displayBalloon({
+          title: 'Restaurant POS',
+          content: 'Spring Boot server muvaffaqiyatli qayta ishga tushirildi!',
+          iconType: 'info'
+        });
+      } catch (e) {}
+    }
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Server Qayta Ishga Tushirildi',
+      message: 'Spring Boot server muvaffaqiyatli qayta ishga tushirildi va LAN orqali ulanishga tayyor.',
+      buttons: ['OK']
+    });
+  } catch (err) {
+    dialog.showErrorBox('Server Qayta Ishga Tushirish Xatosi', err.message);
+  }
+}
+
+/**
+ * Creates and maintains the System Tray icon and menu
+ */
+function createTray() {
+  if (tray) return;
+
+  const iconPath = path.join(__dirname, 'assets', 'icon.ico');
+  try {
+    tray = new Tray(iconPath);
+  } catch (e) {
+    console.warn('[Tray] Failed to create Tray with icon.ico:', e.message);
+    return;
+  }
+
+  const updateTrayMenu = async () => {
+    const isHealthy = await checkBackendHealth();
+    const ips = getLocalLanIps();
+
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: '🍽️ Restaurant POS Server',
+        enabled: false
+      },
+      { type: 'separator' },
+      {
+        label: '🖥️ Dasturni ochish',
+        click: () => {
+          if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.maximize();
+            mainWindow.focus();
+            mainWindow.webContents.focus();
+          } else {
+            createMainWindow();
+          }
+        }
+      },
+      {
+        label: `📊 Server holati: ${isHealthy ? 'Faol (Online)' : 'Aloqa yo‘q'}`,
+        click: async () => {
+          const healthy = await checkBackendHealth();
+          const ipsList = getLocalLanIps();
+          dialog.showMessageBox({
+            type: 'info',
+            title: 'POS Server Holati',
+            message: `Server: ${healthy ? 'Faol (Online)' : 'Aloqa yo‘q'}\nPort: ${BACKEND_PORT}\nRejim: ${currentAppMode.toUpperCase()}\n\nLAN IP manzillar (Ofitsiantlar ulanishi uchun):\n${ipsList.map(ip => `  • http://${ip}:${BACKEND_PORT}`).join('\n') || 'Mavjud emas'}`,
+            buttons: ['Tushunarli']
+          });
+        }
+      },
+      {
+        label: '🔄 Serverni qayta ishga tushirish',
+        click: async () => {
+          if (currentAppMode !== 'server') {
+            dialog.showMessageBox({ type: 'info', title: 'Server', message: 'Client rejimida server qayta ishga tushirilmaydi.', buttons: ['OK'] });
+            return;
+          }
+          const choice = dialog.showMessageBoxSync({
+            type: 'question',
+            title: 'Serverni qayta ishga tushirish',
+            message: 'Haqiqatan ham Spring Boot serverini qayta ishga tushirmoqchimisiz?\n(Ofitsiantlar va KDS aloqasi bir necha soniyaga to‘xtashi mumkin)',
+            buttons: ['Qayta ishga tushirish', 'Bekor qilish'],
+            defaultId: 0,
+            cancelId: 1
+          });
+          if (choice === 0) {
+            await restartBackendService();
+          }
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '❌ Dasturni butunlay yopish',
+        click: () => {
+          const choice = dialog.showMessageBoxSync({
+            type: 'warning',
+            title: 'Dasturni butunlay yopish',
+            message: 'POS server to‘xtatiladi va LAN tarmog‘idagi ofitsiantlar, oshxona (KDS) serverga ulana olmay qoladi.\n\nDasturni butunlay yopishni tasdiqlaysizmi?',
+            buttons: ['Ha, butunlay yopish', 'Bekor qilish'],
+            defaultId: 1,
+            cancelId: 1
+          });
+          if (choice === 0) {
+            isQuitting = true;
+            if (tray) {
+              try { tray.destroy(); } catch (e) {}
+              tray = null;
+            }
+            app.quit();
+          }
+        }
+      }
+    ]);
+
+    tray.setContextMenu(contextMenu);
+  };
+
+  tray.setToolTip(`Restaurant POS Server (${currentAppMode === 'server' ? 'Port 8080' : 'Client'})`);
+
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide();
+      } else {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.maximize();
+        mainWindow.focus();
+        mainWindow.webContents.focus();
+      }
+    } else {
+      createMainWindow();
+    }
+  });
+
+  tray.on('right-click', () => {
+    updateTrayMenu();
+  });
+
+  updateTrayMenu();
 }
 
 /**
@@ -602,6 +880,21 @@ function getLocalLanIps() {
 }
 
 function getAppModeConfig() {
+  // Check local app bundle folder first (installed app directory)
+  const appDir = path.dirname(app.getPath('exe'));
+  const localAppMode = path.join(appDir, 'app-mode.json');
+  if (fs.existsSync(localAppMode)) {
+    try {
+      return JSON.parse(fs.readFileSync(localAppMode, 'utf-8'));
+    } catch (e) {}
+  }
+  const resourcesAppMode = path.join(process.resourcesPath || '', 'app-mode.json');
+  if (fs.existsSync(resourcesAppMode)) {
+    try {
+      return JSON.parse(fs.readFileSync(resourcesAppMode, 'utf-8'));
+    } catch (e) {}
+  }
+
   const modeFile = path.join(APP_DATA, 'config', 'app-mode.json');
   if (fs.existsSync(modeFile)) {
     try {
@@ -825,7 +1118,13 @@ ipcMain.handle('clear-all-storage', async () => {
 // Application Lifecycle
 // ============================================================
 app.whenReady().then(async () => {
-  createSplashWindow();
+  // If starting with Windows autostart/minimized, run silently into tray without splash
+  if (!isAutostart) {
+    createSplashWindow();
+  }
+
+  // Create System Tray icon immediately
+  createTray();
 
   // Check for clean-install flag (placed by installer or reset request)
   const cleanFlag = path.join(APP_DATA, 'config', 'clean-install.flag');
@@ -865,8 +1164,21 @@ app.whenReady().then(async () => {
       // 4. Wait for Health Check UP
       await waitForBackendReady();
 
-      // 5. Open Main Window
-      createMainWindow();
+      // 5. Open Main Window (or stay in tray if autostarted)
+      if (isAutostart) {
+        console.log('[Autostart] Dastur Windows bilan fonda ishga tushdi (System Tray).');
+        if (tray) {
+          try {
+            tray.displayBalloon({
+              title: 'Restaurant POS Server',
+              content: 'POS server fonda muvaffaqiyatli ishga tushdi va LAN orqali ulanishga tayyor.',
+              iconType: 'info'
+            });
+          } catch (e) {}
+        }
+      } else {
+        createMainWindow();
+      }
     }
   } catch (err) {
     console.error('Application startup error:', err);
@@ -882,12 +1194,16 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  stopProcesses();
-  if (process.platform !== 'darwin') {
-    app.quit();
+  // In system tray mode, do NOT terminate backend or app when windows close
+  if (isQuitting) {
+    stopProcesses();
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
   }
 });
 
 app.on('before-quit', () => {
+  isQuitting = true;
   stopProcesses();
 });

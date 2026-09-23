@@ -34,6 +34,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "startupentry"; Description: "Windows ishga tushganda POS serverni avtomatik fonda ishga tushirish (System Tray)"; GroupDescription: "Tizim sozlamalari:"; Flags: unchecked
+
+[Registry]
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "RestaurantPOS-Server"; ValueData: """{app}\{#AppExeName}"" --autostart"; Tasks: startupentry; Flags: uninsdeletevalue
 
 [Dirs]
 Name: "{commonappdata}\RestaurantPOS"; Permissions: users-full
@@ -56,6 +60,7 @@ Source: "..\dist\staging\jre\*"; DestDir: "{app}\jre"; Flags: ignoreversion recu
 Source: "..\dist\staging\pgsql\*"; DestDir: "{app}\pgsql"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; 4. Server App Mode Config
+Source: "config\app-mode-server.json"; DestDir: "{app}"; DestName: "app-mode.json"; Flags: ignoreversion
 Source: "config\app-mode-server.json"; DestDir: "{commonappdata}\RestaurantPOS\config"; DestName: "app-mode.json"; Flags: onlyifdoesntexist uninsneveruninstall
 
 ; 5. Production Properties
@@ -118,6 +123,9 @@ var
 begin
   if CurUninstallStep = usUninstall then
   begin
+    // 1. Terminate running POS desktop process safely before file deletion
+    Exec('taskkill.exe', '/f /im RestaurantPOS.exe /t', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
     DataDir := ExpandConstant('{commonappdata}\RestaurantPOS');
     DeleteDataPrompt := MsgBox(
       'Barcha ma''lumotlar bazasi, savdo tarixi, mahsulot rasmlari va cheklar ham o''chirilsinmi?' + #13#10 + #13#10 +

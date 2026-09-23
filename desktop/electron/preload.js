@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveServerConfig: (cfg) => ipcRenderer.invoke('save-server-config', cfg),
   getLanInfo: () => ipcRenderer.invoke('get-lan-info'),
   getServerMode: () => ipcRenderer.invoke('get-server-mode'),
+  isClientMode: async () => (await ipcRenderer.invoke('get-server-mode')) === 'client',
 
   // Events
   onSplashStatus: (callback) => ipcRenderer.on('splash-status', (event, data) => callback(data)),

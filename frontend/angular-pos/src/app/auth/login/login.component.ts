@@ -87,8 +87,8 @@ interface QuickAccount {
 
           <!-- Section Title & Subtitle -->
           <div class="staff-heading-wrap">
-            <h1 class="staff-title">👨‍🍳 Xodimni tanlang</h1>
-            <p class="staff-subtitle">POS terminalida ishlashni boshlash uchun o‘z hisobingizni bosing</p>
+            <h1 class="staff-title">👨‍🍳 {{ lan.isClientMode() ? 'Ofitsiant yoki Oshpazni tanlang' : 'Xodimni tanlang' }}</h1>
+            <p class="staff-subtitle">{{ lan.isClientMode() ? 'Terminalda ishlash uchun o‘z hisobingizni tanlang va PIN-kodni kiriting' : 'POS terminalida ishlashni boshlash uchun o‘z hisobingizni bosing' }}</p>
           </div>
 
           <!-- Search and Filter Bar -->
@@ -109,20 +109,24 @@ interface QuickAccount {
 
             <div class="staff-role-filters">
               <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'ALL'" (click)="employeeRoleFilter.set('ALL')">
-                Barchasi ({{ deviceService.cachedEmployees().length }})
+                {{ lan.isClientMode() ? 'Barchasi (Ofitsiant & Oshpaz)' : 'Barchasi' }} ({{ clientAllowedEmployees().length }})
               </button>
               <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'WAITER'" (click)="employeeRoleFilter.set('WAITER')">
                 🤵 Ofitsiantlar
               </button>
-              <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'CASHIER'" (click)="employeeRoleFilter.set('CASHIER')">
-                💵 Kassirlar
-              </button>
+              @if (!lan.isClientMode()) {
+                <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'CASHIER'" (click)="employeeRoleFilter.set('CASHIER')">
+                  💵 Kassirlar
+                </button>
+              }
               <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'KITCHEN'" (click)="employeeRoleFilter.set('KITCHEN')">
                 👨‍🍳 Oshpazlar
               </button>
-              <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'ADMIN'" (click)="employeeRoleFilter.set('ADMIN')">
-                👑 Adminlar
-              </button>
+              @if (!lan.isClientMode()) {
+                <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'ADMIN'" (click)="employeeRoleFilter.set('ADMIN')">
+                  👑 Adminlar
+                </button>
+              }
             </div>
           </div>
 
@@ -179,12 +183,12 @@ interface QuickAccount {
                 <h2 class="modal-emp-name">{{ selectedEmp.fullName }}</h2>
                 <span class="modal-emp-role {{ getRoleBadgeClass(selectedEmp.role) }}">{{ getRoleTitle(selectedEmp.role) }}</span>
                 <p class="modal-emp-hint">
-                  {{ isEmpAdmin(selectedEmp) && adminAuthMode() === 'PASSWORD' ? 'Admin login va parolini kiriting' : 'PIN-kodni kiriting' }}
+                  {{ !lan.isClientMode() && isEmpAdmin(selectedEmp) && adminAuthMode() === 'PASSWORD' ? 'Admin login va parolini kiriting' : 'PIN-kodni kiriting' }}
                 </p>
               </div>
 
-              <!-- Admin Auth Mode Switcher (Only for Admin) -->
-              @if (isEmpAdmin(selectedEmp)) {
+              <!-- Admin Auth Mode Switcher (Only for Admin on Server/Web mode) -->
+              @if (!lan.isClientMode() && isEmpAdmin(selectedEmp)) {
                 <div class="admin-auth-tabs">
                   <button
                     type="button"
@@ -212,7 +216,7 @@ interface QuickAccount {
               }
 
               <!-- PIN MODE: masked input & touch numpad -->
-              @if (!isEmpAdmin(selectedEmp) || adminAuthMode() === 'PIN') {
+              @if (lan.isClientMode() || !isEmpAdmin(selectedEmp) || adminAuthMode() === 'PIN') {
                 <div class="pin-input-wrap">
                   <input
                     type="password"
@@ -1388,8 +1392,20 @@ export class LoginComponent implements OnInit {
   adminUsernameInput = signal<string>('');
   adminPasswordInput = signal<string>('');
 
+  readonly clientAllowedEmployees = computed(() => {
+    const all = this.deviceService.cachedEmployees();
+    if (!this.lan.isClientMode()) {
+      return all;
+    }
+    // In Client Mode: strictly allow ONLY Waiter and Kitchen staff
+    return all.filter(e => {
+      const r = (e.role || '').toUpperCase();
+      return r === 'WAITER' || r === 'KITCHEN';
+    });
+  });
+
   readonly filteredEmployees = computed(() => {
-    let list = this.deviceService.cachedEmployees();
+    let list = this.clientAllowedEmployees();
     const roleFilter = this.employeeRoleFilter();
     if (roleFilter !== 'ALL') {
       list = list.filter(e => {
@@ -1588,8 +1604,16 @@ export class LoginComponent implements OnInit {
     const emp = this.deviceService.selectedEmployee();
     if (!emp) return;
 
+    if (this.lan.isClientMode()) {
+      const r = (emp.role || '').toUpperCase();
+      if (r !== 'WAITER' && r !== 'KITCHEN') {
+        this.employeeLoginError.set('Ushbu mijoz (Client) terminali faqat ofitsiant va oshpazlar uchun mo‘ljallangan.');
+        return;
+      }
+    }
+
     let secret = '';
-    const isAdmin = this.isEmpAdmin(emp);
+    const isAdmin = !this.lan.isClientMode() && this.isEmpAdmin(emp);
     if (isAdmin && this.adminAuthMode() === 'PASSWORD') {
       secret = this.adminPasswordInput();
       if (!secret) return;

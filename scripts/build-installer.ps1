@@ -12,21 +12,41 @@ Write-Host "========================================================" -Foregroun
 Write-Host "Root Directory: $ROOT_DIR"
 
 # 0. Locate Tools & Paths
-$JDK_DIR = "C:\Program Files\Java\jdk-21.0.12.1"
-$PG_DIR = "C:\Program Files\PostgreSQL\18"
-$ISCC_EXE = "C:\Users\Steam\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
+$JDK_CANDIDATES = @(
+    "C:\Program Files\Java\jdk-21.0.12",
+    "C:\Program Files\Java\jdk-21",
+    "C:\Program Files\Java\jdk-21.0.12.1",
+    $env:JAVA_HOME
+)
+$JDK_DIR = $JDK_CANDIDATES | Where-Object { $_ -and (Test-Path "$_\bin\jlink.exe") } | Select-Object -First 1
+if (-not $JDK_DIR) {
+    throw "JDK 21 not found! Checked: $($JDK_CANDIDATES -join ', ')"
+}
 
-if (-not (Test-Path $JDK_DIR)) {
-    throw "JDK 21 not found at $JDK_DIR"
+$PG_CANDIDATES = @(
+    "C:\Program Files\PostgreSQL\18",
+    "C:\Program Files\PostgreSQL\17",
+    "C:\Program Files\PostgreSQL\16"
+)
+$PG_DIR = $PG_CANDIDATES | Where-Object { $_ -and (Test-Path "$_\bin\postgres.exe") } | Select-Object -First 1
+if (-not $PG_DIR) {
+    throw "PostgreSQL 18 not found!"
 }
-if (-not (Test-Path $PG_DIR)) {
-    throw "PostgreSQL 18 not found at $PG_DIR"
+
+$ISCC_CANDIDATES = @(
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+    "C:\Users\User\AppData\Local\Programs\Inno Setup 6\ISCC.exe",
+    "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+    "C:\Program Files\Inno Setup 6\ISCC.exe",
+    "C:\Users\Steam\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
+)
+$ISCC_EXE = $ISCC_CANDIDATES | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+if (-not $ISCC_EXE) {
+    $cmd = Get-Command iscc -ErrorAction SilentlyContinue
+    if ($cmd) { $ISCC_EXE = $cmd.Source }
 }
-if (-not (Test-Path $ISCC_EXE)) {
-    $ISCC_EXE = (Get-Command iscc -ErrorAction SilentlyContinue).Source
-    if (-not $ISCC_EXE) {
-        throw "Inno Setup Compiler (ISCC.exe) not found!"
-    }
+if (-not $ISCC_EXE) {
+    throw "Inno Setup Compiler (ISCC.exe) not found!"
 }
 
 $STAGING_DIR = Join-Path $ROOT_DIR "dist\staging"
@@ -45,13 +65,16 @@ New-Item -ItemType Directory -Force $DIST_INSTALLER | Out-Null
 # ========================================================
 Write-Host "`n[1/6] Building Angular Frontend (Production, base-href ./)..." -ForegroundColor Green
 Set-Location (Join-Path $ROOT_DIR "frontend\angular-pos")
-& npx ng build --configuration production --base-href ./
+& npx.cmd ng build --configuration production --base-href ./
 if ($LASTEXITCODE -ne 0) { throw "Angular build failed!" }
 
 # ========================================================
 # 2. Build Spring Boot Backend Fat JAR
 # ========================================================
 Write-Host "`n[2/6] Building Spring Boot Fat JAR..." -ForegroundColor Green
+Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | ForEach-Object {
+    Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
+}
 Set-Location (Join-Path $ROOT_DIR "backend\restaurant-pos-api")
 $env:JAVA_HOME = $JDK_DIR
 $env:PATH = "$JDK_DIR\bin;$env:PATH"
@@ -95,7 +118,7 @@ Write-Host "PostgreSQL binaries bundled at: $PG_OUT"
 # ========================================================
 Write-Host "`n[5/6] Packaging Electron Desktop Shell..." -ForegroundColor Green
 Set-Location (Join-Path $ROOT_DIR "desktop\electron")
-& npm run pack
+& npm.cmd run pack
 if ($LASTEXITCODE -ne 0) { throw "Electron pack failed!" }
 
 # ========================================================
