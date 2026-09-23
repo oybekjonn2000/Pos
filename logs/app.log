@@ -99,3 +99,130 @@
 2026-09-21 03:38:15 [http-nio-8080-exec-6] WARN  c.r.c.e.GlobalExceptionHandler - Business exception: UNAUTHORIZED - Login yoki parol noto'g'ri!
 2026-09-21 03:38:28 [http-nio-8080-exec-2] WARN  c.r.auth.service.AuthService - Failed login attempt for user: admin1 (restaurantCode: GDFGDFG)
 2026-09-21 03:38:28 [http-nio-8080-exec-2] WARN  c.r.c.e.GlobalExceptionHandler - Business exception: UNAUTHORIZED - Login yoki parol noto'g'ri!
+2026-09-23 17:42:48 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication using Java 21.0.12 with PID 13628 (E:\ANtiG\Pos\backend\restaurant-pos-api\target\classes started by User in E:\ANtiG\Pos)
+2026-09-23 17:42:48 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-23 17:42:50 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-23 17:42:51 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 201 ms. Found 47 JPA repository interfaces.
+2026-09-23 17:42:52 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-23 17:42:52 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-23 17:42:52 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-23 17:42:53 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-23 17:42:53 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4007 ms
+2026-09-23 17:42:54 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-23 17:42:54 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@3245efdb
+2026-09-23 17:42:54 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-23 17:42:54 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-23 17:42:54 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-23 17:42:55 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 37
+2026-09-23 17:42:55 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-23 17:42:55 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-23 17:42:55 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-23 17:42:55 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-23 17:42:55 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-23 17:42:55 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-23 17:42:55 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-23 17:42:58 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-23 17:43:01 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-23 17:43:01 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-23 17:43:05 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-23 17:43:06 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-23 17:43:06 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-23 17:43:06 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@209ba351]]
+2026-09-23 17:43:06 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-23 17:43:06 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopping...
+2026-09-23 17:43:06 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=false, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@209ba351]]
+2026-09-23 17:43:06 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Stopped.
+2026-09-23 17:43:06 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-09-23 17:43:06 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-23 17:43:06 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown initiated...
+2026-09-23 17:43:06 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Shutdown completed.
+2026-09-23 17:43:06 [main] INFO  o.s.b.a.l.ConditionEvaluationReportLogger - 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-09-23 17:43:06 [main] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+2026-09-23 18:08:57 [main] INFO  c.r.RestaurantPosApplication - Starting RestaurantPosApplication using Java 21.0.12 with PID 13168 (E:\ANtiG\Pos\backend\restaurant-pos-api\target\classes started by User in E:\ANtiG\Pos)
+2026-09-23 18:08:57 [main] INFO  c.r.RestaurantPosApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-23 18:08:58 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-23 18:08:59 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 179 ms. Found 47 JPA repository interfaces.
+2026-09-23 18:09:00 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-23 18:09:00 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-23 18:09:00 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.36]
+2026-09-23 18:09:00 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-23 18:09:00 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2682 ms
+2026-09-23 18:09:00 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Starting...
+2026-09-23 18:09:00 [main] INFO  com.zaxxer.hikari.pool.HikariPool - POS-Pool - Added connection org.postgresql.jdbc.PgConnection@6c06b1bc
+2026-09-23 18:09:00 [main] INFO  com.zaxxer.hikari.HikariDataSource - POS-Pool - Start completed.
+2026-09-23 18:09:00 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:postgresql://localhost:5433/pos (PostgreSQL 18.6)
+2026-09-23 18:09:00 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 18.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 17.
+2026-09-23 18:09:01 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "public": 37
+2026-09-23 18:09:01 [main] INFO  o.f.core.internal.command.DbMigrate - Schema "public" is up to date. No migration necessary.
+2026-09-23 18:09:01 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-23 18:09:01 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-09-23 18:09:01 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2026-09-23 18:09:01 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-23 18:09:01 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-23 18:09:01 [main] INFO  o.hibernate.orm.connections.pooling - HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (POS-Pool)']
+	Database driver: undefined/unknown
+	Database version: 18.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-23 18:09:03 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-23 18:09:06 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-23 18:09:06 [main] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-09-23 18:09:10 [main] WARN  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-09-23 18:09:10 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoints beneath base path '/actuator'
+2026-09-23 18:09:11 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Starting...
+2026-09-23 18:09:11 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5a23fbb4]]
+2026-09-23 18:09:11 [main] INFO  o.s.m.s.b.SimpleBrokerMessageHandler - Started.
+2026-09-23 18:09:11 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-23 18:09:11 [main] INFO  c.r.RestaurantPosApplication - Started RestaurantPosApplication in 14.118 seconds (process running for 14.414)
+2026-09-23 18:09:13 [http-nio-0.0.0.0-8080-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-23 18:09:13 [http-nio-0.0.0.0-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-23 18:09:13 [http-nio-0.0.0.0-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 0 ms
+2026-09-23 18:10:11 [MessageBroker-1] INFO  o.s.w.s.c.WebSocketMessageBrokerStats - WebSocketSession[1 current WS(1)-HttpStream(0)-HttpPoll(0), 2 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(2)-CONNECTED(2)-DISCONNECT(1)], stompBrokerRelay[null], inboundChannel[pool size = 12, active threads = 0, queued tasks = 0, completed tasks = 12], outboundChannel[pool size = 4, active threads = 0, queued tasks = 0, completed tasks = 4], sockJsScheduler[pool size = 2, active threads = 1, queued tasks = 1, completed tasks = 0]
+2026-09-23 18:19:16 [http-nio-0.0.0.0-8080-exec-9] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:19:16 [http-nio-0.0.0.0-8080-exec-5] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:19:19 [http-nio-0.0.0.0-8080-exec-5] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:19:19 [http-nio-0.0.0.0-8080-exec-7] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:21:11 [http-nio-0.0.0.0-8080-exec-10] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:21:11 [http-nio-0.0.0.0-8080-exec-3] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:21:28 [http-nio-0.0.0.0-8080-exec-2] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:21:28 [http-nio-0.0.0.0-8080-exec-9] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:21:29 [http-nio-0.0.0.0-8080-exec-4] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:21:29 [http-nio-0.0.0.0-8080-exec-7] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:21:41 [http-nio-0.0.0.0-8080-exec-7] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:21:41 [http-nio-0.0.0.0-8080-exec-4] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:22:07 [http-nio-0.0.0.0-8080-exec-2] INFO  c.r.mobile.service.MobilePosService - Waiter logged in via mobile PIN: null (ofit ofit) at gfdgdfgdf
+2026-09-23 18:22:28 [http-nio-0.0.0.0-8080-exec-9] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:22:28 [http-nio-0.0.0.0-8080-exec-10] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:22:40 [http-nio-0.0.0.0-8080-exec-8] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/upload-receipt
+2026-09-23 18:22:44 [http-nio-0.0.0.0-8080-exec-4] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests
+2026-09-23 18:22:54 [http-nio-0.0.0.0-8080-exec-1] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests
+2026-09-23 18:22:59 [http-nio-0.0.0.0-8080-exec-2] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/history
+2026-09-23 18:22:59 [http-nio-0.0.0.0-8080-exec-4] WARN  c.r.c.e.GlobalExceptionHandler - Static resource not found: api/restaurant/billing/requests/latest
+2026-09-23 18:23:06 [http-nio-0.0.0.0-8080-exec-6] INFO  c.r.b.service.SubscriptionService - Processing mock payment 10aae3b7-d434-4103-b99d-7378393cddbd for tenant a0000000-0000-0000-0000-000000000001 with outcome: SUCCESS
+2026-09-23 18:23:08 [http-nio-0.0.0.0-8080-exec-3] INFO  c.r.b.service.SubscriptionService - Processing mock payment 10aae3b7-d434-4103-b99d-7378393cddbd for tenant a0000000-0000-0000-0000-000000000001 with outcome: SUCCESS
+2026-09-23 18:23:08 [http-nio-0.0.0.0-8080-exec-3] INFO  c.r.b.service.SubscriptionService - Payment 10aae3b7-d434-4103-b99d-7378393cddbd already marked as PAID

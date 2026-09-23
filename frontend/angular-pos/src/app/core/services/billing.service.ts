@@ -453,6 +453,116 @@ export class BillingService {
       map(res => res.data)
     );
   }
+
+  // ==========================================
+  // SUBSCRIPTION REQUESTS (CLIENT)
+  // ==========================================
+
+  createSubscriptionRequest(req: SubscriptionRequestCreate): Observable<SubscriptionRequestResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/restaurant/billing/requests`, req).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getLatestSubscriptionRequest(): Observable<SubscriptionRequestResponse | null> {
+    return this.http.get<any>(`${this.apiPrefix}/restaurant/billing/requests/latest`).pipe(
+      map(res => res.data || null)
+    );
+  }
+
+  getSubscriptionRequestHistory(): Observable<SubscriptionRequestResponse[]> {
+    return this.http.get<any>(`${this.apiPrefix}/restaurant/billing/requests/history`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  cancelSubscriptionRequest(id: string): Observable<SubscriptionRequestResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/restaurant/billing/requests/${id}/cancel`, {}).pipe(
+      map(res => res.data)
+    );
+  }
+
+  uploadReceipt(file: File): Observable<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<any>(`${this.apiPrefix}/restaurant/billing/upload-receipt`, formData).pipe(
+      map(res => res.data?.receiptUrl || '')
+    );
+  }
+
+  // ==========================================
+  // SUBSCRIPTION REQUESTS (SUPER ADMIN)
+  // ==========================================
+
+  getAllSubscriptionRequests(status?: string): Observable<SubscriptionRequestResponse[]> {
+    let params = new HttpParams();
+    if (status && status !== 'ALL') {
+      params = params.set('status', status);
+    }
+    return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/requests`, { params }).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  getPendingSubscriptionRequestsCount(): Observable<number> {
+    return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/requests/count-pending`).pipe(
+      map(res => res.data || 0)
+    );
+  }
+
+  approveSubscriptionRequest(id: string, req?: SubscriptionRequestApprove): Observable<SubscriptionRequestResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/requests/${id}/approve`, req || {}).pipe(
+      map(res => res.data)
+    );
+  }
+
+  rejectSubscriptionRequest(id: string, req: SubscriptionRequestReject): Observable<SubscriptionRequestResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/requests/${id}/reject`, req).pipe(
+      map(res => res.data)
+    );
+  }
+}
+
+export interface SubscriptionRequestResponse {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  tenantCode: string;
+  planId: string;
+  planCode: string;
+  planName: string;
+  billingPeriod: string;
+  durationMonths: number;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  receiptUrl?: string;
+  clientNotes?: string;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  rejectionReason?: string;
+  adminNotes?: string;
+  requestedByUsername?: string;
+  reviewedByUsername?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
+
+export interface SubscriptionRequestCreate {
+  planId: string;
+  billingPeriod: string;
+  durationMonths: number;
+  paymentMethod: string;
+  receiptUrl?: string;
+  clientNotes?: string;
+}
+
+export interface SubscriptionRequestApprove {
+  customDaysBonus?: number;
+  adminNotes?: string;
+}
+
+export interface SubscriptionRequestReject {
+  reason: string;
 }
 
 export interface PaymentProviderSettingResponse {

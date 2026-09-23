@@ -1,8 +1,12 @@
 package com.restaurantpos.billing.controller;
 
 import com.restaurantpos.billing.dto.BillingDto;
+import com.restaurantpos.billing.dto.SubscriptionRequestDto;
+import com.restaurantpos.billing.entity.SubscriptionRequestStatus;
+import com.restaurantpos.billing.service.SubscriptionRequestService;
 import com.restaurantpos.billing.service.SubscriptionService;
 import com.restaurantpos.common.response.ApiResponse;
+import com.restaurantpos.common.tenant.TenantContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,7 @@ import java.util.UUID;
 public class PlatformSubscriptionAdminController {
 
     private final SubscriptionService subscriptionService;
+    private final SubscriptionRequestService requestService;
 
     @GetMapping("/overview")
     @Operation(summary = "Get platform-wide subscription metrics, MRR, and all tenant statuses")
@@ -146,4 +151,44 @@ public class PlatformSubscriptionAdminController {
         List<BillingDto.AuditLogResponse> logs = subscriptionService.getAuditLogs();
         return ResponseEntity.ok(ApiResponse.success(logs));
     }
+
+    // ==========================================
+    // SUBSCRIPTION REQUESTS (B2B APPROVAL ENGINE)
+    // ==========================================
+
+    @GetMapping("/requests")
+    @Operation(summary = "Get all subscription requests with optional status filter")
+    public ResponseEntity<ApiResponse<List<SubscriptionRequestDto.Response>>> getSubscriptionRequests(
+            @RequestParam(required = false) SubscriptionRequestStatus status) {
+        List<SubscriptionRequestDto.Response> requests = requestService.getAllRequestsForAdmin(status);
+        return ResponseEntity.ok(ApiResponse.success(requests));
+    }
+
+    @GetMapping("/requests/count-pending")
+    @Operation(summary = "Get total count of pending subscription requests for badge indicator")
+    public ResponseEntity<ApiResponse<Long>> countPendingRequests() {
+        long count = requestService.countPendingRequests();
+        return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    @PostMapping("/requests/{id}/approve")
+    @Operation(summary = "Approve and activate a subscription request")
+    public ResponseEntity<ApiResponse<SubscriptionRequestDto.Response>> approveSubscriptionRequest(
+            @PathVariable UUID id,
+            @RequestBody(required = false) SubscriptionRequestDto.ApproveRequest request) {
+        UUID adminUserId = TenantContext.getCurrentUserId();
+        SubscriptionRequestDto.Response response = requestService.approveRequest(id, adminUserId, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Obuna so'rovi tasdiqlandi va restoran muvaffaqiyatli faollashtirildi!"));
+    }
+
+    @PostMapping("/requests/{id}/reject")
+    @Operation(summary = "Reject a subscription request with reason")
+    public ResponseEntity<ApiResponse<SubscriptionRequestDto.Response>> rejectSubscriptionRequest(
+            @PathVariable UUID id,
+            @RequestBody SubscriptionRequestDto.RejectRequest request) {
+        UUID adminUserId = TenantContext.getCurrentUserId();
+        SubscriptionRequestDto.Response response = requestService.rejectRequest(id, adminUserId, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Obuna so'rovi rad etildi"));
+    }
 }
+

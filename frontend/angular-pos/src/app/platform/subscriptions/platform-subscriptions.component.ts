@@ -13,7 +13,8 @@ import {
   AuditLogResponse,
   ManualActivationRequest,
   PaymentProviderSettingResponse,
-  PaymentProviderSettingUpdateRequest
+  PaymentProviderSettingUpdateRequest,
+  SubscriptionRequestResponse
 } from '../../core/services/billing.service';
 
 @Component({
@@ -149,6 +150,12 @@ import {
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'providers'" (click)="activeTab = 'providers'; loadPaymentProviders()">
           💳 To'lov Sozlamalari ({{ providers().length }})
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'requests'" (click)="activeTab = 'requests'; loadSubscriptionRequests()">
+          📥 Obuna So'rovlari
+          @if (pendingRequestsCount() > 0) {
+            <span class="tab-counter-badge">{{ pendingRequestsCount() }}</span>
+          }
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'audit'" (click)="activeTab = 'audit'; loadAuditLogs()">
           📜 Audit Jurnali
@@ -590,6 +597,129 @@ import {
         </div>
       }
 
+      <!-- TAB: SUBSCRIPTION REQUESTS (B2B APPROVAL ENGINE) -->
+      @if (activeTab === 'requests') {
+        <div class="card table-card">
+          <div class="card-header">
+            <div class="search-filter-row">
+              <input type="text" [(ngModel)]="requestSearchQuery" placeholder="Restoran nomi yoki kodi bo'yicha qidirish..." class="form-control search-input" />
+              <div class="filter-pills">
+                <span class="filter-pill" [class.active]="requestStatusFilter === 'ALL'" (click)="setRequestFilter('ALL')">
+                  Barchasi ({{ requests().length }})
+                </span>
+                <span class="filter-pill" [class.active]="requestStatusFilter === 'PENDING_APPROVAL'" (click)="setRequestFilter('PENDING_APPROVAL')">
+                  Kutilmoqda ({{ pendingRequestsCount() }})
+                </span>
+                <span class="filter-pill" [class.active]="requestStatusFilter === 'APPROVED'" (click)="setRequestFilter('APPROVED')">
+                  Tasdiqlangan
+                </span>
+                <span class="filter-pill" [class.active]="requestStatusFilter === 'REJECTED'" (click)="setRequestFilter('REJECTED')">
+                  Rad etilgan
+                </span>
+                <span class="filter-pill" [class.active]="requestStatusFilter === 'CANCELLED'" (click)="setRequestFilter('CANCELLED')">
+                  Bekor qilingan
+                </span>
+              </div>
+            </div>
+            <button class="btn btn-outline btn-sm" (click)="loadSubscriptionRequests()">🔄 Yangilash</button>
+          </div>
+
+          @if (loadingRequests()) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Arizalar yuklanmoqda...</p>
+            </div>
+          } @else if (filteredRequests().length === 0) {
+            <div class="empty-state">
+              <p>Belgilangan filtr bo'yicha arizalar topilmadi.</p>
+            </div>
+          } @else {
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Restoran</th>
+                    <th>Tanlangan Tarif</th>
+                    <th>Muddat</th>
+                    <th>Summa</th>
+                    <th>To'lov Usuli</th>
+                    <th>To'lov Cheki</th>
+                    <th>Yuborilgan Vaqt</th>
+                    <th>Holat</th>
+                    <th>Izoh / Tafsilot</th>
+                    <th>Amallar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (req of filteredRequests(); track req.id) {
+                    <tr>
+                      <td>
+                        <div class="tenant-cell">
+                          <strong>{{ req.tenantName }}</strong>
+                          <span class="code-badge">{{ req.tenantCode }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <strong>{{ req.planName }}</strong>
+                        <span class="code-badge">{{ req.planCode }}</span>
+                      </td>
+                      <td>{{ req.durationMonths }} oy</td>
+                      <td class="amount-cell">{{ formatPrice(req.amount) }} {{ req.currency }}</td>
+                      <td>
+                        <span class="provider-badge">{{ getPaymentMethodLabel(req.paymentMethod) }}</span>
+                      </td>
+                      <td>
+                        @if (req.receiptUrl) {
+                          <button class="btn btn-xs btn-outline" (click)="viewReceipt(req.receiptUrl)">
+                            📎 Chekni ko'rish
+                          </button>
+                        } @else {
+                          <span class="text-muted">Chek yuklanmagan</span>
+                        }
+                      </td>
+                      <td>{{ formatDate(req.createdAt) }}</td>
+                      <td>
+                        <span class="status-badge" [ngClass]="getRequestStatusBadge(req.status)">
+                          {{ getRequestStatusLabel(req.status) }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (req.clientNotes) {
+                          <div class="note-text"><small class="text-muted">Mijoz:</small> {{ req.clientNotes }}</div>
+                        }
+                        @if (req.adminNotes) {
+                          <div class="note-text text-success"><small>Admin:</small> {{ req.adminNotes }}</div>
+                        }
+                        @if (req.rejectionReason) {
+                          <div class="note-text text-danger"><small>Rad:</small> {{ req.rejectionReason }}</div>
+                        }
+                        @if (req.reviewedByUsername) {
+                          <div class="note-text"><small class="text-muted">Ko'rgan:</small> {{ req.reviewedByUsername }}</div>
+                        }
+                      </td>
+                      <td>
+                        <div class="action-btn-group">
+                          @if (req.status === 'PENDING_APPROVAL') {
+                            <button class="btn btn-sm btn-success" (click)="openApproveModal(req)">
+                              ✅ Tasdiqlash
+                            </button>
+                            <button class="btn btn-sm btn-danger" (click)="openRejectModal(req)">
+                              ❌ Rad etish
+                            </button>
+                          } @else {
+                            <span class="text-muted">-</span>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      }
+
       <!-- MODAL: MANUAL SUBSCRIPTION ACTIVATION -->
       @if (showManualModal) {
         <div class="modal-overlay" (click)="showManualModal = false">
@@ -781,6 +911,124 @@ import {
               <div class="modal-actions">
                 <button class="btn btn-outline" (click)="showDiscountModal = false">Bekor qilish</button>
                 <button class="btn btn-primary" (click)="saveDiscountSubmit()">Saqlash</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL: APPROVE SUBSCRIPTION REQUEST -->
+      @if (showApproveModal && selectedApproveRequest) {
+        <div class="modal-overlay" (click)="showApproveModal = false">
+          <div class="modal-card" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>✅ Obuna So'rovini Tasdiqlash va Faollashtirish</h2>
+              <button class="btn-close" (click)="showApproveModal = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <div class="request-summary-box">
+                <div class="rs-row">
+                  <span>Restoran:</span>
+                  <strong>{{ selectedApproveRequest.tenantName }} ({{ selectedApproveRequest.tenantCode }})</strong>
+                </div>
+                <div class="rs-row">
+                  <span>Tanlangan Tarif:</span>
+                  <strong>{{ selectedApproveRequest.planName }} ({{ selectedApproveRequest.planCode }})</strong>
+                </div>
+                <div class="rs-row">
+                  <span>Asosiy Muddat:</span>
+                  <span>{{ selectedApproveRequest.durationMonths }} oy</span>
+                </div>
+                <div class="rs-row">
+                  <span>To'lov Summasi:</span>
+                  <strong>{{ formatPrice(selectedApproveRequest.amount) }} {{ selectedApproveRequest.currency }}</strong>
+                </div>
+                <div class="rs-row">
+                  <span>To'lov Usuli:</span>
+                  <span class="provider-badge">{{ getPaymentMethodLabel(selectedApproveRequest.paymentMethod) }}</span>
+                </div>
+                @if (selectedApproveRequest.receiptUrl) {
+                  <div class="rs-row">
+                    <span>To'lov Cheki:</span>
+                    <button class="btn btn-xs btn-outline" (click)="viewReceipt(selectedApproveRequest.receiptUrl)">
+                      📎 Chekni Ko'rish
+                    </button>
+                  </div>
+                }
+                @if (selectedApproveRequest.clientNotes) {
+                  <div class="rs-row">
+                    <span>Mijoz Izohi:</span>
+                    <em>{{ selectedApproveRequest.clientNotes }}</em>
+                  </div>
+                }
+              </div>
+
+              <div class="form-group" style="margin-top: 16px;">
+                <label>Sovg'a / Bonus Kunlar (Ixtiyoriy):</label>
+                <input type="number" [(ngModel)]="customBonusDays" min="0" max="365" class="form-control" placeholder="0" />
+                <small class="text-muted">Masalan: 5 kun qo'shilsa, obuna muddati +5 kunga ko'proq beriladi</small>
+              </div>
+
+              <div class="form-group">
+                <label>Admin Izohi / Qayd (Ixtiyoriy):</label>
+                <input type="text" [(ngModel)]="adminApproveNotes" class="form-control" placeholder="Masalan: Ipoteka bank orqali to'lov to'liq tushdi" />
+              </div>
+
+              <div class="modal-actions">
+                <button class="btn btn-outline" (click)="showApproveModal = false">Bekor qilish</button>
+                <button class="btn btn-success" [disabled]="approvingRequest" (click)="submitApproveRequest()">
+                  {{ approvingRequest ? 'Faollashtirilmoqda...' : '✅ Tasdiqlash va Faollashtirish' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL: REJECT SUBSCRIPTION REQUEST -->
+      @if (showRejectModal && selectedRejectRequest) {
+        <div class="modal-overlay" (click)="showRejectModal = false">
+          <div class="modal-card" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>❌ Obuna So'rovini Rad Etish</h2>
+              <button class="btn-close" (click)="showRejectModal = false">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <p>
+                <strong>{{ selectedRejectRequest.tenantName }}</strong> restoranining 
+                <strong>{{ selectedRejectRequest.planName }}</strong> tarifiga bergan arizasi rad etilmoqda.
+              </p>
+
+              <div class="form-group">
+                <label>Rad Etish Sababi (Mijozga ko'rsatiladi):</label>
+                <textarea [(ngModel)]="rejectReason" class="form-control" rows="3" placeholder="Masalan: To'lov cheki bo'yicha mablag' hisob raqamimizga tushmadi..."></textarea>
+              </div>
+
+              <div class="modal-actions">
+                <button class="btn btn-outline" (click)="showRejectModal = false">Bekor qilish</button>
+                <button class="btn btn-danger" [disabled]="rejectingRequest || !rejectReason.trim()" (click)="submitRejectRequest()">
+                  {{ rejectingRequest ? 'Rad etilmoqda...' : '❌ Rad Etishni Tasdiqlash' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- MODAL: VIEW RECEIPT IMAGE -->
+      @if (showReceiptModal) {
+        <div class="modal-overlay" (click)="showReceiptModal = false">
+          <div class="modal-card modal-receipt-viewer" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>📎 To'lov Cheki / Kvitansiya</h2>
+              <button class="btn-close" (click)="showReceiptModal = false">✕</button>
+            </div>
+            <div class="modal-body text-center" style="padding: 16px;">
+              <img [src]="receiptModalUrl" alt="Payment Receipt" style="max-width: 100%; max-height: 550px; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" />
+              <div style="margin-top: 14px;">
+                <a [href]="receiptModalUrl" target="_blank" class="btn btn-outline btn-sm">Yangi oynada ochish ↗</a>
               </div>
             </div>
           </div>
@@ -1362,6 +1610,75 @@ import {
 
     .text-success { color: #10b981; }
     .font-bold { font-weight: 700; }
+
+    .tab-counter-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9999px;
+      background: #f59e0b;
+      color: #1e1b4b;
+      font-size: 11px;
+      font-weight: 800;
+      margin-left: 6px;
+    }
+
+    .tenant-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .action-btn-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+      border: none;
+      &:hover { background: #059669; }
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+      border: none;
+      &:hover { background: #dc2626; }
+    }
+
+    .request-summary-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border, #334155);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .rs-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        span:first-child { color: var(--text-muted, #94a3b8); }
+      }
+    }
+
+    .note-text {
+      font-size: 12px;
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+
+    .modal-receipt-viewer {
+      max-width: 650px;
+    }
   `]
 })
 export class PlatformSubscriptionsComponent implements OnInit {
@@ -1375,9 +1692,30 @@ export class PlatformSubscriptionsComponent implements OnInit {
   providers = signal<PaymentProviderSettingResponse[]>([]);
   loading = signal(true);
 
-  activeTab: 'subscriptions' | 'invoices' | 'plans' | 'discounts' | 'audit' | 'providers' = 'subscriptions';
+  activeTab: 'subscriptions' | 'invoices' | 'plans' | 'discounts' | 'audit' | 'providers' | 'requests' = 'subscriptions';
   searchQuery = '';
   statusFilter = 'ALL';
+
+  // Subscription Requests state
+  requests = signal<SubscriptionRequestResponse[]>([]);
+  pendingRequestsCount = signal<number>(0);
+  loadingRequests = signal<boolean>(false);
+  requestSearchQuery = '';
+  requestStatusFilter = 'ALL';
+
+  showApproveModal = false;
+  selectedApproveRequest: SubscriptionRequestResponse | null = null;
+  customBonusDays = 0;
+  adminApproveNotes = '';
+  approvingRequest = false;
+
+  showRejectModal = false;
+  selectedRejectRequest: SubscriptionRequestResponse | null = null;
+  rejectReason = '';
+  rejectingRequest = false;
+
+  showReceiptModal = false;
+  receiptModalUrl = '';
 
   // Providers settings state
   providerApiKeys: { [key: string]: string } = {};
@@ -1427,6 +1765,8 @@ export class PlatformSubscriptionsComponent implements OnInit {
     this.loadDiscounts();
     this.loadAuditLogs();
     this.loadPaymentProviders();
+    this.loadPendingRequestsCount();
+    this.loadSubscriptionRequests();
   }
 
   loadPaymentProviders(): void {
@@ -1791,5 +2131,129 @@ export class PlatformSubscriptionsComponent implements OnInit {
       archived: false,
       sortOrder: 1
     };
+  }
+
+  // --- Subscription Requests (B2B Approval Engine) ---
+
+  loadSubscriptionRequests(): void {
+    this.loadingRequests.set(true);
+    this.billingService.getAllSubscriptionRequests(this.requestStatusFilter).subscribe({
+      next: (data) => {
+        this.requests.set(data);
+        this.loadingRequests.set(false);
+      },
+      error: () => this.loadingRequests.set(false)
+    });
+  }
+
+  loadPendingRequestsCount(): void {
+    this.billingService.getPendingSubscriptionRequestsCount().subscribe({
+      next: (count) => this.pendingRequestsCount.set(count),
+      error: () => {}
+    });
+  }
+
+  setRequestFilter(filter: string): void {
+    this.requestStatusFilter = filter;
+    this.loadSubscriptionRequests();
+  }
+
+  filteredRequests(): SubscriptionRequestResponse[] {
+    const q = this.requestSearchQuery.trim().toLowerCase();
+    if (!q) return this.requests();
+    return this.requests().filter(r =>
+      (r.tenantName && r.tenantName.toLowerCase().includes(q)) ||
+      (r.tenantCode && r.tenantCode.toLowerCase().includes(q)) ||
+      (r.planName && r.planName.toLowerCase().includes(q))
+    );
+  }
+
+  getPaymentMethodLabel(method: string): string {
+    switch (method) {
+      case 'BANK_TRANSFER': return '🏦 Bank hisob-raqami';
+      case 'CASH': return '💵 Naqd pul';
+      case 'CLICK_PAYME_MANUAL': return '💳 Karta / Click / Payme';
+      case 'CARD_TRANSFER': return '💳 Karta orqali';
+      default: return method || '-';
+    }
+  }
+
+  getRequestStatusLabel(status: string): string {
+    switch (status) {
+      case 'PENDING_APPROVAL': return 'Kutilmoqda';
+      case 'APPROVED': return 'Tasdiqlangan';
+      case 'REJECTED': return 'Rad etilgan';
+      case 'CANCELLED': return 'Bekor qilingan';
+      default: return status || '-';
+    }
+  }
+
+  getRequestStatusBadge(status: string): string {
+    switch (status) {
+      case 'PENDING_APPROVAL': return 'badge-amber';
+      case 'APPROVED': return 'badge-green';
+      case 'REJECTED': return 'badge-red';
+      case 'CANCELLED': return 'badge-gray';
+      default: return 'badge-gray';
+    }
+  }
+
+  openApproveModal(req: SubscriptionRequestResponse): void {
+    this.selectedApproveRequest = req;
+    this.customBonusDays = 0;
+    this.adminApproveNotes = '';
+    this.showApproveModal = true;
+  }
+
+  submitApproveRequest(): void {
+    if (!this.selectedApproveRequest) return;
+    this.approvingRequest = true;
+    this.billingService.approveSubscriptionRequest(this.selectedApproveRequest.id, {
+      customDaysBonus: this.customBonusDays,
+      adminNotes: this.adminApproveNotes
+    }).subscribe({
+      next: () => {
+        this.approvingRequest = false;
+        this.showApproveModal = false;
+        this.selectedApproveRequest = null;
+        alert('Obuna so\'rovi tasdiqlandi va restoran obunasi muvaffaqiyatli faollashtirildi!');
+        this.refreshAll();
+      },
+      error: (err) => {
+        this.approvingRequest = false;
+        alert(err?.error?.message || 'Tasdiqlashda xatolik yuz berdi');
+      }
+    });
+  }
+
+  openRejectModal(req: SubscriptionRequestResponse): void {
+    this.selectedRejectRequest = req;
+    this.rejectReason = '';
+    this.showRejectModal = true;
+  }
+
+  submitRejectRequest(): void {
+    if (!this.selectedRejectRequest || !this.rejectReason.trim()) return;
+    this.rejectingRequest = true;
+    this.billingService.rejectSubscriptionRequest(this.selectedRejectRequest.id, {
+      reason: this.rejectReason.trim()
+    }).subscribe({
+      next: () => {
+        this.rejectingRequest = false;
+        this.showRejectModal = false;
+        this.selectedRejectRequest = null;
+        alert('Obuna so\'rovi rad etildi!');
+        this.refreshAll();
+      },
+      error: (err) => {
+        this.rejectingRequest = false;
+        alert(err?.error?.message || 'Rad etishda xatolik yuz berdi');
+      }
+    });
+  }
+
+  viewReceipt(url: string): void {
+    this.receiptModalUrl = url;
+    this.showReceiptModal = true;
   }
 }

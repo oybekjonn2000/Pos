@@ -7,7 +7,8 @@ import {
   PlanResponse,
   CalculatePriceResponse,
   InvoiceResponse,
-  SubscriptionPeriodResponse
+  SubscriptionPeriodResponse,
+  SubscriptionRequestResponse
 } from '../../core/services/billing.service';
 import { FeatureService } from '../../core/services/feature.service';
 
@@ -25,11 +26,47 @@ import { FeatureService } from '../../core/services/feature.service';
         </div>
 
         <div class="header-actions">
+          <button class="btn btn-warning-dark" (click)="openRequestModal()">
+            📝 Obunaga Ariza Berish (Bank / Chek)
+          </button>
           <button class="btn btn-primary" (click)="openCheckoutModal()">
-            ⚡ Tarifni Yangilash / Uzaytirish
+            ⚡ Tezkor To'lov (Online)
           </button>
         </div>
       </div>
+
+      <!-- Pending or Rejected Subscription Request Banner -->
+      @if (latestRequest() && latestRequest()!.status === 'PENDING_APPROVAL') {
+        <div class="banner banner-pending-request">
+          <div class="banner-icon">🟡</div>
+          <div class="banner-content">
+            <h3>Obuna arizangiz ko'rib chiqilmoqda!</h3>
+            <p>
+              Tanlangan tarif: <strong>{{ latestRequest()!.planName }}</strong> ({{ latestRequest()!.durationMonths }} oy, {{ formatPrice(latestRequest()!.amount) }} {{ latestRequest()!.currency }}).
+              To'lov usuli: <strong>{{ getPaymentMethodLabel(latestRequest()!.paymentMethod) }}</strong>.
+              Ariza yuborilgan vaqt: {{ formatDate(latestRequest()!.createdAt) }}.
+              Super Admin to'lovni tekshirib tasdiqlashi bilan obuna avtomatik ravishda faollashadi.
+            </p>
+          </div>
+          <button class="btn btn-sm btn-outline-danger" (click)="cancelCurrentRequest(latestRequest()!.id)">
+            Bekor qilish
+          </button>
+        </div>
+      } @else if (latestRequest() && latestRequest()!.status === 'REJECTED') {
+        <div class="banner banner-rejected-request">
+          <div class="banner-icon">❌</div>
+          <div class="banner-content">
+            <h3>Obuna so'rovi rad etildi</h3>
+            <p>
+              Rad etish sababi: <strong>{{ latestRequest()!.rejectionReason || 'To\'lov tasdiqlanmadi' }}</strong>.
+              Iltimos, ma'lumotlarni tekshirib qayta ariza yuboring.
+            </p>
+          </div>
+          <button class="btn btn-sm btn-warning-dark" (click)="openRequestModal()">
+            Qayta ariza berish
+          </button>
+        </div>
+      }
 
       <!-- Warning Banners based on Subscription Expiry & Warnings -->
       @if (sub()) {
@@ -339,6 +376,9 @@ import { FeatureService } from '../../core/services/feature.service';
           <button class="tab-btn" [class.active]="activeTab === 'periods'" (click)="activeTab = 'periods'">
             📅 Obunalar Tarixi ({{ periods().length }})
           </button>
+          <button class="tab-btn" [class.active]="activeTab === 'requests'" (click)="activeTab = 'requests'">
+            📑 Obuna Arizalari ({{ requestHistory().length }})
+          </button>
         </div>
 
         <!-- Tab 1: Invoices -->
@@ -430,6 +470,90 @@ import { FeatureService } from '../../core/services/feature.service';
                         <td>{{ formatDate(per.endDate) }}</td>
                         <td class="code-cell">{{ per.invoiceNumber || '-' }}</td>
                         <td>{{ formatDate(per.createdAt) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Tab 3: Subscription Requests History -->
+        @if (activeTab === 'requests') {
+          <div class="card table-card">
+            <div class="card-header">
+              <span class="card-title">Obunaga Yuborilgan Arizalar Tarixi</span>
+              <div class="card-actions">
+                <button class="btn btn-sm btn-warning-dark" (click)="openRequestModal()">
+                  ➕ Yangi Ariza Berish
+                </button>
+                <button class="btn btn-sm btn-outline" (click)="loadSubscriptionRequests()">
+                  Yangilash
+                </button>
+              </div>
+            </div>
+
+            @if (requestHistory().length === 0) {
+              <div class="empty-state">
+                <p>Hozircha arizalar yuborilmagan.</p>
+              </div>
+            } @else {
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tarif</th>
+                      <th>Muddat</th>
+                      <th>Summa</th>
+                      <th>To'lov Usuli</th>
+                      <th>To'lov Cheki</th>
+                      <th>Holat</th>
+                      <th>Izoh / Sabab</th>
+                      <th>Yuborilgan Vaqt</th>
+                      <th>Amal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (req of requestHistory(); track req.id) {
+                      <tr>
+                        <td><strong>{{ req.planName }}</strong> ({{ req.planCode }})</td>
+                        <td>{{ req.durationMonths }} oy</td>
+                        <td class="amount-cell">{{ formatPrice(req.amount) }} {{ req.currency }}</td>
+                        <td>
+                          <span class="provider-badge">{{ getPaymentMethodLabel(req.paymentMethod) }}</span>
+                        </td>
+                        <td>
+                          @if (req.receiptUrl) {
+                            <a [href]="req.receiptUrl" target="_blank" class="receipt-link">📎 Chekni ko'rish</a>
+                          } @else {
+                            <span class="text-muted">-</span>
+                          }
+                        </td>
+                        <td>
+                          <span class="status-badge" [ngClass]="getRequestStatusBadge(req.status)">
+                            {{ getRequestStatusLabel(req.status) }}
+                          </span>
+                        </td>
+                        <td>
+                          @if (req.rejectionReason) {
+                            <span class="text-danger">Rad sababi: {{ req.rejectionReason }}</span>
+                          } @else if (req.adminNotes) {
+                            <span>{{ req.adminNotes }}</span>
+                          } @else if (req.clientNotes) {
+                            <span class="text-muted">{{ req.clientNotes }}</span>
+                          } @else {
+                            <span class="text-muted">-</span>
+                          }
+                        </td>
+                        <td>{{ formatDate(req.createdAt) }}</td>
+                        <td>
+                          @if (req.status === 'PENDING_APPROVAL') {
+                            <button class="btn btn-xs btn-outline-danger" (click)="cancelCurrentRequest(req.id)">
+                              Bekor qilish
+                            </button>
+                          }
+                        </td>
                       </tr>
                     }
                   </tbody>
@@ -626,6 +750,218 @@ import { FeatureService } from '../../core/services/feature.service';
                   </div>
                 </div>
               }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Manual B2B Subscription Request Modal -->
+      @if (showRequestModal()) {
+        <div class="modal-overlay" (click)="closeRequestModal()">
+          <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h2>Obunaga Ariza Berish (B2B / Bank / Chek)</h2>
+              <button class="btn-close" (click)="closeRequestModal()">✕</button>
+            </div>
+
+            <div class="modal-body">
+              <!-- Step 1: Select Plan -->
+              <div class="step-section">
+                <label class="section-label">1. Tarif rejasini tanlang:</label>
+                <div class="plans-selection">
+                  @for (plan of availablePlans(); track plan.code) {
+                    <div class="modal-plan-card" 
+                         [class.active]="requestPlanCode() === plan.code"
+                         [class.pro-card]="plan.code === 'PRO'"
+                         (click)="selectRequestPlan(plan)">
+                      <div class="p-header">
+                        <div class="p-name">{{ plan.name }}</div>
+                        @if (plan.code === 'PRO') {
+                          <span class="pro-tag">⚡ Tavsiya etiladi</span>
+                        }
+                      </div>
+                      <div class="p-price">{{ formatPrice(plan.price) }} so'm <small>/ oy</small></div>
+                      <div class="p-features-summary">
+                        @if (plan.code === 'PRO') {
+                          <div class="feat-badge feat-pro">✅ Barcha Standard + Oshxona Ekrani (KDS) + Mobil Ilova</div>
+                        } @else {
+                          <div class="feat-badge feat-std">Barcha POS funksiyalari (❌ KDS va Mobil Ilovasiz)</div>
+                        }
+                      </div>
+                      <div class="p-limit">♾️ Barcha resurslar cheksiz</div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Step 2: Select Duration -->
+              <div class="step-section">
+                <label class="section-label">2. Obuna muddatini tanlang:</label>
+                <div class="months-selection">
+                  @for (opt of monthOptions; track opt.value) {
+                    <div class="month-card" 
+                         [class.active]="requestMonths() === opt.value"
+                         (click)="selectRequestMonths(opt.value)">
+                      @if (opt.badge) {
+                        <span class="month-badge">{{ opt.badge }}</span>
+                      }
+                      <div class="month-label">{{ opt.label }}</div>
+                      <div class="month-price-hint">{{ opt.hint }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Step 3: Select Payment Method -->
+              <div class="step-section">
+                <label class="section-label">3. To'lov turini tanlang:</label>
+                <div class="payment-methods-grid">
+                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'BANK_TRANSFER'" (click)="requestPaymentMethod.set('BANK_TRANSFER')">
+                    <div class="pm-icon">🏦</div>
+                    <div class="pm-info">
+                      <div class="pm-title">Bank Hisob-Raqamiga (Perechislenie)</div>
+                      <div class="pm-desc">Yuridik shaxslar uchun to'lov topshirig'i (schet-faktura)</div>
+                    </div>
+                  </div>
+
+                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'CARD_TRANSFER'" (click)="requestPaymentMethod.set('CARD_TRANSFER')">
+                    <div class="pm-icon">💳</div>
+                    <div class="pm-info">
+                      <div class="pm-title">Karta Raqamiga O'tkazma</div>
+                      <div class="pm-desc">Uzcard / Humo orqali to'lov cheki bilan</div>
+                    </div>
+                  </div>
+
+                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'CLICK_PAYME_MANUAL'" (click)="requestPaymentMethod.set('CLICK_PAYME_MANUAL')">
+                    <div class="pm-icon">📱</div>
+                    <div class="pm-info">
+                      <div class="pm-title">Click / Payme (Kvitansiya)</div>
+                      <div class="pm-desc">Ilova orqali to'langan kvitansiya skrinshoti bilan</div>
+                    </div>
+                  </div>
+
+                  <div class="pm-card" [class.active]="requestPaymentMethod() === 'CASH'" (click)="requestPaymentMethod.set('CASH')">
+                    <div class="pm-icon">💵</div>
+                    <div class="pm-info">
+                      <div class="pm-title">Naqd To'lov (Kassaga)</div>
+                      <div class="pm-desc">Ofis yoki vakilga naqd to'lov qilish</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Company Bank Details Card -->
+              <div class="bank-details-box">
+                <div class="bd-header">
+                  <span class="bd-title">📋 Rasmiy To'lov Rekvizitlari</span>
+                  <span class="bd-tag">Kompaniya</span>
+                </div>
+                <div class="bd-grid">
+                  <div class="bd-item">
+                    <span class="bd-lbl">Qabul qiluvchi:</span>
+                    <strong>"RESTAURANT POS INNOVATION" MCHJ</strong>
+                  </div>
+                  <div class="bd-item">
+                    <span class="bd-lbl">H/R (Hisob raqam):</span>
+                    <strong class="code-font">2020 8000 9005 1234 5678</strong>
+                  </div>
+                  <div class="bd-item">
+                    <span class="bd-lbl">Bank:</span>
+                    <span>ATIB "Ipoteka Bank" Toshkent sh. filiali</span>
+                  </div>
+                  <div class="bd-item">
+                    <span class="bd-lbl">MFO:</span>
+                    <strong class="code-font">00423</strong>
+                  </div>
+                  <div class="bd-item">
+                    <span class="bd-lbl">STIR / INN:</span>
+                    <strong class="code-font">308 123 456</strong>
+                  </div>
+                  <div class="bd-item">
+                    <span class="bd-lbl">Karta raqami (Karta o'tkazmasi uchun):</span>
+                    <strong class="code-font">9860 3501 2345 6789</strong> (Humo)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 4: Upload Receipt -->
+              <div class="step-section">
+                <label class="section-label">4. To'lov cheki yoki kvitansiya fayli (Ixtiyoriy lekin tavsiya etiladi):</label>
+                <div class="receipt-upload-box">
+                  <input type="file" #receiptInput accept="image/png,image/jpeg,image/webp,application/pdf" (change)="onReceiptFileSelected($event)" style="display: none" />
+                  
+                  @if (uploadingReceipt()) {
+                    <div class="upload-progress">
+                      <div class="spinner-sm"></div>
+                      <span>Fayl serverga yuklanmoqda...</span>
+                    </div>
+                  } @else if (requestReceiptUrl()) {
+                    <div class="receipt-preview">
+                      <span class="receipt-check">✅ To'lov cheki yuklandi</span>
+                      <a [href]="requestReceiptUrl()" target="_blank" class="receipt-link">📎 Chekni ko'rish</a>
+                      <button type="button" class="btn btn-sm btn-outline-danger" (click)="requestReceiptUrl.set('')">O'chirish</button>
+                    </div>
+                  } @else {
+                    <button type="button" class="btn btn-outline" (click)="receiptInput.click()">
+                      📎 Chek yoki kvitansiya faylini yuklash (JPG, PNG, PDF)
+                    </button>
+                    <span class="upload-hint">Maksimal hajm: 10 MB</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Step 5: Notes -->
+              <div class="step-section">
+                <label class="section-label">5. Qo'shimcha izoh yoki to'lovchi rekviziti (Ixtiyoriy):</label>
+                <textarea [(ngModel)]="requestClientNotes" class="form-control" rows="2" placeholder="Masalan: To'lov Ipoteka bank ilovasidan o'tkazildi, to'lovchi: Rustamov A."></textarea>
+              </div>
+
+              <!-- Price Summary -->
+              @if (requestCalcResult()) {
+                <div class="price-summary-box">
+                  <div class="price-summary-row">
+                    <span>Tanlangan tarif:</span>
+                    <strong>{{ requestCalcResult()!.planName }}</strong>
+                  </div>
+                  <div class="price-summary-row">
+                    <span>Muddat:</span>
+                    <span>{{ requestCalcResult()!.months }} oy</span>
+                  </div>
+                  <div class="price-summary-row">
+                    <span>Asosiy narx:</span>
+                    <span>{{ formatPrice(requestCalcResult()!.baseAmount) }} so'm</span>
+                  </div>
+                  @if (requestCalcResult()!.discountAmount > 0) {
+                    <div class="price-summary-row discount-row">
+                      <span>Muddat chegirmasi ({{ requestCalcResult()!.discountPercent }}%):</span>
+                      <span class="text-success">-{{ formatPrice(requestCalcResult()!.discountAmount) }} so'm</span>
+                    </div>
+                  }
+                  <div class="price-summary-total">
+                    <span>To'lanadigan yakuniy summa:</span>
+                    <strong>{{ formatPrice(requestCalcResult()!.finalAmount) }} so'm</strong>
+                  </div>
+                </div>
+              }
+
+              @if (requestError()) {
+                <div class="alert alert-error">{{ requestError() }}</div>
+              }
+
+              @if (requestSuccessMessage()) {
+                <div class="alert alert-success">{{ requestSuccessMessage() }}</div>
+              }
+
+              <div class="modal-actions">
+                <button class="btn btn-outline" (click)="closeRequestModal()">Bekor qilish</button>
+                <button class="btn btn-primary" [disabled]="submittingRequest() || uploadingReceipt()" (click)="submitSubscriptionRequest()">
+                  @if (submittingRequest()) {
+                    <span>Yuborilmoqda...</span>
+                  } @else {
+                    <span>Ariza Yuborish →</span>
+                  }
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1361,6 +1697,233 @@ import { FeatureService } from '../../core/services/feature.service';
       margin-top: 20px;
     }
 
+    .banner-pending-request {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fcd34d;
+      margin-bottom: 24px;
+      h3 { color: #f59e0b; }
+    }
+
+    .banner-rejected-request {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      margin-bottom: 24px;
+      h3 { color: #f87171; }
+    }
+
+    .modal-lg {
+      max-width: 760px;
+    }
+
+    .payment-methods-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pm-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-primary, #0f172a);
+      border: 1px solid var(--border, #334155);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: rgba(99, 102, 241, 0.5);
+      }
+
+      &.active {
+        border-color: #6366f1;
+        background: rgba(99, 102, 241, 0.1);
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+      }
+
+      .pm-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+
+      .pm-info {
+        flex: 1;
+      }
+
+      .pm-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-primary, #f8fafc);
+        margin-bottom: 2px;
+      }
+
+      .pm-desc {
+        font-size: 11px;
+        color: var(--text-muted, #94a3b8);
+        line-height: 1.3;
+      }
+    }
+
+    .bank-details-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+
+      .bd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+        .bd-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: #c7d2fe;
+        }
+
+        .bd-tag {
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          background: rgba(99, 102, 241, 0.2);
+          color: #818cf8;
+          border-radius: 4px;
+        }
+      }
+
+      .bd-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 16px;
+
+        @media (max-width: 600px) {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .bd-item {
+        font-size: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .bd-lbl {
+          font-size: 11px;
+          color: var(--text-muted, #94a3b8);
+        }
+
+        .code-font {
+          font-family: monospace;
+          color: #38bdf8;
+          letter-spacing: 0.5px;
+        }
+      }
+    }
+
+    .receipt-upload-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+
+      .upload-hint {
+        font-size: 11px;
+        color: var(--text-muted, #94a3b8);
+      }
+
+      .receipt-preview {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 6px;
+        font-size: 12px;
+
+        .receipt-check {
+          color: #10b981;
+          font-weight: 600;
+        }
+
+        .receipt-link {
+          color: #38bdf8;
+          text-decoration: underline;
+        }
+      }
+
+      .upload-progress {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #818cf8;
+      }
+    }
+
+    .spinner-sm {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(99, 102, 241, 0.3);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .btn-xs {
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+    }
+
+    .btn-outline-danger {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #f87171;
+      &:hover {
+        background: rgba(239, 68, 68, 0.1);
+      }
+    }
+
+    .receipt-link {
+      color: #38bdf8;
+      font-size: 12px;
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+
+      &.status-pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+      &.status-active, &.status-paid { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+      &.status-expired, &.status-cancelled { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .btn {
       padding: 10px 18px;
       border-radius: 8px;
@@ -1403,7 +1966,23 @@ export class RestaurantBillingComponent implements OnInit {
   periods = signal<SubscriptionPeriodResponse[]>([]);
   availablePlans = signal<PlanResponse[]>([]);
   loading = signal(true);
-  activeTab: 'invoices' | 'periods' = 'invoices';
+  activeTab: 'invoices' | 'periods' | 'requests' = 'invoices';
+
+  // Subscription Requests states
+  latestRequest = signal<SubscriptionRequestResponse | null>(null);
+  requestHistory = signal<SubscriptionRequestResponse[]>([]);
+  showRequestModal = signal(false);
+  requestPlanCode = signal<string>('STANDARD');
+  requestPlanId = signal<string>('');
+  requestMonths = signal<number>(1);
+  requestPaymentMethod = signal<string>('BANK_TRANSFER');
+  requestReceiptUrl = signal<string>('');
+  requestClientNotes = '';
+  requestCalcResult = signal<CalculatePriceResponse | null>(null);
+  submittingRequest = signal(false);
+  uploadingReceipt = signal(false);
+  requestError = signal<string | null>(null);
+  requestSuccessMessage = signal<string | null>(null);
 
   // Checkout modal
   showCheckoutModal = signal(false);
@@ -1432,6 +2011,7 @@ export class RestaurantBillingComponent implements OnInit {
     this.loadInvoices();
     this.loadPeriods();
     this.loadPlans();
+    this.loadSubscriptionRequests();
   }
 
   loadCurrentSubscription(): void {
@@ -1648,4 +2228,174 @@ export class RestaurantBillingComponent implements OnInit {
       }
     });
   }
+
+  // ==========================================
+  // SUBSCRIPTION REQUESTS (B2B APPROVAL FLOW)
+  // ==========================================
+
+  loadSubscriptionRequests(): void {
+    this.billingService.getLatestSubscriptionRequest().subscribe({
+      next: (req) => this.latestRequest.set(req)
+    });
+    this.billingService.getSubscriptionRequestHistory().subscribe({
+      next: (history) => this.requestHistory.set(history)
+    });
+  }
+
+  openRequestModal(preselectPlanCode?: string): void {
+    this.requestError.set(null);
+    this.requestSuccessMessage.set(null);
+    this.submittingRequest.set(false);
+    this.uploadingReceipt.set(false);
+    this.requestReceiptUrl.set('');
+    this.requestClientNotes = '';
+    this.requestMonths.set(1);
+    this.requestPaymentMethod.set('BANK_TRANSFER');
+
+    const code = preselectPlanCode || this.sub()?.planCode || 'STANDARD';
+    const plan = this.availablePlans().find(p => p.code === code) || this.availablePlans()[0];
+    if (plan) {
+      this.requestPlanCode.set(plan.code);
+      this.requestPlanId.set(plan.id);
+    } else {
+      this.requestPlanCode.set('STANDARD');
+      this.requestPlanId.set('');
+    }
+
+    this.showRequestModal.set(true);
+    this.triggerRequestCalculate();
+  }
+
+  closeRequestModal(): void {
+    this.showRequestModal.set(false);
+    this.requestError.set(null);
+    this.requestSuccessMessage.set(null);
+  }
+
+  selectRequestPlan(plan: PlanResponse): void {
+    this.requestPlanCode.set(plan.code);
+    this.requestPlanId.set(plan.id);
+    this.triggerRequestCalculate();
+  }
+
+  selectRequestMonths(months: number): void {
+    this.requestMonths.set(months);
+    this.triggerRequestCalculate();
+  }
+
+  triggerRequestCalculate(): void {
+    const planId = this.requestPlanId();
+    const planCode = this.requestPlanCode();
+    const months = this.requestMonths();
+
+    this.billingService.calculatePrice({
+      planId: planId || undefined,
+      planCode: !planId ? planCode : undefined,
+      months: months
+    }).subscribe({
+      next: (res) => this.requestCalcResult.set(res),
+      error: () => this.requestCalcResult.set(null)
+    });
+  }
+
+  onReceiptFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      this.uploadingReceipt.set(true);
+      this.requestError.set(null);
+
+      this.billingService.uploadReceipt(file).subscribe({
+        next: (url) => {
+          this.uploadingReceipt.set(false);
+          this.requestReceiptUrl.set(url);
+        },
+        error: (err) => {
+          this.uploadingReceipt.set(false);
+          this.requestError.set(err?.error?.message || 'Chekni yuklashda xatolik yuz berdi');
+        }
+      });
+    }
+  }
+
+  submitSubscriptionRequest(): void {
+    const plan = this.availablePlans().find(p => p.code === this.requestPlanCode()) || this.availablePlans()[0];
+    if (!plan) {
+      this.requestError.set('Iltimos, tarif rejasini tanlang!');
+      return;
+    }
+
+    this.submittingRequest.set(true);
+    this.requestError.set(null);
+    this.requestSuccessMessage.set(null);
+
+    this.billingService.createSubscriptionRequest({
+      planId: plan.id,
+      billingPeriod: this.requestMonths() === 12 ? 'ANNUAL' : (this.requestMonths() === 6 ? 'SEMI_ANNUAL' : (this.requestMonths() === 3 ? 'QUARTERLY' : 'MONTHLY')),
+      durationMonths: this.requestMonths(),
+      paymentMethod: this.requestPaymentMethod(),
+      receiptUrl: this.requestReceiptUrl() || undefined,
+      clientNotes: this.requestClientNotes ? this.requestClientNotes.trim() : undefined
+    }).subscribe({
+      next: (res) => {
+        this.submittingRequest.set(false);
+        this.requestSuccessMessage.set('✅ Arizangiz qabul qilindi va Super Adminga yuborildi. Tez orada ko\'rib chiqiladi!');
+        this.latestRequest.set(res);
+        this.loadSubscriptionRequests();
+        setTimeout(() => {
+          this.closeRequestModal();
+        }, 1600);
+      },
+      error: (err) => {
+        this.submittingRequest.set(false);
+        this.requestError.set(err?.error?.message || 'Arizani yuborishda xatolik yuz berdi');
+      }
+    });
+  }
+
+  cancelCurrentRequest(requestId: string): void {
+    if (!confirm('Haqiqatan ham ushbu obuna arizasini bekor qilmoqchimisiz?')) {
+      return;
+    }
+
+    this.billingService.cancelSubscriptionRequest(requestId).subscribe({
+      next: () => {
+        this.loadSubscriptionRequests();
+      },
+      error: (err) => {
+        alert(err?.error?.message || 'Arizani bekor qilishda xatolik yuz berdi');
+      }
+    });
+  }
+
+  getPaymentMethodLabel(method: string): string {
+    switch (method) {
+      case 'BANK_TRANSFER': return '🏦 Bank (Perechislenie)';
+      case 'CARD_TRANSFER': return '💳 Karta O\'tkazmasi';
+      case 'CLICK_PAYME_MANUAL': return '📱 Click / Payme';
+      case 'CASH': return '💵 Naqd Pul';
+      default: return method || 'Boshqa';
+    }
+  }
+
+  getRequestStatusLabel(status: string): string {
+    switch (status) {
+      case 'PENDING_APPROVAL': return '🟡 Kutilmoqda';
+      case 'APPROVED': return '✅ Tasdiqlangan';
+      case 'REJECTED': return '❌ Rad etilgan';
+      case 'CANCELLED': return '⚪ Bekor qilingan';
+      default: return status;
+    }
+  }
+
+  getRequestStatusBadge(status: string): string {
+    switch (status) {
+      case 'PENDING_APPROVAL': return 'status-pending';
+      case 'APPROVED': return 'status-active';
+      case 'REJECTED': return 'status-expired';
+      case 'CANCELLED': return 'status-cancelled';
+      default: return 'status-pending';
+    }
+  }
 }
+
