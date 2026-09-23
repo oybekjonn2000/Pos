@@ -5,6 +5,9 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build --base-href /",
+    "build:desktop": "ng build --base-href ./",
+    "mobile:build": "ng build --base-href / && npx cap sync android",
+    "mobile:open": "npx cap open android",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

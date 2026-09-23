@@ -5,21 +5,11 @@ import com.restaurantpos.billing.entity.SubscriptionPlan;
 import com.restaurantpos.billing.repository.RestaurantSubscriptionRepository;
 import com.restaurantpos.common.exception.PosException;
 import com.restaurantpos.common.tenant.TenantContext;
-import com.restaurantpos.devices.repository.DeviceRepository;
-import com.restaurantpos.kitchen.repository.KitchenRepository;
-import com.restaurantpos.orders.repository.OrderRepository;
-import com.restaurantpos.products.repository.ProductRepository;
-import com.restaurantpos.tables.repository.RestaurantTableRepository;
-import com.restaurantpos.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,14 +19,6 @@ import java.util.UUID;
 public class SubscriptionLimitService {
 
     private final RestaurantSubscriptionRepository subscriptionRepository;
-    private final UserRepository userRepository;
-    private final RestaurantTableRepository tableRepository;
-    private final ProductRepository productRepository;
-    private final KitchenRepository kitchenRepository;
-    private final DeviceRepository deviceRepository;
-    private final OrderRepository orderRepository;
-
-    private static final ZoneId TASHKENT_ZONE = ZoneId.of("Asia/Tashkent");
 
     /**
      * Retrieves the current active or trial subscription for the tenant with concurrency lock.
@@ -63,172 +45,81 @@ public class SubscriptionLimitService {
 
     /**
      * Check if a tenant can create another user/employee.
+     * ZERO RESOURCE LIMITS: All resources are unlimited across Standard, Pro, and Trial.
+     * Only validates that subscription is currently operating (active or trial).
      */
     @Transactional
     public void checkUserLimit(UUID tenantId) {
         if (TenantContext.isSuperAdmin()) return;
-
         RestaurantSubscription sub = getActiveSubscriptionWithLock(tenantId);
         validateSubscriptionOperating(sub);
-
-        SubscriptionPlan plan = sub.getPlan();
-        Integer maxUsers = plan.getMaxUsers();
-        if (maxUsers == null || maxUsers == -1) {
-            return; // Unlimited
-        }
-        if (maxUsers == 0) {
-            throw PosException.badRequest("Tarifingiz bo‘yicha qo'shimcha xodim qo'shish imkoniyati mavjud emas.");
-        }
-
-        long currentCount = userRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
-        if (currentCount >= maxUsers) {
-            throw PosException.badRequest(
-                    String.format("Tarifingiz bo‘yicha maksimal %d ta xodim mavjud. Yangi xodim qo‘shish uchun tarifingizni yangilang.", maxUsers)
-            );
-        }
+        // Unlimited resource - no count capping enforced
     }
 
     /**
      * Check if a tenant can create another table.
+     * ZERO RESOURCE LIMITS: Unlimited for all operating plans.
      */
     @Transactional
     public void checkTableLimit(UUID tenantId) {
         if (TenantContext.isSuperAdmin()) return;
-
         RestaurantSubscription sub = getActiveSubscriptionWithLock(tenantId);
         validateSubscriptionOperating(sub);
-
-        SubscriptionPlan plan = sub.getPlan();
-        Integer maxTables = plan.getMaxTables();
-        if (maxTables == null || maxTables == -1) {
-            return; // Unlimited
-        }
-        if (maxTables == 0) {
-            throw PosException.badRequest("Tarifingiz bo‘yicha stol yaratish imkoniyati mavjud emas.");
-        }
-
-        long currentCount = tableRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
-        if (currentCount >= maxTables) {
-            throw PosException.badRequest(
-                    String.format("Tarifingiz bo‘yicha maksimal %d ta stol mavjud. Yangi stol qo‘shish uchun tarifingizni yangilang.", maxTables)
-            );
-        }
+        // Unlimited resource - no count capping enforced
     }
 
     /**
      * Check if a tenant can create another product.
+     * ZERO RESOURCE LIMITS: Unlimited for all operating plans.
      */
     @Transactional
     public void checkProductLimit(UUID tenantId) {
         if (TenantContext.isSuperAdmin()) return;
-
         RestaurantSubscription sub = getActiveSubscriptionWithLock(tenantId);
         validateSubscriptionOperating(sub);
-
-        SubscriptionPlan plan = sub.getPlan();
-        Integer maxProducts = plan.getMaxProducts();
-        if (maxProducts == null || maxProducts == -1) {
-            return; // Unlimited
-        }
-        if (maxProducts == 0) {
-            throw PosException.badRequest("Tarifingiz bo‘yicha mahsulot qo'shish imkoniyati mavjud emas.");
-        }
-
-        long currentCount = productRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
-        if (currentCount >= maxProducts) {
-            throw PosException.badRequest(
-                    String.format("Tarifingiz bo‘yicha maksimal %d ta mahsulot mavjud. Yangi mahsulot qo‘shish uchun tarifingizni yangilang.", maxProducts)
-            );
-        }
+        // Unlimited resource - no count capping enforced
     }
 
     /**
-     * Check if a tenant can create another kitchen.
+     * Check if a tenant can create another kitchen station.
+     * ZERO RESOURCE LIMITS: Unlimited for all operating plans.
      */
     @Transactional
     public void checkKitchenLimit(UUID tenantId) {
         if (TenantContext.isSuperAdmin()) return;
-
         RestaurantSubscription sub = getActiveSubscriptionWithLock(tenantId);
         validateSubscriptionOperating(sub);
-
-        SubscriptionPlan plan = sub.getPlan();
-        Integer maxKitchens = plan.getMaxKitchens();
-        if (maxKitchens == null || maxKitchens == -1) {
-            return; // Unlimited
-        }
-        if (maxKitchens == 0) {
-            throw PosException.badRequest("Tarifingiz bo‘yicha oshxona qo'shish imkoniyati mavjud emas.");
-        }
-
-        long currentCount = kitchenRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
-        if (currentCount >= maxKitchens) {
-            throw PosException.badRequest(
-                    String.format("Tarifingiz bo‘yicha maksimal %d ta oshxona mavjud. Yangi oshxona qo‘shish uchun tarifingizni yangilang.", maxKitchens)
-            );
-        }
+        // Unlimited resource - no count capping enforced
     }
 
     /**
      * Check if a tenant can register another device.
+     * ZERO RESOURCE LIMITS: Unlimited for all operating plans.
      */
     @Transactional
     public void checkDeviceLimit(UUID tenantId) {
         if (TenantContext.isSuperAdmin()) return;
-
         RestaurantSubscription sub = getActiveSubscriptionWithLock(tenantId);
         validateSubscriptionOperating(sub);
-
-        SubscriptionPlan plan = sub.getPlan();
-        Integer maxDevices = plan.getMaxDevices();
-        if (maxDevices == null || maxDevices == -1) {
-            return; // Unlimited
-        }
-        if (maxDevices == 0) {
-            throw PosException.badRequest("Tarifingiz bo‘yicha qurilma qo'shish imkoniyati mavjud emas.");
-        }
-
-        long currentCount = deviceRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
-        if (currentCount >= maxDevices) {
-            throw PosException.badRequest(
-                    String.format("Tarifingiz bo‘yicha maksimal %d ta qurilma mavjud. Yangi qurilma ulash uchun tarifingizni yangilang.", maxDevices)
-            );
-        }
+        // Unlimited resource - no count capping enforced
     }
 
     /**
      * Check if a tenant can create an order this month.
+     * ZERO RESOURCE LIMITS: Unlimited for all operating plans.
      */
     @Transactional(readOnly = true)
     public void checkOrderLimit(UUID tenantId) {
         if (TenantContext.isSuperAdmin()) return;
-
         RestaurantSubscription sub = getActiveSubscription(tenantId);
         validateSubscriptionOperating(sub);
-
-        SubscriptionPlan plan = sub.getPlan();
-        Integer maxOrders = plan.getMaxOrdersPerMonth();
-        if (maxOrders == null || maxOrders == -1) {
-            return; // Unlimited
-        }
-        if (maxOrders == 0) {
-            throw PosException.badRequest("Tarifingiz bo‘yicha buyurtma yaratish imkoniyati mavjud emas.");
-        }
-
-        ZonedDateTime now = ZonedDateTime.now(TASHKENT_ZONE);
-        Instant startOfMonth = now.with(TemporalAdjusters.firstDayOfMonth()).toLocalDate().atStartOfDay(TASHKENT_ZONE).toInstant();
-        Instant endOfMonth = now.with(TemporalAdjusters.lastDayOfMonth()).plusDays(1).toLocalDate().atStartOfDay(TASHKENT_ZONE).toInstant();
-
-        long currentOrders = orderRepository.countByTenantIdAndOpenedAtBetweenAndDeletedAtIsNull(tenantId, startOfMonth, endOfMonth);
-        if (currentOrders >= maxOrders) {
-            throw PosException.badRequest(
-                    String.format("Tarifingiz bo‘yicha oylik maksimal %d ta buyurtma limitiga yetdingiz. Yangi buyurtma yaratish uchun tarifingizni yangilang.", maxOrders)
-            );
-        }
+        // Unlimited resource - no count capping enforced
     }
 
     /**
      * Check if a specific module/feature is enabled for the tenant.
+     * Standard & Trial: POS Core, Tables, Orders, Kitchen Management, Warehouse, Reports, Printers, Settings.
+     * Pro: Standard + MOBILE_APP + KITCHEN_DISPLAY.
      */
     @Transactional(readOnly = true)
     public void checkFeatureAccess(UUID tenantId, String featureCode) {
@@ -238,16 +129,26 @@ public class SubscriptionLimitService {
         validateSubscriptionOperating(sub);
 
         SubscriptionPlan plan = sub.getPlan();
-        if (!plan.hasFeature(featureCode)) {
+        boolean hasAccess = plan != null && (
+                "PRO".equalsIgnoreCase(plan.getCode()) ||
+                plan.hasFeature(featureCode)
+        );
+        if (!hasAccess) {
+            String featureName = featureCode;
+            if ("KITCHEN_DISPLAY".equalsIgnoreCase(featureCode)) {
+                featureName = "Oshxona Ekrani (KDS)";
+            } else if ("MOBILE_APP".equalsIgnoreCase(featureCode)) {
+                featureName = "Mobil Ofitsiant Ilovasi (APK)";
+            }
             throw PosException.forbidden(
-                    String.format("Sizning tarif rejangizda ushbu modul (%s) mavjud emas. Yangilash uchun tarifingizni o'zgartiring.", featureCode)
+                    String.format("Ushbu funksiya (%s) faqat PRO tarifida mavjud. Iltimos, tarifingizni PRO ga yangilang.", featureName)
             );
         }
     }
 
     private void validateSubscriptionOperating(RestaurantSubscription sub) {
         if (sub == null || !sub.isOperating()) {
-            throw PosException.paymentRequired("Obunangiz muddati tugagan yoki faol emas. Ushbu amalni bajarish uchun tarifingizni yangilang.");
+            throw PosException.paymentRequired("Obunangiz muddati tugagan yoki faol emas. POS operatsiyalarini davom ettirish uchun tarifingizni yangilang.");
         }
     }
 }

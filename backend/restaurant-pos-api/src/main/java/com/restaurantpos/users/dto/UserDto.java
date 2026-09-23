@@ -15,30 +15,33 @@ public class UserDto {
     @Getter
     @Setter
     public static class CreateRequest {
-        @NotBlank(message = "Username is required")
-        @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-        private String username;
-
-        @NotBlank(message = "Password is required")
-        @Size(min = 4, message = "Password must be at least 4 characters")
-        private String password;
-
-        @NotBlank(message = "First name is required")
+        @NotBlank(message = "Ism kiritilishi shart")
         private String firstName;
 
         private String lastName;
-        private String email;
+
+        @NotBlank(message = "Telefon raqami kiritilishi shart")
         private String phone;
+
         private String pin;
+
+        @NotBlank(message = "Lavozim kiritilishi shart")
         private String role;
+
         private UUID roleId;
         private List<UUID> kitchenIds;
+
+        // Admin-only fields (null for ordinary employees)
+        private String username;
+        private String password;
+        private String email;
+        private String authenticationType;
     }
 
     @Getter
     @Setter
     public static class UpdateRequest {
-        @NotBlank(message = "First name is required")
+        @NotBlank(message = "Ism kiritilishi shart")
         private String firstName;
 
         private String lastName;
@@ -61,6 +64,18 @@ public class UserDto {
 
     @Getter
     @Setter
+    public static class ChangePinRequest {
+        private String currentPinOrPassword;
+
+        @NotBlank(message = "Yangi PIN kiritilishi shart")
+        private String newPin;
+
+        @NotBlank(message = "Yangi PIN tasdig'i kiritilishi shart")
+        private String confirmPin;
+    }
+
+    @Getter
+    @Setter
     @Builder
     public static class Response {
         private UUID id;
@@ -73,6 +88,8 @@ public class UserDto {
         private boolean active;
         private String role;
         private UUID roleId;
+        private String authenticationType;
+        private boolean hasPin;
         private List<String> permissions;
         private List<UUID> kitchenIds;
         private List<KitchenSummary> kitchens;

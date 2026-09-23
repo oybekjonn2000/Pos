@@ -2,6 +2,7 @@ import { Component, Output, EventEmitter, signal, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
+import { FeatureService } from '../../core/services/feature.service';
 
 interface NavItem {
   icon: string;
@@ -12,6 +13,7 @@ interface NavItem {
   superAdminOnly?: boolean;
   disallowRoles?: string[];
   badge?: number;
+  proOnly?: boolean;
 }
 
 @Component({
@@ -41,6 +43,9 @@ interface NavItem {
             <span class="sidebar__icon">{{ item.icon }}</span>
             @if (!collapsed()) {
               <span class="sidebar__label">{{ item.label }}</span>
+              @if (item.proOnly) {
+                <span class="sidebar__pro-badge" [class.unlocked]="featureService.isPro()">PRO</span>
+              }
               @if (item.badge) {
                 <span class="sidebar__badge">{{ item.badge }}</span>
               }
@@ -51,16 +56,18 @@ interface NavItem {
 
       <!-- Bottom User & Server Section -->
       <div class="sidebar__footer">
-        <div class="sidebar__server-badge" (click)="openLanSettings.emit()" [title]="'Markaziy POS Server: ' + lan.currentServerUrl()">
-          <span class="server-dot" [class.online]="lan.connectionState() === 'ONLINE'" [class.reconnecting]="lan.connectionState() === 'RECONNECTING'" [class.offline]="lan.connectionState() === 'OFFLINE'"></span>
-          @if (!collapsed()) {
-            <div class="server-badge-text">
-              <span class="server-status-title">{{ lan.connectionState() === 'ONLINE' ? 'POS Server Online' : 'Server Offline' }}</span>
-              <span class="server-status-ip">{{ lan.currentServerUrl().replace('http://', '') }}</span>
-            </div>
-            <span class="server-badge-cog">⚙️</span>
-          }
-        </div>
+        @if (lan.isDesktop()) {
+          <div class="sidebar__server-badge" (click)="openLanSettings.emit()" [title]="'Markaziy POS Server: ' + lan.currentServerUrl()">
+            <span class="server-dot" [class.online]="lan.connectionState() === 'ONLINE'" [class.reconnecting]="lan.connectionState() === 'RECONNECTING'" [class.offline]="lan.connectionState() === 'OFFLINE'"></span>
+            @if (!collapsed()) {
+              <div class="server-badge-text">
+                <span class="server-status-title">{{ lan.connectionState() === 'ONLINE' ? 'POS Server Online' : 'Server Offline' }}</span>
+                <span class="server-status-ip">{{ lan.currentServerUrl().replace('http://', '') }}</span>
+              </div>
+              <span class="server-badge-cog">⚙️</span>
+            }
+          </div>
+        }
 
         <div class="sidebar__user" [title]="collapsed() ? auth.user()?.fullName ?? '' : ''">
           <div class="sidebar__avatar">
@@ -174,6 +181,24 @@ interface NavItem {
         text-align: center;
       }
 
+      &__pro-badge {
+        margin-left: auto;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        letter-spacing: 0.5px;
+
+        &.unlocked {
+          background: rgba(16, 185, 129, 0.15);
+          color: #34d399;
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+      }
+
       &__footer {
         padding: 12px 8px;
         border-top: 1px solid var(--divider);
@@ -285,6 +310,7 @@ export class SidebarComponent {
 
   collapsed = signal(false);
   lan = inject(LanStatusService);
+  featureService = inject(FeatureService);
 
   readonly platformNavItems: NavItem[] = [
     { icon: '📊', label: 'Platforma Dashboard', route: '/platform/dashboard' },
@@ -293,6 +319,7 @@ export class SidebarComponent {
     { icon: '💵', label: 'To‘lovlar', route: '/platform/payments' },
     { icon: '💰', label: 'Savdo monitoringi', route: '/platform/sales' },
     { icon: '👥', label: 'Xodimlar monitoringi', route: '/platform/employees' },
+    { icon: '💻', label: 'Qurilmalar', route: '/platform/devices' },
     { icon: '📈', label: 'Platforma hisobotlari', route: '/platform/reports' }
   ];
 
@@ -300,7 +327,8 @@ export class SidebarComponent {
     { icon: '📊', label: 'Boshqaruv paneli', route: '/dashboard', permission: 'VIEW_DASHBOARD' },
     { icon: '🪑', label: 'Joylar va Stollar', route: '/tables' },
     { icon: '📋', label: 'Buyurtmalar', route: '/orders' },
-    { icon: '👨‍🍳', label: 'Oshxona', route: '/kitchen', permission: 'KITCHEN_VIEW' },
+    { icon: '👨‍🍳', label: 'Oshxona (KDS)', route: '/kitchen', permission: 'KITCHEN_VIEW', proOnly: true },
+    { icon: '📱', label: 'Mobil Ofitsiant', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
     { icon: '🍔', label: 'Mahsulotlar', route: '/products', permission: 'MANAGE_PRODUCTS' },
     { icon: '📁', label: 'Kategoriyalar', route: '/categories', permission: 'MANAGE_CATEGORIES' },
     { icon: '🥘', label: 'Oshxonalar', route: '/kitchens', permission: 'MANAGE_SETTINGS', disallowRoles: ['KITCHEN', 'WAITER'] },
@@ -309,7 +337,6 @@ export class SidebarComponent {
     { icon: '👤', label: 'Xodimlar', route: '/employees', permission: 'MANAGE_USERS' },
     { icon: '📈', label: 'Hisobotlar', route: '/reports', permission: 'VIEW_REPORTS' },
     { icon: '💳', label: 'Tarif & Billing', route: '/restaurant/billing', adminOnly: true },
-    { icon: '📱', label: 'Qurilmalar', route: '/devices', permission: 'MANAGE_DEVICES' },
     { icon: '⚙️', label: 'Sozlamalar', route: '/settings', permission: 'MANAGE_SETTINGS' }
   ];
 

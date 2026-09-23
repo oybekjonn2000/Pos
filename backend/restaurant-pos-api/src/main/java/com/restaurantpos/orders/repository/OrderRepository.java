@@ -89,9 +89,24 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
            "ORDER BY COALESCE(o.paidAt, o.closedAt, o.openedAt) DESC")
     org.springframework.data.domain.Page<Order> findHistoryOrdersByWaiter(@Param("tenantId") UUID tenantId, @Param("waiterId") UUID waiterId, org.springframework.data.domain.Pageable pageable);
 
-    List<Order> findByTenantIdAndStatusAndPaidAtBetweenAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status, Instant from, Instant to);
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.deletedAt IS NULL " +
+           "AND (o.status = :status OR o.paymentStatus = 'PAID') " +
+           "AND o.paidAt BETWEEN :from AND :to")
+    List<Order> findByTenantIdAndStatusAndPaidAtBetweenAndDeletedAtIsNull(
+            @Param("tenantId") UUID tenantId, 
+            @Param("status") Order.OrderStatus status, 
+            @Param("from") Instant from, 
+            @Param("to") Instant to);
 
-    List<Order> findByTenantIdAndStatusAndPaidAtBetweenAndWaiterIdAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status, Instant from, Instant to, UUID waiterId);
+    @Query("SELECT o FROM Order o WHERE o.tenant.id = :tenantId AND o.waiter.id = :waiterId AND o.deletedAt IS NULL " +
+           "AND (o.status = :status OR o.paymentStatus = 'PAID') " +
+           "AND o.paidAt BETWEEN :from AND :to")
+    List<Order> findByTenantIdAndStatusAndPaidAtBetweenAndWaiterIdAndDeletedAtIsNull(
+            @Param("tenantId") UUID tenantId, 
+            @Param("status") Order.OrderStatus status, 
+            @Param("from") Instant from, 
+            @Param("to") Instant to, 
+            @Param("waiterId") UUID waiterId);
 
     List<Order> findByTenantIdAndStatusAndClosedAtBetweenAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status, Instant from, Instant to);
 
@@ -122,7 +137,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     long countByTenantIdAndOpenedAtBetweenAndDeletedAtIsNull(UUID tenantId, Instant from, Instant to);
 
-    long countByTenantIdAndStatusAndDeletedAtIsNull(UUID tenantId, Order.OrderStatus status);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.tenant.id = :tenantId AND o.deletedAt IS NULL AND (o.status = :status OR o.paymentStatus = 'PAID')")
+    long countByTenantIdAndStatusAndDeletedAtIsNull(@Param("tenantId") UUID tenantId, @Param("status") Order.OrderStatus status);
 
     org.springframework.data.domain.Page<Order> findByTenantIdAndDeletedAtIsNullOrderByOpenedAtDesc(UUID tenantId, org.springframework.data.domain.Pageable pageable);
 

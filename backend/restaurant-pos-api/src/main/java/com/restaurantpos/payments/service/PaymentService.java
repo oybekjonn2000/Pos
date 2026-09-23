@@ -115,7 +115,7 @@ public class PaymentService {
                     saved.getId(), saved.getPaymentNumber(), order.getId(), saved.getAmount());
 
             // Update Order status and payment status
-            order.setStatus(Order.OrderStatus.CLOSED);
+            order.setStatus(Order.OrderStatus.PAID);
             order.setPaymentStatus(Order.PaymentStatus.PAID);
             order.setCashier(cashier);
             Instant now = Instant.now();

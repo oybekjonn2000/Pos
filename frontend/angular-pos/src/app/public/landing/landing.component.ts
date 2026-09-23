@@ -61,12 +61,12 @@ import { ThemeService } from '../../core/services/theme.service';
 
           <p class="hero-subtitle">
             Ofitsiantlar, oshxona ekranlari (KDS), kassa, ombor va hisobotlar — barchasi yagona bulutli POS tizimida. 
-            Super-adminga murojaat qilmasdan, hoziroq <strong>14 kun bepul</strong> sinab ko'ring!
+            Super-adminga murojaat qilmasdan, hoziroq <strong>15 kun bepul</strong> sinab ko'ring!
           </p>
 
           <div class="hero-cta-group">
             <a routerLink="/register" class="btn btn-primary btn-lg">
-              🚀 14 kun bepul boshlash
+              🚀 15 kun bepul boshlash
             </a>
             <a href="#pricing" class="btn btn-outline btn-lg">
               💳 Tariflarni ko'rish
@@ -231,17 +231,17 @@ import { ThemeService } from '../../core/services/theme.service';
           <div class="section-header">
             <span class="section-tag">TARIF REJALARI</span>
             <h2 class="section-title">Shaffof va Qulay Narxlar</h2>
-            <p class="section-desc">Hech qanday yashirin to'lovlarsiz. Dastlabki 14 kun barcha tariflar mutlaqo bepul!</p>
+            <p class="section-desc">Hech qanday yashirin to'lovlarsiz. Dastlabki 15 kun barcha yangi restoranlar uchun mutlaqo bepul!</p>
           </div>
 
           <div class="pricing-cards-grid">
             @for (plan of plans(); track plan.id) {
-              <div class="plan-card" [class.featured]="plan.code === 'BUSINESS'" [class.trial-card]="plan.code === 'TRIAL'">
-                @if (plan.code === 'BUSINESS') {
+              <div class="plan-card" [class.featured]="plan.code === 'PRO'" [class.trial-card]="plan.code === 'TRIAL'">
+                @if (plan.code === 'PRO') {
                   <div class="featured-badge">Tavsiya etiladi</div>
                 }
                 @if (plan.code === 'TRIAL') {
-                  <div class="featured-badge trial-badge">14 kun bepul</div>
+                  <div class="featured-badge trial-badge">15 kun bepul</div>
                 }
 
                 <div class="plan-card-top">
@@ -255,16 +255,19 @@ import { ThemeService } from '../../core/services/theme.service';
                 </div>
 
                 <div class="plan-limits">
-                  <div class="limit-line">🪑 Stollar: <strong>{{ plan.maxTables ? plan.maxTables + ' ta' : 'Cheksiz' }}</strong></div>
-                  <div class="limit-line">👥 Xodimlar: <strong>{{ plan.maxUsers ? plan.maxUsers + ' ta' : 'Cheksiz' }}</strong></div>
-                  <div class="limit-line">🍔 Mahsulotlar: <strong>{{ plan.maxProducts ? plan.maxProducts + ' ta' : 'Cheksiz' }}</strong></div>
-                  <div class="limit-line">👨‍🍳 Oshxonalar: <strong>{{ plan.maxKitchens ? plan.maxKitchens + ' ta' : 'Cheksiz' }}</strong></div>
+                  <div class="limit-line">🪑 Stollar: <strong class="text-success">♾️ Cheksiz</strong></div>
+                  <div class="limit-line">👥 Xodimlar: <strong class="text-success">♾️ Cheksiz</strong></div>
+                  <div class="limit-line">🍔 Mahsulotlar: <strong class="text-success">♾️ Cheksiz</strong></div>
+                  <div class="limit-line">🍳 Oshxonalar: <strong class="text-success">♾️ Cheksiz</strong></div>
                 </div>
 
                 <div class="plan-features">
                   <ul class="features-list">
                     @for (feat of getPlanFeatures(plan); track feat) {
-                      <li><span class="check-icon">✓</span> {{ feat }}</li>
+                      <li [class.feature-excluded]="feat.startsWith('❌')">
+                        <span class="check-icon">{{ feat.startsWith('❌') ? '—' : '✓' }}</span>
+                        {{ feat }}
+                      </li>
                     }
                   </ul>
                 </div>
@@ -272,9 +275,9 @@ import { ThemeService } from '../../core/services/theme.service';
                 <div class="plan-action">
                   <a [routerLink]="['/register']" [queryParams]="{ plan: plan.code }" 
                      class="btn w-full"
-                     [class.btn-primary]="plan.code === 'BUSINESS'"
-                     [class.btn-outline]="plan.code !== 'BUSINESS'">
-                    {{ plan.code === 'TRIAL' ? 'Sinovni boshlash' : 'Tarifni tanlash' }}
+                     [class.btn-primary]="plan.code === 'PRO'"
+                     [class.btn-outline]="plan.code !== 'PRO'">
+                    {{ plan.code === 'TRIAL' ? '15 kun bepul boshlash' : 'Tarifni tanlash' }}
                   </a>
                 </div>
               </div>
@@ -294,13 +297,13 @@ import { ThemeService } from '../../core/services/theme.service';
           <div class="faq-grid">
             <div class="faq-item" (click)="toggleFaq(1)">
               <div class="faq-question">
-                <h4>14 kunlik bepul sinov qanday ishlaydi?</h4>
+                <h4>15 kunlik bepul sinov qanday ishlaydi?</h4>
                 <span class="faq-toggle">{{ openFaq() === 1 ? '−' : '+' }}</span>
               </div>
               @if (openFaq() === 1) {
                 <div class="faq-answer">
-                  Ro'yxatdan o'tishingiz bilan sizga avtomatik ravishda 14 kunlik to'liq litsenziya beriladi. 
-                  Bu davrda hech qanday to'lov kartasi talab qilinmaydi. 14 kundan so'ng o'zingizga ma'qul tarifni sotib olishingiz mumkin.
+                  Ro'yxatdan o'tishingiz bilan sizga avtomatik ravishda 15 kunlik to'liq sinov davri beriladi. 
+                  Bu davrda hech qanday to'lov kartasi talab qilinmaydi. 15 kundan so'ng Standard (189 000 so'm) yoki Pro (249 000 so'm) tarifini tanlashingiz mumkin.
                 </div>
               }
             </div>
@@ -844,6 +847,13 @@ import { ThemeService } from '../../core/services/theme.service';
                 color: #10b981;
                 font-weight: 700;
               }
+
+              &.feature-excluded {
+                color: var(--text-muted, #64748b);
+                .check-icon {
+                  color: #ef4444;
+                }
+              }
             }
           }
         }
@@ -1069,17 +1079,40 @@ export class LandingComponent implements OnInit {
   }
 
   getPlanFeatures(plan: PlanResponse): string[] {
-    if (plan.features && plan.features.length > 0) {
-      return plan.features;
-    }
-    if (plan.code === 'TRIAL') {
-      return ['14 kun bepul sinov', 'Barcha POS funksiyalari', 'Oshxona ekrani (KDS)', 'Chek chiqarish'];
-    } else if (plan.code === 'STARTER') {
-      return ['Kichik kafe va choyxonalar', 'Stollar va buyurtmalar', 'Chek va hisobotlar', '24/7 yordam'];
-    } else if (plan.code === 'BUSINESS') {
-      return ['Katta restoranlar uchun', 'Oshxona ekrani (KDS)', 'Ko‘p zallar va stollar', 'Yetkazib berish (Delivery)'];
+    if (plan.code === 'PRO') {
+      return [
+        '⭐️ Barcha STANDARD imkoniyatlari',
+        '✅ Oshxona Ekrani (KDS)',
+        '✅ Mobil Ofitsiant Ilovasi',
+        'Cheksiz xodimlar, stollar va mahsulotlar',
+        'Sexlar bo‘yicha avtomatik marshrutlash',
+        'LAN va Offline/Online sinxronlash',
+        '24/7 prioritet yordam'
+      ];
+    } else if (plan.code === 'STANDARD') {
+      return [
+        'Barcha asosiy POS tizim imkoniyatlari',
+        'Cheksiz xodimlar, stollar va mahsulotlar',
+        'Interaktiv stollar va zallar',
+        'Kassa, to‘lovlar va chek printerlari',
+        'Ombor va mahsulotlar kirim-chiqimi',
+        'P&L va barcha moliya hisobotlari',
+        'LAN va Offline/Online sinxronlash',
+        '❌ Oshxona Ekrani (KDS) kirmaydi',
+        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+      ];
     } else {
-      return ['Yirik restoran tarmoqlari', 'Cheksiz mahsulotlar', 'Cheksiz stollar va xodimlar', 'Prioritet yordam'];
+      // TRIAL
+      return [
+        '15 kun bepul to‘liq sinov (0 UZS)',
+        'Barcha asosiy POS tizim imkoniyatlari',
+        'Cheksiz xodimlar, stollar va mahsulotlar',
+        'Kassa, to‘lovlar va chek chiqarish',
+        'Ombor va hisobotlar',
+        'LAN va Offline/Online sinxronlash',
+        '❌ Oshxona Ekrani (KDS) kirmaydi',
+        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+      ];
     }
   }
 }

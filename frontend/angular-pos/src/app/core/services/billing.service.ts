@@ -48,16 +48,24 @@ export interface CurrentSubscriptionResponse {
   warningLevel: 'NONE' | '7_DAYS' | '3_DAYS' | '1_DAY' | 'EXPIRED';
   currentUsers: number;
   maxUsers: number;
+  currentWaiters?: number;
+  currentChefs?: number;
   currentTables: number;
   maxTables: number;
   currentProducts: number;
   maxProducts: number;
+  currentCategories?: number;
+  currentHalls?: number;
   currentKitchens: number;
   maxKitchens: number;
   currentDevices: number;
   maxDevices: number;
+  currentOrders?: number;
   currentMonthOrders: number;
   maxOrdersPerMonth: number;
+  currentPrinters?: number;
+  trialStartDate?: string;
+  trialEndDate?: string;
 }
 
 export interface CalculatePriceRequest {
@@ -205,10 +213,13 @@ export interface AuditLogResponse {
 export interface PlatformSubscriptionOverview {
   totalSubscriptions: number;
   activeSubscriptions: number;
+  standardSubscriptions?: number;
+  proSubscriptions?: number;
   trialSubscriptions: number;
   expiringSoonSubscriptions: number;
   expiredSubscriptions: number;
   cancelledSubscriptions: number;
+  suspendedSubscriptions?: number;
   pendingPaymentSubscriptions: number;
   totalRevenue: number;
   monthlyRecurringRevenue: number;
@@ -349,6 +360,22 @@ export class BillingService {
     );
   }
 
+  suspendSubscription(subscriptionId: string, reason?: string): Observable<TenantSubscriptionSummary> {
+    let params = new HttpParams();
+    if (reason) {
+      params = params.set('reason', reason);
+    }
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/${subscriptionId}/suspend`, {}, { params }).pipe(
+      map(res => res.data)
+    );
+  }
+
+  resumeSubscription(subscriptionId: string): Observable<TenantSubscriptionSummary> {
+    return this.http.post<any>(`${this.apiPrefix}/platform/subscriptions/${subscriptionId}/resume`, {}).pipe(
+      map(res => res.data)
+    );
+  }
+
   getPlatformPlans(): Observable<PlanResponse[]> {
     return this.http.get<any>(`${this.apiPrefix}/platform/subscriptions/plans`).pipe(
       map(res => res.data || [])
@@ -402,4 +429,55 @@ export class BillingService {
       map(res => res.data || [])
     );
   }
+
+  processMockPayment(paymentId: string, outcome: string): Observable<CurrentSubscriptionResponse> {
+    return this.http.post<any>(`${this.apiPrefix}/restaurant/billing/mock-pay`, { paymentId, outcome }).pipe(
+      map(res => res.data)
+    );
+  }
+
+  getPaymentProviderSettings(): Observable<PaymentProviderSettingResponse[]> {
+    return this.http.get<any>(`${this.apiPrefix}/platform/payment-settings`).pipe(
+      map(res => res.data || [])
+    );
+  }
+
+  updatePaymentProviderSetting(id: string, req: PaymentProviderSettingUpdateRequest): Observable<PaymentProviderSettingResponse> {
+    return this.http.put<any>(`${this.apiPrefix}/platform/payment-settings/${id}`, req).pipe(
+      map(res => res.data)
+    );
+  }
+
+  updatePaymentProviderSettingByCode(code: string, req: PaymentProviderSettingUpdateRequest): Observable<PaymentProviderSettingResponse> {
+    return this.http.put<any>(`${this.apiPrefix}/platform/payment-settings/by-code/${code}`, req).pipe(
+      map(res => res.data)
+    );
+  }
+}
+
+export interface PaymentProviderSettingResponse {
+  id: string;
+  providerCode: string;
+  displayName: string;
+  enabled: boolean;
+  testMode: boolean;
+  merchantId?: string;
+  maskedApiKey?: string;
+  maskedSecretKey?: string;
+  hasApiKey: boolean;
+  hasSecretKey: boolean;
+  callbackUrl?: string;
+  description?: string;
+  updatedAt: string;
+}
+
+export interface PaymentProviderSettingUpdateRequest {
+  enabled?: boolean;
+  testMode?: boolean;
+  merchantId?: string;
+  apiKey?: string;
+  secretKey?: string;
+  callbackUrl?: string;
+  displayName?: string;
+  description?: string;
 }

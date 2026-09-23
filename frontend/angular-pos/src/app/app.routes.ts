@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
@@ -6,6 +6,7 @@ import { permissionGuard } from './core/guards/permission.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { AuthService } from './core/services/auth.service';
+import { LanStatusService } from './core/services/lan-status.service';
 
 export const routes: Routes = [
   // ==========================================
@@ -14,6 +15,15 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
+    canActivate: [() => {
+      const lan = inject(LanStatusService);
+      const router = inject(Router);
+      if (lan.isDesktop()) {
+        router.navigate(['/login']);
+        return false;
+      }
+      return true;
+    }],
     loadComponent: () => import('./public/landing/landing.component').then(m => m.LandingComponent),
     title: 'RestaurantPOS - Professional Restaurant Management SaaS'
   },
@@ -31,6 +41,15 @@ export const routes: Routes = [
   },
   {
     path: 'pricing',
+    canActivate: [() => {
+      const lan = inject(LanStatusService);
+      const router = inject(Router);
+      if (lan.isDesktop()) {
+        router.navigate(['/login']);
+        return false;
+      }
+      return true;
+    }],
     loadComponent: () => import('./public/pricing/pricing.component').then(m => m.PricingComponent),
     title: 'Tariflar - RestaurantPOS'
   },
@@ -112,6 +131,12 @@ export const routes: Routes = [
         loadComponent: () => import('./platform/payments/platform-payments.component').then(m => m.PlatformPaymentsComponent),
         canActivate: [superAdminGuard],
         data: { title: 'Platforma To‘lovlari' }
+      },
+      {
+        path: 'platform/devices',
+        loadComponent: () => import('./platform/devices/platform-devices.component').then(m => m.PlatformDevicesComponent),
+        canActivate: [superAdminGuard],
+        data: { title: 'Qurilmalar Boshqaruvi' }
       },
 
       // ==========================================

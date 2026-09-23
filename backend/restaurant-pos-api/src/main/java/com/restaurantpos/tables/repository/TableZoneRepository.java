@@ -15,4 +15,6 @@ public interface TableZoneRepository extends JpaRepository<TableZone, UUID> {
     java.util.Optional<TableZone> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);
 
     java.util.Optional<TableZone> findByTenantIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String name);
+
+    long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
 }

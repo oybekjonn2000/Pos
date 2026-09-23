@@ -34,13 +34,30 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByUsernameAndTenantIdAndDeletedAtIsNull(String username, UUID tenantId);
 
+    boolean existsByUsernameIgnoreCaseAndDeletedAtIsNull(String username);
+
+    Optional<User> findByUsernameIgnoreCaseAndDeletedAtIsNull(String username);
+
+    Optional<User> findByTenantIdAndUsernameIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String username);
+
     long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
 
     long countByTenantIsNotNullAndDeletedAtIsNull();
 
     java.util.List<User> findByTenantIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID tenantId);
 
+    java.util.List<User> findAllByTenantIdAndDeletedAtIsNull(UUID tenantId);
+
+    @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.tenant.id = :tenantId AND u.deletedAt IS NULL")
+    java.util.List<User> findAllByTenantIdWithRoles(UUID tenantId);
+
     java.util.List<User> findByTenantIsNotNullAndDeletedAtIsNullOrderByCreatedAtDesc();
 
     Optional<User> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);
+
+    boolean existsByTenantIdAndPinLookupHashAndDeletedAtIsNull(UUID tenantId, String pinLookupHash);
+
+    boolean existsByTenantIdAndPinLookupHashAndIdNotAndDeletedAtIsNull(UUID tenantId, String pinLookupHash, UUID id);
+
+    Optional<User> findByTenantIdAndPinLookupHashAndDeletedAtIsNull(UUID tenantId, String pinLookupHash);
 }

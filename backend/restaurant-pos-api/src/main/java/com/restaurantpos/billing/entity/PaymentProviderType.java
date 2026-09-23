@@ -7,5 +7,8 @@ public enum PaymentProviderType {
     UZUM,
     STRIPE,
     OTHER,
-    MOCK
+    MOCK,
+    UZCARD,
+    HUMO
 }
+

@@ -9,8 +9,11 @@ import com.restaurantpos.common.tenant.TenantContext;
 import com.restaurantpos.devices.repository.DeviceRepository;
 import com.restaurantpos.kitchen.repository.KitchenRepository;
 import com.restaurantpos.orders.repository.OrderRepository;
+import com.restaurantpos.printers.repository.PrinterRepository;
+import com.restaurantpos.products.repository.CategoryRepository;
 import com.restaurantpos.products.repository.ProductRepository;
 import com.restaurantpos.tables.repository.RestaurantTableRepository;
+import com.restaurantpos.tables.repository.TableZoneRepository;
 import com.restaurantpos.tenants.entity.RestaurantStatus;
 import com.restaurantpos.tenants.entity.Tenant;
 import com.restaurantpos.tenants.repository.TenantRepository;
@@ -50,10 +53,14 @@ public class SubscriptionService {
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final RestaurantTableRepository restaurantTableRepository;
+    private final TableZoneRepository tableZoneRepository;
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
     private final KitchenRepository kitchenRepository;
     private final DeviceRepository deviceRepository;
     private final OrderRepository orderRepository;
+    private final PrinterRepository printerRepository;
+    private final RestaurantResourceUsageRepository resourceUsageRepository;
     private final PaymentProviderFactory paymentProviderFactory;
 
     // ==========================================
@@ -372,12 +379,12 @@ public class SubscriptionService {
         }
         if (plan == null) {
             plan = planRepository.findByCode("TRIAL")
-                    .or(() -> planRepository.findByCode("STARTER"))
+                    .or(() -> planRepository.findByCode("STANDARD"))
                     .orElseGet(() -> planRepository.findAll().stream().findFirst()
                             .orElseThrow(() -> PosException.badRequest("Tizimda tarif rejalari mavjud emas!")));
         }
 
-        int trialDays = (plan.getTrialDays() != null && plan.getTrialDays() > 0) ? plan.getTrialDays() : 14;
+        int trialDays = (plan.getTrialDays() != null && plan.getTrialDays() > 0) ? plan.getTrialDays() : 15;
         Instant now = Instant.now();
         Instant end = addCalendarDays(now, trialDays);
 
@@ -451,11 +458,24 @@ public class SubscriptionService {
             }
         }
 
+        // Live Resource Usage Counting
         long usersCount = userRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
         long tablesCount = restaurantTableRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
         long productsCount = productRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
+        long categoriesCount = categoryRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
         long kitchensCount = kitchenRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
         long devicesCount = deviceRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
+        long hallsCount = tableZoneRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
+        long printersCount = printerRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
+        long totalOrders = orderRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
+
+        List<User> tenantUsers = userRepository.findByTenantIdAndDeletedAtIsNullOrderByCreatedAtDesc(tenantId);
+        long waitersCount = tenantUsers.stream()
+                .filter(u -> u.getRoles() != null && u.getRoles().stream().anyMatch(r -> "WAITER".equalsIgnoreCase(r.getName())))
+                .count();
+        long chefsCount = tenantUsers.stream()
+                .filter(u -> u.getRoles() != null && u.getRoles().stream().anyMatch(r -> "KITCHEN".equalsIgnoreCase(r.getName())))
+                .count();
 
         // Monthly orders
         ZonedDateTime zdtNow = ZonedDateTime.now(TASHKENT_ZONE);
@@ -463,7 +483,36 @@ public class SubscriptionService {
         Instant endOfMonth = zdtNow.with(TemporalAdjusters.lastDayOfMonth()).plusDays(1).toLocalDate().atStartOfDay(TASHKENT_ZONE).toInstant();
         long monthOrders = orderRepository.countByTenantIdAndOpenedAtBetweenAndDeletedAtIsNull(tenantId, startOfMonth, endOfMonth);
 
+        // Cache usage stats in database
+        try {
+            RestaurantResourceUsage usage = resourceUsageRepository.findByTenantId(tenantId)
+                    .orElseGet(() -> {
+                        RestaurantResourceUsage ru = new RestaurantResourceUsage();
+                        ru.setTenant(tenant);
+                        return ru;
+                    });
+            usage.setUsersCount((int) usersCount);
+            usage.setEmployeesCount((int) usersCount);
+            usage.setWaitersCount((int) waitersCount);
+            usage.setChefsCount((int) chefsCount);
+            usage.setProductsCount((int) productsCount);
+            usage.setCategoriesCount((int) categoriesCount);
+            usage.setTablesCount((int) tablesCount);
+            usage.setHallsCount((int) hallsCount);
+            usage.setKitchensCount((int) kitchensCount);
+            usage.setOrdersCount((int) totalOrders);
+            usage.setPrintersCount((int) printersCount);
+            usage.setDevicesCount((int) devicesCount);
+            usage.setLastCalculatedAt(now);
+            resourceUsageRepository.save(usage);
+        } catch (Exception e) {
+            log.warn("Could not cache resource usage for tenant {}: {}", tenantId, e.getMessage());
+        }
+
         SubscriptionPlan plan = sub.getPlan();
+
+        Instant trialStart = sub.getStatus() == SubscriptionStatus.TRIAL ? sub.getStartDate() : null;
+        Instant trialEnd = sub.getStatus() == SubscriptionStatus.TRIAL ? sub.getEndDate() : null;
 
         return BillingDto.CurrentSubscriptionResponse.builder()
                 .id(sub.getId())
@@ -486,16 +535,24 @@ public class SubscriptionService {
                 .warningLevel(warningLevel)
                 .currentUsers(usersCount)
                 .maxUsers(plan.getMaxUsers())
+                .currentWaiters(waitersCount)
+                .currentChefs(chefsCount)
                 .currentTables(tablesCount)
                 .maxTables(plan.getMaxTables())
                 .currentProducts(productsCount)
                 .maxProducts(plan.getMaxProducts())
+                .currentCategories(categoriesCount)
+                .currentHalls(hallsCount)
                 .currentKitchens(kitchensCount)
                 .maxKitchens(plan.getMaxKitchens())
                 .currentDevices(devicesCount)
                 .maxDevices(plan.getMaxDevices())
+                .currentOrders(totalOrders)
                 .currentMonthOrders(monthOrders)
                 .maxOrdersPerMonth(plan.getMaxOrdersPerMonth())
+                .currentPrinters(printersCount)
+                .trialStartDate(trialStart)
+                .trialEndDate(trialEnd)
                 .build();
     }
 
@@ -982,6 +1039,51 @@ public class SubscriptionService {
     }
 
     // ==========================================
+    // MOCK PAYMENT GATEWAY SIMULATION
+    // ==========================================
+
+    @Transactional
+    public BillingDto.CurrentSubscriptionResponse processMockPayment(UUID tenantId, BillingDto.MockPaymentRequest request) {
+        if (request == null || request.getPaymentId() == null) {
+            throw PosException.badRequest("Payment ID ko'rsatilishi shart!");
+        }
+
+        SubscriptionPayment payment = paymentRepository.findById(request.getPaymentId())
+                .orElseThrow(() -> PosException.notFound("To'lov topilmadi: " + request.getPaymentId()));
+
+        if (!payment.getTenant().getId().equals(tenantId) && !TenantContext.isSuperAdmin()) {
+            throw PosException.forbidden("Sizda ushbu to'lovni amalga oshirish huquqi yo'q!");
+        }
+
+        String outcome = request.getOutcome() != null ? request.getOutcome().trim().toUpperCase(Locale.ROOT) : "SUCCESS";
+        log.info("Processing mock payment {} for tenant {} with outcome: {}", payment.getId(), tenantId, outcome);
+
+        if ("SUCCESS".equals(outcome)) {
+            String mockTxId = "MOCK-TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            return processPaymentSuccess(payment.getId(), mockTxId, Map.of(
+                    "gateway", "MOCK",
+                    "simulation", true,
+                    "processedAt", Instant.now().toString()
+            ));
+        } else if ("FAILED".equals(outcome)) {
+            processPaymentFailed(payment.getId(), "Test simulyatsiyasi: to'lov rad etildi (MOCK_PAYMENT_FAILED)");
+            return getCurrentSubscription(tenantId);
+        } else if ("CANCELLED".equals(outcome)) {
+            payment.setStatus(SubscriptionPaymentStatus.CANCELLED);
+            paymentRepository.save(payment);
+            if (payment.getInvoice() != null) {
+                SubscriptionInvoice invoice = payment.getInvoice();
+                invoice.setStatus(InvoiceStatus.CANCELLED);
+                invoiceRepository.save(invoice);
+            }
+            return getCurrentSubscription(tenantId);
+        } else {
+            // PENDING or other
+            return getCurrentSubscription(tenantId);
+        }
+    }
+
+    // ==========================================
     // INVOICE & PAYMENT HISTORY
     // ==========================================
 
@@ -1041,6 +1143,7 @@ public class SubscriptionService {
         long expiringSoon = subscriptionRepository.countByStatus(SubscriptionStatus.EXPIRING_SOON);
         long expired = subscriptionRepository.countByStatus(SubscriptionStatus.EXPIRED);
         long cancelled = subscriptionRepository.countByStatus(SubscriptionStatus.CANCELLED);
+        long suspended = subscriptionRepository.countByStatus(SubscriptionStatus.SUSPENDED);
         long pending = invoiceRepository.countByStatus(InvoiceStatus.PENDING);
 
         BigDecimal totalRevenue = invoiceRepository.sumTotalPaidRevenue();
@@ -1049,8 +1152,10 @@ public class SubscriptionService {
 
         List<RestaurantSubscription> allSubs = subscriptionRepository.findAllByOrderByCreatedAtDesc();
 
-        // Calculate exact MRR from all operating subscriptions
+        // Calculate exact MRR from all operating subscriptions and count by plan
         BigDecimal mrr = BigDecimal.ZERO;
+        long standardCount = 0;
+        long proCount = 0;
         for (RestaurantSubscription s : allSubs) {
             if (s.isOperating() && (s.getStatus() == SubscriptionStatus.ACTIVE || s.getStatus() == SubscriptionStatus.EXPIRING_SOON)) {
                 BigDecimal pPrice = s.getPlan().getPrice();
@@ -1059,35 +1164,29 @@ public class SubscriptionService {
                 }
                 mrr = mrr.add(pPrice);
             }
+            if (s.isOperating() && s.getPlan() != null) {
+                if ("STANDARD".equalsIgnoreCase(s.getPlan().getCode())) {
+                    standardCount++;
+                } else if ("PRO".equalsIgnoreCase(s.getPlan().getCode())) {
+                    proCount++;
+                }
+            }
         }
 
         List<BillingDto.TenantSubscriptionSummary> summaryList = allSubs.stream()
-                .map(s -> BillingDto.TenantSubscriptionSummary.builder()
-                        .id(s.getId())
-                        .tenantId(s.getTenant().getId())
-                        .restaurantName(s.getTenant().getName())
-                        .restaurantCode(s.getTenant().getCode())
-                        .restaurantStatus(s.getTenant().getStatus() != null ? s.getTenant().getStatus().name() : "ACTIVE")
-                        .planName(s.getPlan().getName())
-                        .planCode(s.getPlan().getCode())
-                        .price(s.getPlan().getPrice())
-                        .yearlyPrice(s.getPlan().getYearlyPrice())
-                        .status(s.getStatus().name())
-                        .startDate(s.getStartDate())
-                        .endDate(s.getEndDate())
-                        .daysRemaining(s.getDaysRemaining())
-                        .operating(s.isOperating())
-                        .nextPlanName(s.getNextPlan() != null ? s.getNextPlan().getName() : null)
-                        .build())
+                .map(this::toTenantSubscriptionSummary)
                 .collect(Collectors.toList());
 
         return BillingDto.PlatformSubscriptionOverview.builder()
                 .totalSubscriptions(total)
                 .activeSubscriptions(active)
+                .standardSubscriptions(standardCount)
+                .proSubscriptions(proCount)
                 .trialSubscriptions(trial)
                 .expiringSoonSubscriptions(expiringSoon)
                 .expiredSubscriptions(expired)
                 .cancelledSubscriptions(cancelled)
+                .suspendedSubscriptions(suspended)
                 .pendingPaymentSubscriptions(pending)
                 .totalRevenue(totalRevenue)
                 .monthlyRecurringRevenue(mrr)
@@ -1115,6 +1214,90 @@ public class SubscriptionService {
         return subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(tenantId)
                 .map(RestaurantSubscription::isOperating)
                 .orElse(false);
+    }
+
+    @Transactional
+    public BillingDto.TenantSubscriptionSummary suspendSubscription(UUID idOrTenantId, String reason) {
+        RestaurantSubscription sub = subscriptionRepository.findById(idOrTenantId)
+                .or(() -> subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(idOrTenantId))
+                .orElseThrow(() -> PosException.notFound("Obuna topilmadi: " + idOrTenantId));
+
+        sub.setStatus(SubscriptionStatus.SUSPENDED);
+        String suspendNote = "Vaqtincha to'xtatildi (Super Admin): " + (reason != null && !reason.isBlank() ? reason : "Ko'rsatilmadi");
+        sub.setNotes(sub.getNotes() != null ? sub.getNotes() + "\n" + suspendNote : suspendNote);
+        RestaurantSubscription saved = subscriptionRepository.save(sub);
+
+        Tenant tenant = sub.getTenant();
+        tenant.setStatus(RestaurantStatus.SUSPENDED);
+        tenantRepository.save(tenant);
+
+        // Audit Log
+        UUID currentUserId = TenantContext.getCurrentUserId();
+        User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+        auditService.log(tenant, currentUser, currentUser != null ? currentUser.getUsername() : "SUPER_ADMIN", "SUPER_ADMIN",
+                "SUBSCRIPTION_SUSPENDED", "RestaurantSubscription", sub.getId(),
+                Map.of("reason", reason != null ? reason : ""));
+
+        log.info("Subscription suspended for tenant: {} ({}) by superadmin", tenant.getName(), tenant.getId());
+        return toTenantSubscriptionSummary(saved);
+    }
+
+    @Transactional
+    public BillingDto.TenantSubscriptionSummary resumeSubscription(UUID idOrTenantId) {
+        RestaurantSubscription sub = subscriptionRepository.findById(idOrTenantId)
+                .or(() -> subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(idOrTenantId))
+                .orElseThrow(() -> PosException.notFound("Obuna topilmadi: " + idOrTenantId));
+
+        Instant now = Instant.now();
+        if (sub.getEndDate() == null || sub.getEndDate().isBefore(now)) {
+            // If expired while suspended, grant 30 days active period
+            sub.setEndDate(now.plus(30, ChronoUnit.DAYS));
+        }
+
+        if (sub.getPlan() != null && "TRIAL".equalsIgnoreCase(sub.getPlan().getCode())) {
+            sub.setStatus(SubscriptionStatus.TRIAL);
+        } else {
+            sub.setStatus(SubscriptionStatus.ACTIVE);
+        }
+
+        String resumeNote = "Qayta faollashtirildi (Super Admin)";
+        sub.setNotes(sub.getNotes() != null ? sub.getNotes() + "\n" + resumeNote : resumeNote);
+        RestaurantSubscription saved = subscriptionRepository.save(sub);
+
+        Tenant tenant = sub.getTenant();
+        tenant.setStatus(RestaurantStatus.ACTIVE);
+        tenant.setActive(true);
+        tenantRepository.save(tenant);
+
+        // Audit Log
+        UUID currentUserId = TenantContext.getCurrentUserId();
+        User currentUser = currentUserId != null ? userRepository.findById(currentUserId).orElse(null) : null;
+        auditService.log(tenant, currentUser, currentUser != null ? currentUser.getUsername() : "SUPER_ADMIN", "SUPER_ADMIN",
+                "SUBSCRIPTION_RESUMED", "RestaurantSubscription", sub.getId(),
+                Map.of("plan", sub.getPlan() != null ? sub.getPlan().getCode() : ""));
+
+        log.info("Subscription resumed for tenant: {} ({}) by superadmin", tenant.getName(), tenant.getId());
+        return toTenantSubscriptionSummary(saved);
+    }
+
+    private BillingDto.TenantSubscriptionSummary toTenantSubscriptionSummary(RestaurantSubscription s) {
+        return BillingDto.TenantSubscriptionSummary.builder()
+                .id(s.getId())
+                .tenantId(s.getTenant() != null ? s.getTenant().getId() : null)
+                .restaurantName(s.getTenant() != null ? s.getTenant().getName() : "")
+                .restaurantCode(s.getTenant() != null ? s.getTenant().getCode() : "")
+                .restaurantStatus(s.getTenant() != null && s.getTenant().getStatus() != null ? s.getTenant().getStatus().name() : "ACTIVE")
+                .planName(s.getPlan() != null ? s.getPlan().getName() : "N/A")
+                .planCode(s.getPlan() != null ? s.getPlan().getCode() : "N/A")
+                .price(s.getPlan() != null ? s.getPlan().getPrice() : BigDecimal.ZERO)
+                .yearlyPrice(s.getPlan() != null ? s.getPlan().getYearlyPrice() : BigDecimal.ZERO)
+                .status(s.getStatus() != null ? s.getStatus().name() : "ACTIVE")
+                .startDate(s.getStartDate())
+                .endDate(s.getEndDate())
+                .daysRemaining(s.getDaysRemaining())
+                .operating(s.isOperating())
+                .nextPlanName(s.getNextPlan() != null ? s.getNextPlan().getName() : null)
+                .build();
     }
 
     // ==========================================

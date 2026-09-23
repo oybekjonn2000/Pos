@@ -195,6 +195,10 @@ export class OrderService {
     return this.http.put<ApiResponse<Order>>(`${this.API}/${orderId}/status`, { status });
   }
 
+  requestBill(orderId: string): Observable<ApiResponse<Order>> {
+    return this.updateStatus(orderId, 'BILL_REQUESTED');
+  }
+
   closeOrder(orderId: string): Observable<ApiResponse<Order>> {
     return this.http.post<ApiResponse<Order>>(`${this.API}/${orderId}/close`, {});
   }

@@ -30,7 +30,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
         <div class="pricing-hero__badge">✨ O'zbekiston bo'ylab 500+ restoranlar ishonchi</div>
         <h1 class="pricing-hero__title">Restoraningiz uchun shaffof va qulay tariflar</h1>
         <p class="pricing-hero__subtitle">
-          Super-adminga bog'lanish shart emas. Hoziroq ro'yxatdan o'ting, 14 kun bepul sinab ko'ring va POS tizimini to'liq boshqaring.
+          Super-adminga bog'lanish shart emas. Hoziroq ro'yxatdan o'ting, 15 kun bepul sinab ko'ring va POS tizimini to'liq boshqaring.
         </p>
       </section>
 
@@ -48,12 +48,12 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
         } @else {
           <div class="pricing-grid">
             @for (plan of plans(); track plan.id) {
-              <div class="plan-card" [class.popular]="plan.code === 'BUSINESS'" [class.trial]="plan.code === 'TRIAL'">
-                @if (plan.code === 'BUSINESS') {
+              <div class="plan-card" [class.popular]="plan.code === 'PRO'" [class.trial]="plan.code === 'TRIAL'">
+                @if (plan.code === 'PRO') {
                   <div class="popular-ribbon">Eng ommabop</div>
                 }
                 @if (plan.code === 'TRIAL') {
-                  <div class="popular-ribbon trial-ribbon">14 kun bepul</div>
+                  <div class="popular-ribbon trial-ribbon">15 kun bepul</div>
                 }
 
                 <div class="plan-card__header">
@@ -71,27 +71,27 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                   </div>
                 </div>
 
-                <!-- Limits Summary -->
+                <!-- Limits Summary (All Unlimited) -->
                 <div class="plan-card__limits">
                   <div class="limit-item">
                     <span class="limit-icon">🪑</span>
                     <span class="limit-label">Stollar soni:</span>
-                    <strong class="limit-val">{{ plan.maxTables ? plan.maxTables + ' ta' : 'Cheksiz' }}</strong>
+                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
                   </div>
                   <div class="limit-item">
                     <span class="limit-icon">👥</span>
                     <span class="limit-label">Xodimlar:</span>
-                    <strong class="limit-val">{{ plan.maxUsers ? plan.maxUsers + ' ta' : 'Cheksiz' }}</strong>
+                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
                   </div>
                   <div class="limit-item">
                     <span class="limit-icon">🍔</span>
                     <span class="limit-label">Mahsulotlar:</span>
-                    <strong class="limit-val">{{ plan.maxProducts ? plan.maxProducts + ' ta' : 'Cheksiz' }}</strong>
+                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
                   </div>
                   <div class="limit-item">
-                    <span class="limit-icon">👨‍🍳</span>
+                    <span class="limit-icon">🍳</span>
                     <span class="limit-label">Oshxonalar:</span>
-                    <strong class="limit-val">{{ plan.maxKitchens ? plan.maxKitchens + ' ta' : 'Cheksiz' }}</strong>
+                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
                   </div>
                 </div>
 
@@ -100,17 +100,20 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                   <h4 class="features-heading">Imkoniyatlar:</h4>
                   <ul class="features-list">
                     @for (feat of getPlanFeatures(plan); track feat) {
-                      <li><span class="check-icon">✓</span> {{ feat }}</li>
+                      <li [class.feature-excluded]="feat.startsWith('❌')">
+                        <span class="check-icon">{{ feat.startsWith('❌') ? '—' : '✓' }}</span>
+                        {{ feat }}
+                      </li>
                     }
                   </ul>
                 </div>
 
                 <div class="plan-card__action">
                   <button class="btn btn-choose" 
-                          [class.btn-primary]="plan.code === 'BUSINESS'"
-                          [class.btn-outline]="plan.code !== 'BUSINESS'"
+                          [class.btn-primary]="plan.code === 'PRO'"
+                          [class.btn-outline]="plan.code !== 'PRO'"
                           (click)="choosePlan(plan.code)">
-                    {{ plan.code === 'TRIAL' ? 'Sinovni boshlash' : 'Tarifni tanlash' }}
+                    {{ plan.code === 'TRIAL' ? '15 kun bepul boshlash' : 'Tarifni tanlash' }}
                   </button>
                 </div>
               </div>
@@ -409,6 +412,13 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
               color: #10b981;
               font-weight: bold;
             }
+
+            &.feature-excluded {
+              color: var(--text-muted, #64748b);
+              .check-icon {
+                color: #ef4444;
+              }
+            }
           }
         }
       }
@@ -580,18 +590,40 @@ export class PricingComponent implements OnInit {
   }
 
   getPlanFeatures(plan: PlanResponse): string[] {
-    if (plan.features && plan.features.length > 0) {
-      return plan.features;
-    }
-    // Fallback standard descriptions
-    if (plan.code === 'TRIAL') {
-      return ['14 kun bepul sinov', 'Barcha asosiy funksiyalar', 'Telegram xabarnomalar', 'Chek chiqarish'];
-    } else if (plan.code === 'STARTER') {
-      return ['Kichik kafe va choyxonalar', 'Stollar va buyurtmalar', 'Chek va hisobotlar', '24/7 qo‘llab-quvvatlash'];
-    } else if (plan.code === 'BUSINESS') {
-      return ['Katta restoranlar uchun', 'Oshxona ekrani (KDS)', 'Ko‘p zallar va stollar', 'Yetkazib berish (Delivery)', 'Batafsil tahlil'];
+    if (plan.code === 'PRO') {
+      return [
+        '⭐️ Barcha STANDARD imkoniyatlari',
+        '✅ Oshxona Ekrani (KDS - Kitchen Display System)',
+        '✅ Mobil Ofitsiant Ilovasi (Android planshet / telefon)',
+        'Cheksiz xodimlar, stollar, mahsulotlar va buyurtmalar',
+        'Sexlar bo‘yicha avtomatik buyurtma marshrutlash',
+        'LAN va Offline/Online sinxronlash',
+        '24/7 prioritet qo‘llab-quvvatlash'
+      ];
+    } else if (plan.code === 'STANDARD') {
+      return [
+        'Barcha asosiy POS tizim funksiyalari',
+        'Cheksiz xodimlar, stollar, mahsulotlar va buyurtmalar',
+        'Interaktiv stollar va zallar boshqaruvi',
+        'Kassa, to‘lovlar, chek printerlari',
+        'Ombor va mahsulotlar kirim-chiqimi',
+        'P&L va barcha moliya hisobotlari',
+        'LAN va Offline/Online sinxronlash',
+        '❌ Oshxona Ekrani (KDS) kirmaydi',
+        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+      ];
     } else {
-      return ['Yirik restoran tarmoqlari', 'Cheksiz mahsulotlar', 'Cheksiz stollar va xodimlar', 'Prioritet qo‘llab-quvvatlash', 'Maxsus integratsiyalar'];
+      // TRIAL
+      return [
+        '15 kun bepul to‘liq sinov davri (0 UZS)',
+        'Barcha asosiy POS tizim funksiyalari',
+        'Cheksiz xodimlar, stollar, mahsulotlar va buyurtmalar',
+        'Kassa, to‘lovlar va chek chop etish',
+        'Ombor va tahliliy hisobotlar',
+        'LAN va Offline/Online sinxronlash',
+        '❌ Oshxona Ekrani (KDS) kirmaydi',
+        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+      ];
     }
   }
 

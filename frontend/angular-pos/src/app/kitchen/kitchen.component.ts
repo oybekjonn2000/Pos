@@ -1,10 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { KitchenService, KitchenStation, KitchenOrderBatch, KitchenOrderBatchItem } from '../core/services/kitchen.service';
 import { WebsocketService } from '../core/services/websocket.service';
 import { NotificationService } from '../core/services/notification.service';
+import { FeatureService } from '../core/services/feature.service';
 
 export interface KitchenTableItemSubDetail {
   id: string;
@@ -53,9 +55,10 @@ export interface KitchenTableCard {
 @Component({
   selector: 'app-kitchen',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, RouterLink],
   template: `
-    <div class="kds-container fade-in">
+    <ng-container *ngIf="featureService.canAccessKds(); else proRequiredView">
+      <div class="kds-container fade-in">
       <!-- Top Bar -->
       <div class="kds-header">
         <div class="kds-title-area">
@@ -431,8 +434,265 @@ export interface KitchenTableCard {
         (page)="onPageChange($event)">
       </mat-paginator>
     </div>
+    </ng-container>
+
+    <!-- PRO UPGRADE REQUIRED VIEW -->
+    <ng-template #proRequiredView>
+      <div class="kds-upgrade-wrapper fade-in">
+        <div class="kds-upgrade-card">
+          <div class="upgrade-crown-badge">⭐ PRO TARIF TALAB QILINADI</div>
+          <div class="upgrade-icon">👨‍🍳</div>
+          <h1 class="upgrade-title">Oshxona Ekrani (Kitchen Display System — KDS)</h1>
+          <p class="upgrade-desc">
+            Ushbu professional modul faqat <strong>PRO</strong> tarifida mavjud. Real-vaqt rejimida oshpazlar navbati, pishirish monitoringi va mobil ofitsiant ilovasi imkoniyatlaridan to'liq foydalaning.
+          </p>
+
+          <div class="upgrade-perks-grid">
+            <div class="perk-card">
+              <span class="perk-icon">⚡</span>
+              <div>
+                <strong>Tezkor Yangilanish</strong>
+                <p>Ofitsiant buyurtma olishi bilan oshxona ekranida soniyalarda paydo bo'ladi.</p>
+              </div>
+            </div>
+            <div class="perk-card">
+              <span class="perk-icon">🎯</span>
+              <div>
+                <strong>Rangli Bosqichlar</strong>
+                <p>Yangi (Yashil) → Pishirilmoqda (Sariq) → Tayyor (Ko'k) holatlari.</p>
+              </div>
+            </div>
+            <div class="perk-card">
+              <span class="perk-icon">⏱️</span>
+              <div>
+                <strong>Vaqt Monitoringi</strong>
+                <p>Kechikayotgan taomlarni vizual ogohlantirish bilan darhol aniqlash.</p>
+              </div>
+            </div>
+            <div class="perk-card">
+              <span class="perk-icon">📱</span>
+              <div>
+                <strong>Mobil Ofitsiant (APK)</strong>
+                <p>PRO tarifida ofitsiantlar uchun Android mobil ilova ham birga faollashadi.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="upgrade-price-wrap">
+            <div class="price-bubble">
+              <span class="bubble-val">249 000</span>
+              <span class="bubble-curr">so'm / oy</span>
+            </div>
+            <span class="unlimited-tag">♾️ Resurslar soni bo'yicha hech qanday cheklov yo'q</span>
+          </div>
+
+          <div class="upgrade-action-btns">
+            <button type="button" class="btn-refresh-status" (click)="checkProStatus()" [disabled]="featureService.loading()">
+              {{ featureService.loading() ? '🔄 Tekshirilmoqda...' : '🔄 Obunani qayta tekshirish' }}
+            </button>
+            <a routerLink="/restaurant/billing" class="btn-upgrade-now">
+              ⚡ Pro Tarifga O'tish
+            </a>
+            <a routerLink="/dashboard" class="btn-back-dash">
+              ← Boshqaruv Paneliga Qaytish
+            </a>
+          </div>
+        </div>
+      </div>
+    </ng-template>
   `,
   styles: [`
+    .kds-upgrade-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      padding: 30px 16px;
+    }
+
+    .kds-upgrade-card {
+      max-width: 680px;
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: var(--radius-lg, 16px);
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .upgrade-crown-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .upgrade-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .upgrade-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .upgrade-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+    }
+
+    .upgrade-perks-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .perk-card {
+      display: flex;
+      gap: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md, 10px);
+      padding: 14px;
+
+      .perk-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      strong {
+        display: block;
+        font-size: 13px;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+
+      p {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: 0;
+        line-height: 1.4;
+      }
+    }
+
+    .upgrade-price-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 28px;
+    }
+
+    .price-bubble {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 8px 20px;
+      border-radius: 30px;
+
+      .bubble-val {
+        font-size: 26px;
+        font-weight: 800;
+        color: #f59e0b;
+      }
+
+      .bubble-curr {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+    }
+
+    .unlimited-tag {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .upgrade-action-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-upgrade-now {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      text-decoration: none;
+      padding: 12px 28px;
+      font-weight: 700;
+      font-size: 15px;
+      border-radius: var(--radius-md, 10px);
+      transition: all 0.2s ease;
+      display: inline-block;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+      }
+    }
+
+    .btn-refresh-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md, 10px);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.35);
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    .btn-back-dash {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 12px 22px;
+      font-weight: 600;
+      font-size: 14px;
+      border-radius: var(--radius-md, 10px);
+      border: 1px solid var(--border);
+      transition: all 0.2s ease;
+      display: inline-block;
+
+      &:hover {
+        color: var(--text-primary);
+        background: var(--bg-secondary);
+      }
+    }
+
     .kds-container {
       padding: 0;
       height: 100%;
@@ -1680,11 +1940,13 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   private wsUnsubs: (() => void)[] = [];
   private timerTick?: any;
+  private isKdsStarted = false;
 
   constructor(
     private kitchenService: KitchenService,
     public wsService: WebsocketService,
     private notify: NotificationService,
+    public featureService: FeatureService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -1696,6 +1958,42 @@ export class KitchenComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // 1. If access is already granted via cached state or role, start immediately
+    if (this.featureService.canAccessKds()) {
+      this.startKds();
+    }
+
+    // 2. Refresh features asynchronously from server to ensure freshest plan status
+    this.featureService.refreshFeatures().subscribe({
+      next: () => {
+        if (this.featureService.canAccessKds() && !this.isKdsStarted) {
+          this.startKds();
+        }
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  checkProStatus(): void {
+    this.featureService.refreshFeatures().subscribe({
+      next: () => {
+        if (this.featureService.canAccessKds()) {
+          if (!this.isKdsStarted) {
+            this.startKds();
+          }
+          this.notify.success('Pro tarif faolligi tasdiqlandi!');
+        } else {
+          this.notify.error('Hozirgi tarif Pro emas yoki to‘lov hali qabul qilinmagan');
+        }
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  startKds(): void {
+    if (this.isKdsStarted) return;
+    this.isKdsStarted = true;
+
     const savedFilter = sessionStorage.getItem('kds_current_filter') as any;
     if (savedFilter && ['ALL', 'NEW', 'ACCEPTED', 'READY', 'SERVED'].includes(savedFilter)) {
       this.currentFilter = savedFilter;
@@ -1709,17 +2007,21 @@ export class KitchenComponent implements OnInit, OnDestroy {
     this.loadKitchenStations();
 
     // Timer tick to update relative elapsed time without polling backend
-    this.timerTick = setInterval(() => {
-      this.batches = [...this.batches];
-      this.cdr.markForCheck();
-    }, 15000);
+    if (!this.timerTick) {
+      this.timerTick = setInterval(() => {
+        this.batches = [...this.batches];
+        this.cdr.markForCheck();
+      }, 15000);
+    }
   }
 
   ngOnDestroy(): void {
     this.unsubscribeAllStations();
     if (this.timerTick) {
       clearInterval(this.timerTick);
+      this.timerTick = null;
     }
+    this.isKdsStarted = false;
   }
 
   loadKitchenStations(): void {

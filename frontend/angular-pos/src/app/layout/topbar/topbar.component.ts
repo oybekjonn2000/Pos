@@ -35,8 +35,9 @@ import { ThemeService } from '../../core/services/theme.service';
         <!-- Connection status -->
         <div class="connection-indicator"
              [class]="lan.connectionState() === 'ONLINE' ? 'online' : 'offline'"
-             (click)="openLanSettings.emit()"
-             [title]="'LAN Server: ' + lan.currentServerUrl() + ' - Sozlash uchun bosing'">
+             (click)="lan.isDesktop() ? openLanSettings.emit() : null"
+             [style.cursor]="lan.isDesktop() ? 'pointer' : 'default'"
+             [title]="lan.isDesktop() ? ('LAN Server: ' + lan.currentServerUrl() + ' - Sozlash uchun bosing') : ('Server holati: ' + getStatusLabel())">
           <span class="dot"></span>
           <span class="status-label">{{ getStatusLabel() }}</span>
           @if (lan.connectionState() === 'ONLINE' && lan.latencyMs() > 0) {

@@ -291,9 +291,18 @@ export class PlatformPaymentsComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('uz-UZ', {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${day}.${month}.${year}, ${hours}:${minutes}`;
+    } catch {
+      return dateStr;
+    }
   }
 
   getBadgeClass(status: string): string {

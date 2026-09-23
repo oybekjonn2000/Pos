@@ -7,6 +7,7 @@ import { PrinterService, Printer, CreatePrinterRequest, UpdatePrinterRequest, Te
 import { ResetService, OrdersResetResult, EntityResetResult, AllResetResult } from '../core/services/reset.service';
 import { AuthService } from '../core/services/auth.service';
 import { ThemeService } from '../core/services/theme.service';
+import { UserService } from '../core/services/user.service';
 
 type SettingsCategory = 
   | 'RESTAURANT'
@@ -989,6 +990,76 @@ type SettingsCategory =
                   <div class="form-group">
                     <label>Maksimal noto'g'ri urinishlar</label>
                     <input type="number" class="pos-input" [(ngModel)]="security.maxLoginAttempts" min="3" max="10">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 14.1 ADMIN PERSONAL PIN CHANGE -->
+              <div class="category-card" style="margin-top: 20px;">
+                <div class="card-header">
+                  <h3>🔢 Admin Shaxsiy PIN-kodini O'zgartirish</h3>
+                  <p>Desktop POS terminaliga tezkor kirish uchun 4–6 xonali shaxsiy PIN kodingizni yangilang.</p>
+                </div>
+
+                <div class="form-grid">
+                  @if (adminPinSuccess()) {
+                    <div class="form-group span-2">
+                      <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                        ✅ {{ adminPinSuccess() }}
+                      </div>
+                    </div>
+                  }
+                  @if (adminPinError()) {
+                    <div class="form-group span-2">
+                      <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                        ⚠️ {{ adminPinError() }}
+                      </div>
+                    </div>
+                  }
+
+                  <div class="form-group span-2">
+                    <label>Hozirgi Parol yoki PIN *</label>
+                    <input
+                      type="password"
+                      class="pos-input"
+                      [(ngModel)]="adminPinForm.currentPinOrPassword"
+                      placeholder="Eski PIN yoki parolingizni kiriting"
+                      maxlength="32"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Yangi PIN (4–6 raqam) *</label>
+                    <input
+                      type="password"
+                      class="pos-input"
+                      [(ngModel)]="adminPinForm.newPin"
+                      placeholder="Masalan: 8520"
+                      maxlength="6"
+                      inputmode="numeric"
+                    />
+                    <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Restoran ichida boshqa xodimlarda bo'lmasligi kerak</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Yangi PINni tasdiqlash *</label>
+                    <input
+                      type="password"
+                      class="pos-input"
+                      [(ngModel)]="adminPinForm.confirmPin"
+                      placeholder="Yangi PINni qayta kiriting"
+                      maxlength="6"
+                      inputmode="numeric"
+                    />
+                  </div>
+
+                  <div class="form-group span-2" style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                    <button
+                      class="pos-btn pos-btn-primary"
+                      (click)="saveAdminPin()"
+                      [disabled]="savingAdminPin() || !adminPinForm.currentPinOrPassword || !adminPinForm.newPin || !adminPinForm.confirmPin">
+                      <span>{{ savingAdminPin() ? 'Saqlanmoqda...' : '🔐 PIN-kodni Saqlash' }}</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2646,13 +2717,58 @@ export class SettingsComponent implements OnInit {
     return def ? def.name : 'Belgilanmagan';
   });
 
+  // Admin Personal PIN Form
+  adminPinForm = {
+    currentPinOrPassword: '',
+    newPin: '',
+    confirmPin: ''
+  };
+  savingAdminPin = signal(false);
+  adminPinSuccess = signal<string | null>(null);
+  adminPinError = signal<string | null>(null);
+
   constructor(
     private settingsService: SettingsService,
     private printerService: PrinterService,
     private resetService: ResetService,
+    private userService: UserService,
     public auth: AuthService,
     public themeService: ThemeService
   ) {}
+
+  saveAdminPin(): void {
+    this.adminPinSuccess.set(null);
+    this.adminPinError.set(null);
+
+    const { currentPinOrPassword, newPin, confirmPin } = this.adminPinForm;
+
+    if (!currentPinOrPassword || !currentPinOrPassword.trim()) {
+      this.adminPinError.set('Hozirgi parol yoki PIN kodni kiriting.');
+      return;
+    }
+    if (!newPin || !/^[0-9]{4,6}$/.test(newPin)) {
+      this.adminPinError.set('Yangi PIN faqat 4 tadan 6 tagacha raqamlardan iborat bo‘lishi kerak.');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      this.adminPinError.set('Yangi PIN kod tasdig‘i bilan mos kelmadi.');
+      return;
+    }
+
+    this.savingAdminPin.set(true);
+    this.userService.changePin({ currentPinOrPassword, newPin, confirmPin }).subscribe({
+      next: () => {
+        this.savingAdminPin.set(false);
+        this.adminPinSuccess.set('Admin shaxsiy PIN-kodi muvaffaqiyatli yangilandi!');
+        this.adminPinForm = { currentPinOrPassword: '', newPin: '', confirmPin: '' };
+      },
+      error: (err) => {
+        this.savingAdminPin.set(false);
+        const msg = err.error?.message || err.message || 'PIN kodni o‘zgartirishda xatolik yuz berdi';
+        this.adminPinError.set(msg);
+      }
+    });
+  }
 
   onThemeChange(theme: 'light' | 'dark'): void {
     this.general.theme = theme;

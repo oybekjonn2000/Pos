@@ -81,7 +81,7 @@ import { NotificationService } from '../core/services/notification.service';
             <thead>
               <tr>
                 <th>Xodim (F.I.Sh)</th>
-                <th>Login (Username)</th>
+                <th>Kirish / Login</th>
                 <th>Lavozim (Rol)</th>
                 <th>Oshxonalar</th>
                 <th>Telefon</th>
@@ -101,7 +101,8 @@ import { NotificationService } from '../core/services/notification.service';
                   </div>
                 </td>
                 <td>
-                  <code class="username-tag">&#64;{{ emp.username }}</code>
+                  <code class="username-tag" *ngIf="emp.username">&#64;{{ emp.username }}</code>
+                  <span class="pin-badge" *ngIf="!emp.username">🔢 PIN orqali</span>
                 </td>
                 <td>
                   <span class="role-badge" [ngClass]="emp.role?.toLowerCase()">
@@ -131,10 +132,17 @@ import { NotificationService } from '../core/services/notification.service';
                       ✏️ Tahrirlash
                     </button>
                     <button
+                      *ngIf="emp.username || emp.role === 'ADMIN'"
                       class="pos-btn pos-btn--secondary pos-btn--sm"
                       title="Parolni almashtirish"
                       (click)="openResetPasswordModal(emp)">
                       🔑 Parol
+                    </button>
+                    <button
+                      class="pos-btn pos-btn--secondary pos-btn--sm"
+                      title="PIN-kodni o'zgartirish"
+                      (click)="openQuickPinModal(emp)">
+                      🔢 PIN
                     </button>
                     <button
                       *ngIf="emp.active"
@@ -179,41 +187,64 @@ import { NotificationService } from '../core/services/notification.service';
           </div>
 
           <div class="modal-body form-grid">
+            <div class="form-group full-width" *ngIf="createErrorMessage">
+              <div class="validation-banner">
+                ⚠️ {{ createErrorMessage }}
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">Ismi *</label>
               <input type="text" [(ngModel)]="createData.firstName" class="pos-input" placeholder="Ali" required />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Familiyasi</label>
-              <input type="text" [(ngModel)]="createData.lastName" class="pos-input" placeholder="Valiyev" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Login (Foydalanuvchi nomi) *</label>
-              <input type="text" [(ngModel)]="createData.username" class="pos-input" placeholder="ali_waiter" required />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Parol *</label>
-              <input type="password" [(ngModel)]="createData.password" class="pos-input" placeholder="••••••••" required />
+              <label class="form-label">Familiyasi *</label>
+              <input type="text" [(ngModel)]="createData.lastName" class="pos-input" placeholder="Valiyev" required />
             </div>
 
             <div class="form-group">
               <label class="form-label">Lavozim (Rol) *</label>
               <select [(ngModel)]="createData.role" class="pos-input" (change)="onRoleChange('create')">
-                <option value="ADMIN">Admin (Boshqaruvchi)</option>
-                <option value="MANAGER">Menejer</option>
                 <option value="WAITER">Ofitsiant</option>
-                <option value="KITCHEN">Oshpaz (Oshxona)</option>
                 <option value="CASHIER">Kassir</option>
+                <option value="KITCHEN">Oshpaz (Oshxona)</option>
+                <option value="MANAGER">Menejer</option>
+                <option value="ADMIN">Admin (Boshqaruvchi)</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Telefon raqam</label>
-              <input type="text" [(ngModel)]="createData.phone" class="pos-input" placeholder="+998 90 123-45-67" />
+              <label class="form-label">Telefon raqam *</label>
+              <input type="text" [(ngModel)]="createData.phone" class="pos-input" placeholder="+998 90 123 45 67" required />
             </div>
+
+            <div class="form-group" [class.full-width]="createData.role !== 'ADMIN'">
+              <label class="form-label">PIN kod (4–6 raqam) *</label>
+              <input
+                type="password"
+                inputmode="numeric"
+                maxlength="6"
+                [(ngModel)]="createData.pin"
+                class="pos-input"
+                placeholder="1234"
+                required
+              />
+              <span class="field-hint">Faqat 4 tadan 6 tagacha raqam. Restoran ichida unique bo'lishi shart.</span>
+            </div>
+
+            <!-- Admin Only: Username & Password -->
+            <ng-container *ngIf="createData.role === 'ADMIN'">
+              <div class="form-group">
+                <label class="form-label">Login (Foydalanuvchi nomi) *</label>
+                <input type="text" [(ngModel)]="createData.username" class="pos-input" placeholder="admin_ali" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Parol *</label>
+                <input type="password" [(ngModel)]="createData.password" class="pos-input" placeholder="••••••••" required />
+              </div>
+            </ng-container>
 
             <!-- Multi-select Kitchens for KITCHEN role -->
             <div class="form-group full-width" *ngIf="createData.role === 'KITCHEN'">
@@ -243,7 +274,7 @@ import { NotificationService } from '../core/services/notification.service';
             <button
               class="pos-btn pos-btn--primary"
               (click)="saveCreate()"
-              [disabled]="saving || !createData.username || !createData.password || !createData.firstName || (createData.role === 'KITCHEN' && selectedCreateKitchenIds.size === 0)">
+              [disabled]="saving || !createData.firstName || !createData.lastName || !createData.phone || !createData.pin || (createData.role === 'ADMIN' && (!createData.username || !createData.password)) || (createData.role === 'KITCHEN' && selectedCreateKitchenIds.size === 0)">
               <span>{{ saving ? 'Saqlanmoqda...' : 'Saqlash' }}</span>
             </button>
           </div>
@@ -256,11 +287,17 @@ import { NotificationService } from '../core/services/notification.service';
       <div class="modal-overlay" *ngIf="showEditModal && selectedEmp" (click)="closeModals()">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">✏️ Xodimni Tahrirlash: &#64;{{ selectedEmp.username }}</h2>
+            <h2 class="modal-title">✏️ Xodimni Tahrirlash: {{ selectedEmp.firstName }} {{ selectedEmp.lastName || '' }}</h2>
             <button class="close-btn" (click)="closeModals()">✕</button>
           </div>
 
           <div class="modal-body form-grid">
+            <div class="form-group full-width" *ngIf="editErrorMessage">
+              <div class="validation-banner">
+                ⚠️ {{ editErrorMessage }}
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">Ismi *</label>
               <input type="text" [(ngModel)]="editData.firstName" class="pos-input" required />
@@ -274,17 +311,30 @@ import { NotificationService } from '../core/services/notification.service';
             <div class="form-group">
               <label class="form-label">Lavozim (Rol) *</label>
               <select [(ngModel)]="editData.role" class="pos-input" (change)="onRoleChange('edit')">
-                <option value="ADMIN">Admin (Boshqaruvchi)</option>
-                <option value="MANAGER">Menejer</option>
                 <option value="WAITER">Ofitsiant</option>
-                <option value="KITCHEN">Oshpaz (Oshxona)</option>
                 <option value="CASHIER">Kassir</option>
+                <option value="KITCHEN">Oshpaz (Oshxona)</option>
+                <option value="MANAGER">Menejer</option>
+                <option value="ADMIN">Admin (Boshqaruvchi)</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Telefon raqam</label>
-              <input type="text" [(ngModel)]="editData.phone" class="pos-input" />
+              <label class="form-label">Telefon raqam *</label>
+              <input type="text" [(ngModel)]="editData.phone" class="pos-input" required />
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">Yangi PIN kod (ixtiyoriy, 4–6 raqam)</label>
+              <input
+                type="password"
+                inputmode="numeric"
+                maxlength="6"
+                [(ngModel)]="editData.pin"
+                class="pos-input"
+                placeholder="O'zgartirish uchun yangi PIN kiriting"
+              />
+              <span class="field-hint">Agar PIN-kodni o'zgartirmoqchi bo'lmasangiz, bo'sh qoldiring.</span>
             </div>
 
             <!-- Multi-select Kitchens for KITCHEN role in Edit Modal -->
@@ -323,7 +373,7 @@ import { NotificationService } from '../core/services/notification.service';
       </div>
 
       <!-- ============================================================ -->
-      <!-- MODAL 3: RESET PASSWORD                                        -->
+      <!-- MODAL 3: RESET PASSWORD (ADMIN ONLY)                           -->
       <!-- ============================================================ -->
       <div class="modal-overlay" *ngIf="showPasswordModal && selectedEmp" (click)="closeModals()">
         <div class="modal-card modal-card--sm" (click)="$event.stopPropagation()">
@@ -334,7 +384,7 @@ import { NotificationService } from '../core/services/notification.service';
 
           <div class="modal-body">
             <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
-              Foydalanuvchi: <strong>&#64;{{ selectedEmp.username }} ({{ selectedEmp.firstName }})</strong>
+              Foydalanuvchi: <strong>&#64;{{ selectedEmp.username || selectedEmp.firstName }} ({{ selectedEmp.firstName }})</strong>
             </p>
 
             <div class="form-group">
@@ -343,7 +393,7 @@ import { NotificationService } from '../core/services/notification.service';
                 type="password"
                 [(ngModel)]="newPassword"
                 class="pos-input"
-                placeholder="Yangi parol (kamida 6 belgi)"
+                placeholder="Yangi parol (kamida 4 belgi)"
                 required
               />
             </div>
@@ -356,6 +406,55 @@ import { NotificationService } from '../core/services/notification.service';
               (click)="savePassword()"
               [disabled]="saving || !newPassword || newPassword.length < 4">
               <span>{{ saving ? 'O‘zgartirilmoqda...' : 'Parolni yangilash' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- MODAL 4: QUICK PIN CHANGE                                      -->
+      <!-- ============================================================ -->
+      <div class="modal-overlay" *ngIf="showPinModal && selectedEmp" (click)="closeModals()">
+        <div class="modal-card modal-card--sm" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2 class="modal-title">🔢 PIN-kodni O'zgartirish</h2>
+            <button class="close-btn" (click)="closeModals()">✕</button>
+          </div>
+
+          <div class="modal-body">
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+              Xodim: <strong>{{ selectedEmp.firstName }} {{ selectedEmp.lastName || '' }}</strong> ({{ getRoleLabel(selectedEmp.role) }})
+            </p>
+
+            <div class="form-group" *ngIf="pinErrorMessage" style="margin-bottom: 12px;">
+              <div class="validation-banner">
+                ⚠️ {{ pinErrorMessage }}
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Yangi PIN kod (4–6 raqam) *</label>
+              <input
+                type="password"
+                inputmode="numeric"
+                maxlength="6"
+                [(ngModel)]="newPinValue"
+                class="pos-input"
+                placeholder="Masalan: 2580"
+                autofocus
+                required
+              />
+              <span class="field-hint">Faqat 4-6 ta raqam. Restoran ichida unique bo'lishi shart.</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="pos-btn pos-btn--secondary" (click)="closeModals()" [disabled]="saving">Bekor qilish</button>
+            <button
+              class="pos-btn pos-btn--primary"
+              (click)="saveQuickPin()"
+              [disabled]="saving || !newPinValue || newPinValue.length < 4">
+              <span>{{ saving ? 'Saqlanmoqda...' : 'PINni saqlash' }}</span>
             </button>
           </div>
         </div>
@@ -460,6 +559,19 @@ import { NotificationService } from '../core/services/notification.service';
       background: var(--bg-secondary);
       padding: 2px 6px;
       border-radius: 4px;
+    }
+
+    .pin-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .role-badge {
@@ -640,6 +752,17 @@ import { NotificationService } from '../core/services/notification.service';
       margin-top: 6px;
     }
 
+    .validation-banner {
+      font-size: 13px;
+      color: #ef4444;
+      font-weight: 600;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      line-height: 1.4;
+    }
+
     .kitchen-chips {
       display: flex;
       flex-wrap: wrap;
@@ -751,7 +874,13 @@ export class EmployeesComponent implements OnInit {
   showCreateModal = false;
   showEditModal = false;
   showPasswordModal = false;
+  showPinModal = false;
   selectedEmp: Employee | null = null;
+
+  createErrorMessage = '';
+  editErrorMessage = '';
+  pinErrorMessage = '';
+  newPinValue = '';
 
   createData: CreateEmployeeRequest = {
     username: '',
@@ -759,6 +888,7 @@ export class EmployeesComponent implements OnInit {
     firstName: '',
     lastName: '',
     phone: '',
+    pin: '',
     role: 'WAITER',
     kitchenIds: []
   };
@@ -768,6 +898,7 @@ export class EmployeesComponent implements OnInit {
     lastName: '',
     phone: '',
     role: 'WAITER',
+    pin: '',
     kitchenIds: []
   };
 
@@ -876,10 +1007,12 @@ export class EmployeesComponent implements OnInit {
       password: '',
       firstName: '',
       lastName: '',
-      phone: '',
+      phone: '+998 ',
+      pin: '',
       role: 'WAITER',
       kitchenIds: []
     };
+    this.createErrorMessage = '';
     this.selectedCreateKitchenIds.clear();
     this.createKitchenError = false;
     this.showCreateModal = true;
@@ -892,11 +1025,13 @@ export class EmployeesComponent implements OnInit {
     this.editData = {
       firstName: emp.firstName,
       lastName: emp.lastName,
-      phone: emp.phone,
+      phone: emp.phone || '',
       role: emp.role || 'WAITER',
       active: emp.active,
+      pin: '',
       kitchenIds: [...empKitchenIds]
     };
+    this.editErrorMessage = '';
     this.selectedEditKitchenIds = new Set<string>(empKitchenIds);
     this.editKitchenError = false;
     this.showEditModal = true;
@@ -910,21 +1045,69 @@ export class EmployeesComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
+  openQuickPinModal(emp: Employee): void {
+    this.selectedEmp = emp;
+    this.newPinValue = '';
+    this.pinErrorMessage = '';
+    this.showPinModal = true;
+    this.cdr.markForCheck();
+  }
+
   closeModals(): void {
     this.showCreateModal = false;
     this.showEditModal = false;
     this.showPasswordModal = false;
+    this.showPinModal = false;
     this.selectedEmp = null;
+    this.createErrorMessage = '';
+    this.editErrorMessage = '';
+    this.pinErrorMessage = '';
+    this.newPinValue = '';
     this.cdr.markForCheck();
   }
 
   saveCreate(): void {
+    this.createErrorMessage = '';
+
+    // Validations
+    if (!this.createData.firstName || !this.createData.firstName.trim()) {
+      this.createErrorMessage = 'Ism kiritilishi shart.';
+      return;
+    }
+    if (!this.createData.lastName || !this.createData.lastName.trim()) {
+      this.createErrorMessage = 'Familiya kiritilishi shart.';
+      return;
+    }
+    if (!this.createData.phone || !this.createData.phone.trim()) {
+      this.createErrorMessage = 'Telefon raqami kiritilishi shart.';
+      return;
+    }
+    if (!this.createData.pin || !/^[0-9]{4,6}$/.test(this.createData.pin)) {
+      this.createErrorMessage = 'PIN kod faqat 4 tadan 6 tagacha raqamlardan iborat bo‘lishi kerak.';
+      return;
+    }
+
+    if (this.createData.role === 'ADMIN') {
+      if (!this.createData.username || !this.createData.username.trim()) {
+        this.createErrorMessage = 'Admin uchun login kiritilishi shart.';
+        return;
+      }
+      if (!this.createData.password || this.createData.password.length < 4) {
+        this.createErrorMessage = 'Admin paroli kamida 4 ta belgidan iborat bo‘lishi kerak.';
+        return;
+      }
+    } else {
+      // Ordinary employees NEVER have username or password
+      this.createData.username = undefined;
+      this.createData.password = undefined;
+    }
+
     if (this.createData.role === 'KITCHEN') {
       this.createData.kitchenIds = Array.from(this.selectedCreateKitchenIds);
       if (this.createData.kitchenIds.length === 0) {
         this.createKitchenError = true;
+        this.createErrorMessage = 'Oshpaz kamida bitta oshxonaga biriktirilishi kerak.';
         this.cdr.markForCheck();
-        this.notify.warning('Oshpaz kamida bitta oshxonaga biriktirilishi kerak.');
         return;
       }
     } else {
@@ -942,20 +1125,38 @@ export class EmployeesComponent implements OnInit {
       },
       error: (err) => {
         this.saving = false;
+        const msg = err.error?.message || err.message || 'Xatolik yuz berdi';
+        this.createErrorMessage = msg;
+        this.notify.error(msg);
         this.cdr.markForCheck();
-        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
       }
     });
   }
 
   saveEdit(): void {
     if (!this.selectedEmp) return;
+    this.editErrorMessage = '';
+
+    if (!this.editData.firstName || !this.editData.firstName.trim()) {
+      this.editErrorMessage = 'Ism kiritilishi shart.';
+      return;
+    }
+    if (!this.editData.phone || !this.editData.phone.trim()) {
+      this.editErrorMessage = 'Telefon raqami kiritilishi shart.';
+      return;
+    }
+
+    if (this.editData.pin && !/^[0-9]{4,6}$/.test(this.editData.pin)) {
+      this.editErrorMessage = 'PIN kod faqat 4 tadan 6 tagacha raqamlardan iborat bo‘lishi kerak.';
+      return;
+    }
+
     if (this.editData.role === 'KITCHEN') {
       this.editData.kitchenIds = Array.from(this.selectedEditKitchenIds);
       if (this.editData.kitchenIds.length === 0) {
         this.editKitchenError = true;
+        this.editErrorMessage = 'Oshpaz kamida bitta oshxonaga biriktirilishi kerak.';
         this.cdr.markForCheck();
-        this.notify.warning('Oshpaz kamida bitta oshxonaga biriktirilishi kerak.');
         return;
       }
     } else {
@@ -973,8 +1174,47 @@ export class EmployeesComponent implements OnInit {
       },
       error: (err) => {
         this.saving = false;
+        const msg = err.error?.message || err.message || 'Xatolik yuz berdi';
+        this.editErrorMessage = msg;
+        this.notify.error(msg);
         this.cdr.markForCheck();
-        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  saveQuickPin(): void {
+    if (!this.selectedEmp) return;
+    this.pinErrorMessage = '';
+
+    if (!this.newPinValue || !/^[0-9]{4,6}$/.test(this.newPinValue)) {
+      this.pinErrorMessage = 'PIN kod faqat 4 tadan 6 tagacha raqamlardan iborat bo‘lishi kerak.';
+      return;
+    }
+
+    this.saving = true;
+    this.cdr.markForCheck();
+
+    const req: UpdateEmployeeRequest = {
+      firstName: this.selectedEmp.firstName,
+      lastName: this.selectedEmp.lastName,
+      phone: this.selectedEmp.phone,
+      role: this.selectedEmp.role,
+      pin: this.newPinValue
+    };
+
+    this.userService.updateUser(this.selectedEmp.id, req).subscribe({
+      next: () => {
+        this.saving = false;
+        this.notify.success(`"${this.selectedEmp?.firstName}" PIN kodi muvaffaqiyatli yangilandi!`);
+        this.closeModals();
+        this.loadEmployees();
+      },
+      error: (err) => {
+        this.saving = false;
+        const msg = err.error?.message || err.message || 'PIN kodni yangilashda xatolik yuz berdi';
+        this.pinErrorMessage = msg;
+        this.notify.error(msg);
+        this.cdr.markForCheck();
       }
     });
   }

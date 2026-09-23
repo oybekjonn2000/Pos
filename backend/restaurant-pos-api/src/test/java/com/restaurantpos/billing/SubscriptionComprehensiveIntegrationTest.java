@@ -1,6 +1,5 @@
 package com.restaurantpos.billing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.restaurantpos.billing.dto.BillingDto;
 import com.restaurantpos.billing.entity.*;
 import com.restaurantpos.billing.repository.*;
@@ -11,9 +10,7 @@ import com.restaurantpos.common.tenant.TenantContext;
 import com.restaurantpos.tenants.entity.RestaurantStatus;
 import com.restaurantpos.tenants.entity.Tenant;
 import com.restaurantpos.tenants.repository.TenantRepository;
-import com.restaurantpos.users.entity.Role;
 import com.restaurantpos.users.entity.User;
-import com.restaurantpos.users.repository.RoleRepository;
 import com.restaurantpos.users.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +58,15 @@ class SubscriptionComprehensiveIntegrationTest {
     private SubscriptionPeriodRepository periodRepository;
 
     @Autowired
+    private SubscriptionPaymentRepository paymentRepository;
+
+    @Autowired
+    private SubscriptionFeatureRepository featureRepository;
+
+    @Autowired
+    private PlanFeatureRepository planFeatureRepository;
+
+    @Autowired
     private TenantRepository tenantRepository;
 
     @Autowired
@@ -68,8 +74,10 @@ class SubscriptionComprehensiveIntegrationTest {
 
     private Tenant testTenantA;
     private Tenant testTenantB;
-    private SubscriptionPlan starterPlan;
-    private SubscriptionPlan businessPlan;
+    private SubscriptionPlan standardPlan;
+    private SubscriptionPlan proPlan;
+    private SubscriptionFeature kdsFeature;
+    private SubscriptionFeature mobileAppFeature;
 
     @BeforeEach
     void setUp() {
@@ -79,46 +87,81 @@ class SubscriptionComprehensiveIntegrationTest {
         upsertRule(6, BigDecimal.valueOf(10), "6 oylik chegirma");
         upsertRule(12, BigDecimal.valueOf(20), "12 oylik chegirma");
 
-        // 2. Ensure Starter & Business plans exist
-        starterPlan = planRepository.findByCode("STARTER").orElseGet(() -> {
+        // 2. Ensure features exist
+        kdsFeature = featureRepository.findByCode("KITCHEN_DISPLAY").orElseGet(() -> {
+            SubscriptionFeature f = new SubscriptionFeature();
+            f.setCode("KITCHEN_DISPLAY");
+            f.setName("Oshxona Ekrani (KDS)");
+            f.setDescription("Live Kitchen Display System");
+            return featureRepository.save(f);
+        });
+
+        mobileAppFeature = featureRepository.findByCode("MOBILE_APP").orElseGet(() -> {
+            SubscriptionFeature f = new SubscriptionFeature();
+            f.setCode("MOBILE_APP");
+            f.setName("Mobil Ofitsiant Ilovasi");
+            f.setDescription("Mobile waiter terminal app");
+            return featureRepository.save(f);
+        });
+
+        // 3. Ensure Standard & Pro plans exist
+        standardPlan = planRepository.findByCode("STANDARD").orElseGet(() -> {
             SubscriptionPlan p = new SubscriptionPlan();
-            p.setCode("STARTER");
-            p.setName("Starter Tarifi");
-            p.setDescription("Kichik kafelar uchun");
-            p.setPrice(BigDecimal.valueOf(100000));
-            p.setYearlyPrice(BigDecimal.valueOf(1000000));
+            p.setCode("STANDARD");
+            p.setName("Standard");
+            p.setDescription("Barcha asosiy POS funksiyalari");
+            p.setPrice(BigDecimal.valueOf(189000));
+            p.setYearlyPrice(BigDecimal.valueOf(1890000));
             p.setCurrency("UZS");
-            p.setMaxUsers(3);
-            p.setMaxTables(10);
-            p.setMaxProducts(50);
-            p.setMaxKitchens(1);
-            p.setMaxDevices(2);
+            p.setMaxUsers(-1);
+            p.setMaxTables(-1);
+            p.setMaxProducts(-1);
+            p.setMaxKitchens(-1);
+            p.setMaxDevices(-1);
             p.setMaxBranches(1);
+            p.setMaxOrdersPerMonth(-1);
             p.setActive(true);
-            p.setTrialEnabled(true);
-            p.setTrialDays(14);
+            p.setSortOrder(2);
             return planRepository.save(p);
         });
 
-        businessPlan = planRepository.findByCode("BUSINESS").orElseGet(() -> {
+        proPlan = planRepository.findByCode("PRO").orElseGet(() -> {
             SubscriptionPlan p = new SubscriptionPlan();
-            p.setCode("BUSINESS");
-            p.setName("Business Tarifi");
-            p.setDescription("O'rta va yirik restoranlar uchun");
-            p.setPrice(BigDecimal.valueOf(200000));
-            p.setYearlyPrice(BigDecimal.valueOf(2000000));
+            p.setCode("PRO");
+            p.setName("Pro");
+            p.setDescription("Standard + KDS va Mobil Ilova");
+            p.setPrice(BigDecimal.valueOf(249000));
+            p.setYearlyPrice(BigDecimal.valueOf(2490000));
             p.setCurrency("UZS");
-            p.setMaxUsers(10);
-            p.setMaxTables(30);
-            p.setMaxProducts(300);
-            p.setMaxKitchens(3);
-            p.setMaxDevices(5);
+            p.setMaxUsers(-1);
+            p.setMaxTables(-1);
+            p.setMaxProducts(-1);
+            p.setMaxKitchens(-1);
+            p.setMaxDevices(-1);
             p.setMaxBranches(2);
+            p.setMaxOrdersPerMonth(-1);
             p.setActive(true);
+            p.setSortOrder(3);
             return planRepository.save(p);
         });
 
-        // 3. Create Tenant A & Tenant B
+        // Link KDS and Mobile App to Pro plan
+        if (!planFeatureRepository.existsByPlanIdAndFeatureId(proPlan.getId(), kdsFeature.getId())) {
+            PlanFeature pf = new PlanFeature();
+            pf.setPlan(proPlan);
+            pf.setFeature(kdsFeature);
+            pf.setEnabled(true);
+            planFeatureRepository.save(pf);
+        }
+        if (!planFeatureRepository.existsByPlanIdAndFeatureId(proPlan.getId(), mobileAppFeature.getId())) {
+            PlanFeature pf = new PlanFeature();
+            pf.setPlan(proPlan);
+            pf.setFeature(mobileAppFeature);
+            pf.setEnabled(true);
+            planFeatureRepository.save(pf);
+        }
+
+        // 4. Create Tenant A & Tenant B
         String suffix = UUID.randomUUID().toString().substring(0, 6);
         testTenantA = new Tenant();
         testTenantA.setName("Oshxona Alpha " + suffix);
@@ -153,22 +196,19 @@ class SubscriptionComprehensiveIntegrationTest {
     }
 
     // =========================================================================
-    // 1. DISCOUNT & DURATION FLOOR-TIER TESTS (Specifications 4, 5, 6)
+    // 1. DISCOUNT & DURATION FLOOR-TIER TESTS
     // =========================================================================
     @Test
-    @DisplayName("DISC-01: 6 months Business plan yields exactly 600,000 base, 10% discount, 540,000 final")
+    @DisplayName("DISC-01: 6 months Standard plan (189,000) yields 1,134,000 base, 10% discount, 1,020,600 final")
     void testDiscountCalculation_6Months_10Percent() {
-        starterPlan.setPrice(BigDecimal.valueOf(100000));
-        planRepository.save(starterPlan);
-
         BillingDto.CalculatePriceResponse calc = subscriptionService.calculatePrice(testTenantA.getId(),
-                new BillingDto.CalculatePriceRequest(starterPlan.getId(), "STARTER", 6, 0));
+                new BillingDto.CalculatePriceRequest(standardPlan.getId(), "STANDARD", 6, 0));
 
         assertThat(calc.getMonths()).isEqualTo(6);
-        assertThat(calc.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(600000));
+        assertThat(calc.getBaseAmount()).isEqualByComparingTo(BigDecimal.valueOf(1134000));
         assertThat(calc.getDiscountPercent()).isEqualByComparingTo(BigDecimal.valueOf(10));
-        assertThat(calc.getDiscountAmount()).isEqualByComparingTo(BigDecimal.valueOf(60000));
-        assertThat(calc.getFinalAmount()).isEqualByComparingTo(BigDecimal.valueOf(540000));
+        assertThat(calc.getDiscountAmount()).isEqualByComparingTo(BigDecimal.valueOf(113400));
+        assertThat(calc.getFinalAmount()).isEqualByComparingTo(BigDecimal.valueOf(1020600));
     }
 
     @Test
@@ -186,57 +226,121 @@ class SubscriptionComprehensiveIntegrationTest {
     }
 
     // =========================================================================
-    // 2. TRIAL SUBSCRIPTION & CALENDAR DATES (Specifications 8, 9, 20)
+    // 2. TRIAL SUBSCRIPTION & 15 DAYS DURATION
     // =========================================================================
     @Test
-    @DisplayName("TRIAL-01: Initial subscription creates 14 days trial in Asia/Tashkent")
-    void testInitialTrialCreation() {
+    @DisplayName("TRIAL-01: Initial subscription creates 15 days free trial in Asia/Tashkent")
+    void testInitialTrialCreation_15Days() {
         BillingDto.CurrentSubscriptionResponse sub = subscriptionService.getCurrentSubscription(testTenantA.getId());
 
         assertThat(sub).isNotNull();
         assertThat(sub.getStatus()).isEqualTo("TRIAL");
         assertThat(sub.isOperating()).isTrue();
-        assertThat(sub.getDaysRemaining()).isBetween(13L, 15L);
+        assertThat(sub.getDaysRemaining()).isBetween(14L, 16L);
         assertThat(sub.getStartDate()).isNotNull();
         assertThat(sub.getEndDate()).isNotNull();
     }
 
     // =========================================================================
-    // 3. CHECKOUT, INVOICE & MANUAL PAYMENT "MARK AS PAID" (Specifications 13, 14, 15, 16)
+    // 3. CHECKOUT & MOCK PAYMENT SIMULATOR
     // =========================================================================
     @Test
-    @DisplayName("BILL-01: Restaurant initiates checkout -> creates PENDING invoice. Super Admin marks as PAID -> ACTIVE")
-    void testInvoiceCheckoutAndManualPayment() {
+    @DisplayName("MOCK-01: Checkout for PRO plan + Mock Payment SUCCESS immediately transitions to ACTIVE")
+    void testMockPaymentSuccessActivatesProSubscription() {
         TenantContext.setExplicitTenant(testTenantA.getId());
 
         BillingDto.CheckoutResponse checkout = subscriptionService.initiateCheckout(testTenantA.getId(),
-                new BillingDto.CheckoutRequest(businessPlan.getId(), "BUSINESS", "MANUAL", 6, 0, "Test order"));
+                new BillingDto.CheckoutRequest(proPlan.getId(), "PRO", "MOCK", 1, 0, "Test pro upgrade"));
 
         assertThat(checkout.getInvoiceId()).isNotNull();
+        assertThat(checkout.getPaymentId()).isNotNull();
         assertThat(checkout.getStatus()).isEqualTo("PENDING");
 
-        SubscriptionInvoice invoice = invoiceRepository.findById(checkout.getInvoiceId()).orElseThrow();
-        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PENDING);
-        assertThat(invoice.getFinalAmount()).isGreaterThan(BigDecimal.ZERO);
+        // Execute Mock Payment SUCCESS
+        BillingDto.MockPaymentRequest mockReq = new BillingDto.MockPaymentRequest();
+        mockReq.setPaymentId(checkout.getPaymentId());
+        mockReq.setOutcome("SUCCESS");
 
-        // Super Admin marks as paid
-        BillingDto.InvoiceResponse paidInvoice = subscriptionService.markInvoiceAsPaid(invoice.getId(), "Cash payment verified by admin");
-        assertThat(paidInvoice.getStatus()).isEqualTo("PAID");
-        assertThat(paidInvoice.getPaidAt()).isNotNull();
+        BillingDto.CurrentSubscriptionResponse activeSub = subscriptionService.processMockPayment(testTenantA.getId(), mockReq);
 
-        // Verify restaurant subscription is now ACTIVE
-        BillingDto.CurrentSubscriptionResponse updatedSub = subscriptionService.getCurrentSubscription(testTenantA.getId());
-        assertThat(updatedSub.getStatus()).isEqualTo("ACTIVE");
-        assertThat(updatedSub.isOperating()).isTrue();
-        assertThat(updatedSub.getPlanCode()).isEqualTo("BUSINESS");
+        assertThat(activeSub.getStatus()).isEqualTo("ACTIVE");
+        assertThat(activeSub.getPlanCode()).isEqualTo("PRO");
+        assertThat(activeSub.isOperating()).isTrue();
 
-        // Verify period was recorded
+        // Check invoice is PAID
+        SubscriptionInvoice inv = invoiceRepository.findById(checkout.getInvoiceId()).orElseThrow();
+        assertThat(inv.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThat(inv.getPaidAt()).isNotNull();
+
+        // Check period recorded
         List<SubscriptionPeriod> periods = periodRepository.findAllByTenantIdOrderByStartDateDesc(testTenantA.getId());
         assertThat(periods).isNotEmpty();
     }
 
     // =========================================================================
-    // 4. RENEWAL PRESERVES PREVIOUS END DATE (Specification 10)
+    // 4. UNLIMITED RESOURCE CAPABILITIES (ZERO LIMIT EXCEPTIONS)
+    // =========================================================================
+    @Test
+    @DisplayName("UNLIMITED-01: Adding numerous users never throws limit exception when subscription is operating")
+    void testUnlimitedResourceCapabilities() {
+        // Activate Standard subscription
+        RestaurantSubscription sub = new RestaurantSubscription();
+        sub.setTenant(testTenantA);
+        sub.setPlan(standardPlan);
+        sub.setStatus(SubscriptionStatus.ACTIVE);
+        sub.setStartDate(Instant.now());
+        sub.setEndDate(Instant.now().plus(30, ChronoUnit.DAYS));
+        subscriptionRepository.save(sub);
+
+        // Limit checks must never throw limit exceeded exceptions
+        limitService.checkUserLimit(testTenantA.getId());
+        limitService.checkTableLimit(testTenantA.getId());
+        limitService.checkProductLimit(testTenantA.getId());
+        limitService.checkKitchenLimit(testTenantA.getId());
+        limitService.checkDeviceLimit(testTenantA.getId());
+        limitService.checkOrderLimit(testTenantA.getId());
+    }
+
+    // =========================================================================
+    // 5. FEATURE GATING: PRO VS STANDARD (KDS & MOBILE APP)
+    // =========================================================================
+    @Test
+    @DisplayName("FEATURE-01: STANDARD tenant is blocked from KDS (403), PRO tenant is granted access")
+    void testFeatureAccessControl() {
+        // Set tenant A to STANDARD
+        RestaurantSubscription subA = new RestaurantSubscription();
+        subA.setTenant(testTenantA);
+        subA.setPlan(standardPlan);
+        subA.setStatus(SubscriptionStatus.ACTIVE);
+        subA.setStartDate(Instant.now());
+        subA.setEndDate(Instant.now().plus(30, ChronoUnit.DAYS));
+        subscriptionRepository.save(subA);
+
+        // Standard tenant cannot access KITCHEN_DISPLAY or MOBILE_APP
+        assertThatThrownBy(() -> limitService.checkFeatureAccess(testTenantA.getId(), "KITCHEN_DISPLAY"))
+                .isInstanceOf(PosException.class)
+                .hasMessageContaining("PRO tarifida mavjud");
+
+        assertThatThrownBy(() -> limitService.checkFeatureAccess(testTenantA.getId(), "MOBILE_APP"))
+                .isInstanceOf(PosException.class)
+                .hasMessageContaining("PRO tarifida mavjud");
+
+        // Set tenant B to PRO
+        RestaurantSubscription subB = new RestaurantSubscription();
+        subB.setTenant(testTenantB);
+        subB.setPlan(proPlan);
+        subB.setStatus(SubscriptionStatus.ACTIVE);
+        subB.setStartDate(Instant.now());
+        subB.setEndDate(Instant.now().plus(30, ChronoUnit.DAYS));
+        subscriptionRepository.save(subB);
+
+        // Pro tenant has full access
+        limitService.checkFeatureAccess(testTenantB.getId(), "KITCHEN_DISPLAY");
+        limitService.checkFeatureAccess(testTenantB.getId(), "MOBILE_APP");
+    }
+
+    // =========================================================================
+    // 6. RENEWAL PRESERVES PREVIOUS END DATE
     // =========================================================================
     @Test
     @DisplayName("RENEWAL-01: Renewal extends from previous endDate, not today")
@@ -245,7 +349,7 @@ class SubscriptionComprehensiveIntegrationTest {
 
         RestaurantSubscription sub = new RestaurantSubscription();
         sub.setTenant(testTenantA);
-        sub.setPlan(businessPlan);
+        sub.setPlan(standardPlan);
         sub.setStatus(SubscriptionStatus.ACTIVE);
         sub.setStartDate(Instant.now());
         sub.setEndDate(currentEndDate);
@@ -255,9 +359,9 @@ class SubscriptionComprehensiveIntegrationTest {
         SubscriptionInvoice invoice = new SubscriptionInvoice();
         invoice.setInvoiceNumber("INV-RENEW-01");
         invoice.setTenant(testTenantA);
-        invoice.setPlan(businessPlan);
+        invoice.setPlan(standardPlan);
         invoice.setDurationMonths(3);
-        invoice.setBaseAmount(businessPlan.getPrice().multiply(BigDecimal.valueOf(3)));
+        invoice.setBaseAmount(standardPlan.getPrice().multiply(BigDecimal.valueOf(3)));
         invoice.setDiscountPercent(BigDecimal.ZERO);
         invoice.setDiscountAmount(BigDecimal.ZERO);
         invoice.setFinalAmount(invoice.getBaseAmount());
@@ -272,83 +376,18 @@ class SubscriptionComprehensiveIntegrationTest {
         RestaurantSubscription renewedSub = subscriptionRepository.findFirstByTenantIdOrderByCreatedAtDesc(testTenantA.getId()).orElseThrow();
         Instant expectedEndDate = SubscriptionService.addCalendarMonths(currentEndDate, 3);
 
-        // Within a 5-second tolerance
         assertThat(ChronoUnit.SECONDS.between(renewedSub.getEndDate(), expectedEndDate)).isLessThanOrEqualTo(5);
     }
 
     // =========================================================================
-    // 5. PLAN DOWNGRADE POLICY (Specification 12)
-    // =========================================================================
-    @Test
-    @DisplayName("DOWNGRADE-01: Downgrade is scheduled for next billing period without immediate feature cuts")
-    void testPlanDowngradeDeferredToNextCycle() {
-        RestaurantSubscription currentSub = new RestaurantSubscription();
-        currentSub.setTenant(testTenantA);
-        currentSub.setPlan(businessPlan);
-        currentSub.setStatus(SubscriptionStatus.ACTIVE);
-        currentSub.setStartDate(Instant.now().minus(10, ChronoUnit.DAYS));
-        currentSub.setEndDate(Instant.now().plus(20, ChronoUnit.DAYS));
-        subscriptionRepository.save(currentSub);
-
-        BillingDto.CheckoutResponse response = subscriptionService.initiateCheckout(testTenantA.getId(),
-                new BillingDto.CheckoutRequest(starterPlan.getId(), "STARTER", "MANUAL", 1, 0, "Downgrade request"));
-
-        assertThat(response.isDowngradeScheduled()).isTrue();
-        assertThat(response.getStatus()).isEqualTo("SCHEDULED");
-
-        RestaurantSubscription updatedSub = subscriptionRepository.findById(currentSub.getId()).orElseThrow();
-        assertThat(updatedSub.getPlan().getCode()).isEqualTo("BUSINESS");
-        assertThat(updatedSub.getNextPlan().getCode()).isEqualTo("STARTER");
-        assertThat(updatedSub.isOperating()).isTrue();
-    }
-
-    // =========================================================================
-    // 6. RESOURCE LIMIT VALIDATION (Specification 17, 24, 25)
-    // =========================================================================
-    @Test
-    @DisplayName("LIMIT-01: User limit enforcement blocks 4th employee on Starter plan (max=3)")
-    void testResourceLimitEnforcement() {
-        starterPlan.setMaxUsers(3);
-        starterPlan = planRepository.save(starterPlan);
-
-        RestaurantSubscription sub = new RestaurantSubscription();
-        sub.setTenant(testTenantA);
-        sub.setPlan(starterPlan); // maxUsers = 3
-        sub.setStatus(SubscriptionStatus.ACTIVE);
-        sub.setStartDate(Instant.now());
-        sub.setEndDate(Instant.now().plus(30, ChronoUnit.DAYS));
-        subscriptionRepository.save(sub);
-
-        // Delete any leftover users for Tenant A
-        userRepository.findByTenantIdAndDeletedAtIsNullOrderByCreatedAtDesc(testTenantA.getId())
-                .forEach(u -> userRepository.delete(u));
-
-        // Create 3 employees (should succeed)
-        for (int i = 1; i <= 3; i++) {
-            User u = new User();
-            u.setUsername("emp_" + i + "_" + UUID.randomUUID().toString().substring(0, 5));
-            u.setPasswordHash("hash");
-            u.setFirstName("Emp");
-            u.setLastName(String.valueOf(i));
-            u.setTenant(testTenantA);
-            userRepository.save(u);
-        }
-
-        // Limit check must now throw exception when attempting 4th
-        assertThatThrownBy(() -> limitService.checkUserLimit(testTenantA.getId()))
-                .isInstanceOf(PosException.class)
-                .hasMessageContaining("maksimal 3 ta");
-    }
-
-    // =========================================================================
-    // 7. SUBSCRIPTION EXPIRY & BLOCKED OPERATIONS (Specifications 18, 20)
+    // 7. SUBSCRIPTION EXPIRY & BLOCKED OPERATIONS
     // =========================================================================
     @Test
     @DisplayName("EXPIRY-01: Expired subscription disables operations and returns false for isOperating")
     void testExpiredSubscriptionBlocksOperations() {
         RestaurantSubscription sub = new RestaurantSubscription();
         sub.setTenant(testTenantA);
-        sub.setPlan(starterPlan);
+        sub.setPlan(standardPlan);
         sub.setStatus(SubscriptionStatus.ACTIVE);
         sub.setStartDate(Instant.now().minus(40, ChronoUnit.DAYS));
         sub.setEndDate(Instant.now().minus(2, ChronoUnit.DAYS)); // Past
@@ -366,7 +405,7 @@ class SubscriptionComprehensiveIntegrationTest {
     }
 
     // =========================================================================
-    // 8. MULTI-TENANT ISOLATION (Specification 26)
+    // 8. MULTI-TENANT ISOLATION
     // =========================================================================
     @Test
     @DisplayName("TENANT-01: Tenant A cannot view or access Tenant B's invoices or subscriptions")
@@ -374,12 +413,12 @@ class SubscriptionComprehensiveIntegrationTest {
         SubscriptionInvoice invB = new SubscriptionInvoice();
         invB.setInvoiceNumber("INV-B-001");
         invB.setTenant(testTenantB);
-        invB.setPlan(businessPlan);
+        invB.setPlan(proPlan);
         invB.setDurationMonths(1);
-        invB.setBaseAmount(businessPlan.getPrice());
+        invB.setBaseAmount(proPlan.getPrice());
         invB.setDiscountPercent(BigDecimal.ZERO);
         invB.setDiscountAmount(BigDecimal.ZERO);
-        invB.setFinalAmount(businessPlan.getPrice());
+        invB.setFinalAmount(proPlan.getPrice());
         invB.setStatus(InvoiceStatus.PENDING);
         invB.setPaymentMethod(PaymentProviderType.MANUAL);
         invoiceRepository.save(invB);

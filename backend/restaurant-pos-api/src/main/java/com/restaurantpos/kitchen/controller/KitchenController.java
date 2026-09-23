@@ -5,6 +5,7 @@ import com.restaurantpos.common.response.ApiResponse;
 import com.restaurantpos.kitchen.dto.KitchenDto;
 import com.restaurantpos.kitchen.service.KitchenService;
 import com.restaurantpos.orders.dto.OrderDto;
+import com.restaurantpos.billing.service.SubscriptionLimitService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class KitchenController {
 
     private final KitchenService kitchenService;
+    private final SubscriptionLimitService subscriptionLimitService;
 
     @GetMapping({"/api/kitchens", "/api/kitchen/stations"})
     @Operation(summary = "Get kitchen stations with filtering, search, and optional pagination")
@@ -165,12 +167,13 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(null, "Oshxona muvaffaqiyatli o'chirildi"));
     }
 
-    @GetMapping("/api/kitchen/orders")
+    @GetMapping({"/api/kitchen/orders", "/api/kitchen-display/orders"})
     @PreAuthorize("hasAuthority('KITCHEN_VIEW') or hasAuthority('VIEW_DASHBOARD')")
     @Operation(summary = "Get active kitchen orders, optionally filtered by kitchenId")
     public ResponseEntity<ApiResponse<List<OrderDto.Response>>> getKitchenOrders(
             @RequestParam(required = false) UUID kitchenId,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         if (user != null && user.isKitchen()) {
             java.util.Set<UUID> userKitchenIds = user.getKitchenIds();
             if (userKitchenIds == null || userKitchenIds.isEmpty()) {
@@ -191,12 +194,13 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(orders));
     }
 
-    @GetMapping("/api/kitchen/orders/{id}")
+    @GetMapping({"/api/kitchen/orders/{id}", "/api/kitchen-display/orders/{id}"})
     @PreAuthorize("hasAuthority('KITCHEN_VIEW') or hasAuthority('VIEW_DASHBOARD')")
     @Operation(summary = "Get single kitchen order by ID, filtered for user kitchen station")
     public ResponseEntity<ApiResponse<OrderDto.Response>> getKitchenOrder(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         if (user != null && user.isKitchen()) {
             OrderDto.Response order = kitchenService.getKitchenOrderByIdForKitchens(id, user.getTenantId(), user.getKitchenIds());
             return ResponseEntity.ok(ApiResponse.success(order));
@@ -205,12 +209,13 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(order));
     }
 
-    @GetMapping("/api/kitchen/tickets/{id}")
+    @GetMapping({"/api/kitchen/tickets/{id}", "/api/kitchen-display/tickets/{id}"})
     @PreAuthorize("hasAuthority('KITCHEN_VIEW') or hasAuthority('VIEW_DASHBOARD')")
     @Operation(summary = "Get single kitchen ticket by ID with station authorization guard")
     public ResponseEntity<ApiResponse<com.restaurantpos.kitchen.entity.KitchenTicket>> getKitchenTicket(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         com.restaurantpos.kitchen.entity.KitchenTicket ticket = kitchenService.getKitchenTicketById(id, user.getTenantId(), null);
         if (user != null && user.isKitchen() && ticket.getKitchen() != null) {
             if (!user.hasKitchenAccess(ticket.getKitchen().getId())) {
@@ -220,7 +225,7 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(ticket));
     }
 
-    @PutMapping("/api/kitchen/orders/{id}/status")
+    @PutMapping({"/api/kitchen/orders/{id}/status", "/api/kitchen-display/orders/{id}/status"})
     @PreAuthorize("hasAuthority('KITCHEN_UPDATE')")
     @Operation(summary = "Update all items in order for user's kitchen station")
     public ResponseEntity<ApiResponse<Void>> updateKitchenOrderStatus(
@@ -228,6 +233,7 @@ public class KitchenController {
             @RequestParam(required = false) String status,
             @RequestBody(required = false) java.util.Map<String, String> body,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         String targetStatus = status;
         if ((targetStatus == null || targetStatus.isBlank()) && body != null) {
             targetStatus = body.get("status");
@@ -240,25 +246,27 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(null, "Kitchen order status updated"));
     }
 
-    @PutMapping("/api/kitchen/items/{itemId}/status")
+    @PutMapping({"/api/kitchen/items/{itemId}/status", "/api/kitchen-display/items/{itemId}/status"})
     @PreAuthorize("hasAuthority('KITCHEN_UPDATE')")
     @Operation(summary = "Update kitchen item preparation status (NEW, ACCEPTED, COOKING, READY, SERVED)")
     public ResponseEntity<ApiResponse<Void>> updateItemStatus(
             @PathVariable UUID itemId,
             @RequestParam String status,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         java.util.Set<UUID> allowedKitchenIds = (user != null && user.isKitchen()) ? user.getKitchenIds() : null;
         kitchenService.updateItemKitchenStatusForKitchens(itemId, status, allowedKitchenIds);
         return ResponseEntity.ok(ApiResponse.success(null, "Kitchen item status updated"));
     }
 
-    @GetMapping({"/api/kitchen/batches", "/api/kitchens/batches"})
+    @GetMapping({"/api/kitchen/batches", "/api/kitchens/batches", "/api/kitchen-display/batches"})
     @PreAuthorize("hasAuthority('KITCHEN_VIEW') or hasAuthority('VIEW_DASHBOARD')")
     @Operation(summary = "Get active kitchen batches (initial and addon rounds) for KDS")
     public ResponseEntity<ApiResponse<List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>>> getKitchenBatches(
             @RequestParam(required = false) UUID kitchenId,
             @RequestParam(required = false, defaultValue = "true") Boolean includeServed,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         boolean served = includeServed == null || includeServed;
         if (user != null && user.isKitchen()) {
             java.util.Set<UUID> userKitchenIds = user.getKitchenIds();
@@ -280,7 +288,7 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(batches));
     }
 
-    @PutMapping("/api/kitchen/batches/{batchId}/status")
+    @PutMapping({"/api/kitchen/batches/{batchId}/status", "/api/kitchen-display/batches/{batchId}/status"})
     @PreAuthorize("hasAuthority('KITCHEN_UPDATE')")
     @Operation(summary = "Update whole kitchen batch status (NEW, ACCEPTED, COOKING, READY, SERVED)")
     public ResponseEntity<ApiResponse<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>> updateBatchStatus(
@@ -288,6 +296,7 @@ public class KitchenController {
             @RequestParam(required = false) String status,
             @RequestBody(required = false) java.util.Map<String, String> body,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         String targetStatus = status;
         if ((targetStatus == null || targetStatus.isBlank()) && body != null) {
             targetStatus = body.get("status");
@@ -300,7 +309,7 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Kitchen batch status updated"));
     }
 
-    @PutMapping("/api/kitchen/batches/items/{itemId}/status")
+    @PutMapping({"/api/kitchen/batches/items/{itemId}/status", "/api/kitchen-display/batches/items/{itemId}/status"})
     @PreAuthorize("hasAuthority('KITCHEN_UPDATE')")
     @Operation(summary = "Update individual batch item status")
     public ResponseEntity<ApiResponse<com.restaurantpos.kitchen.dto.KitchenBatchDto.ItemResponse>> updateBatchItemStatus(
@@ -308,6 +317,7 @@ public class KitchenController {
             @RequestParam(required = false) String status,
             @RequestBody(required = false) java.util.Map<String, String> body,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         String targetStatus = status;
         if ((targetStatus == null || targetStatus.isBlank()) && body != null) {
             targetStatus = body.get("status");
@@ -320,7 +330,7 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Kitchen batch item status updated"));
     }
 
-    @PutMapping({"/api/kitchen/tables/{tableId}/status", "/api/kitchens/tables/{tableId}/status"})
+    @PutMapping({"/api/kitchen/tables/{tableId}/status", "/api/kitchens/tables/{tableId}/status", "/api/kitchen-display/tables/{tableId}/status"})
     @PreAuthorize("hasAuthority('KITCHEN_UPDATE') or hasAuthority('KITCHEN_VIEW')")
     @Operation(summary = "Update all batches status for a specific table in the kitchen")
     public ResponseEntity<ApiResponse<List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>>> updateTableStatus(
@@ -329,6 +339,7 @@ public class KitchenController {
             @RequestParam(required = false) UUID kitchenId,
             @RequestBody(required = false) java.util.Map<String, String> body,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         String targetStatus = status;
         if ((targetStatus == null || targetStatus.isBlank()) && body != null) {
             targetStatus = body.get("status");
@@ -342,7 +353,7 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Stol bo'yicha oshxona statusi yangilandi"));
     }
 
-    @PutMapping({"/api/kitchen/orders/{orderId}/batches/status", "/api/kitchens/orders/{orderId}/batches/status"})
+    @PutMapping({"/api/kitchen/orders/{orderId}/batches/status", "/api/kitchens/orders/{orderId}/batches/status", "/api/kitchen-display/orders/{orderId}/batches/status"})
     @PreAuthorize("hasAuthority('KITCHEN_UPDATE') or hasAuthority('KITCHEN_VIEW')")
     @Operation(summary = "Update all batches status for a specific order in the kitchen (e.g. takeaway)")
     public ResponseEntity<ApiResponse<List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>>> updateOrderBatchesStatus(
@@ -351,6 +362,7 @@ public class KitchenController {
             @RequestParam(required = false) UUID kitchenId,
             @RequestBody(required = false) java.util.Map<String, String> body,
             @AuthenticationPrincipal UserPrincipal user) {
+        subscriptionLimitService.checkFeatureAccess(user.getTenantId(), "KITCHEN_DISPLAY");
         String targetStatus = status;
         if ((targetStatus == null || targetStatus.isBlank()) && body != null) {
             targetStatus = body.get("status");
@@ -364,3 +376,4 @@ public class KitchenController {
         return ResponseEntity.ok(ApiResponse.success(updated, "Buyurtma bo'yicha oshxona statusi yangilandi"));
     }
 }
+

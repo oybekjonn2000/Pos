@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
   openBackupFolder: () => ipcRenderer.invoke('open-backup-folder'),
   showMessageBox: (options) => ipcRenderer.invoke('show-message-box', options),
+  clearAllStorage: () => ipcRenderer.invoke('clear-all-storage'),
 
   // Updates
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),

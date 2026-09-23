@@ -72,16 +72,26 @@ public class BillingDto {
         // Current Tenant Usage against Limits
         private long currentUsers;
         private Integer maxUsers;
+        private long currentWaiters;
+        private long currentChefs;
         private long currentTables;
         private Integer maxTables;
         private long currentProducts;
         private Integer maxProducts;
+        private long currentCategories;
+        private long currentHalls;
         private long currentKitchens;
         private Integer maxKitchens;
         private long currentDevices;
         private Integer maxDevices;
+        private long currentOrders;
         private long currentMonthOrders;
         private Integer maxOrdersPerMonth;
+        private long currentPrinters;
+
+        // Trial dates
+        private Instant trialStartDate;
+        private Instant trialEndDate;
     }
 
     @Data
@@ -243,10 +253,13 @@ public class BillingDto {
     public static class PlatformSubscriptionOverview {
         private long totalSubscriptions;
         private long activeSubscriptions;
+        private long standardSubscriptions;
+        private long proSubscriptions;
         private long trialSubscriptions;
         private long expiringSoonSubscriptions;
         private long expiredSubscriptions;
         private long cancelledSubscriptions;
+        private long suspendedSubscriptions;
         private long pendingPaymentSubscriptions;
         private BigDecimal totalRevenue;
         private BigDecimal monthlyRecurringRevenue;
@@ -335,5 +348,47 @@ public class BillingDto {
         private Map<String, Object> details;
         private String ipAddress;
         private Instant createdAt;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MockPaymentRequest {
+        private UUID paymentId;
+        private String outcome; // SUCCESS, FAILED, PENDING, CANCELLED
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PaymentProviderSettingResponse {
+        private UUID id;
+        private String providerCode;
+        private String displayName;
+        private boolean enabled;
+        private boolean testMode;
+        private String merchantId;
+        private String maskedApiKey;
+        private String maskedSecretKey;
+        private boolean hasApiKey;
+        private boolean hasSecretKey;
+        private String callbackUrl;
+        private String description;
+        private Instant updatedAt;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PaymentProviderSettingUpdateRequest {
+        private Boolean enabled;
+        private Boolean testMode;
+        private String merchantId;
+        private String apiKey;
+        private String secretKey;
+        private String callbackUrl;
+        private String displayName;
+        private String description;
     }
 }

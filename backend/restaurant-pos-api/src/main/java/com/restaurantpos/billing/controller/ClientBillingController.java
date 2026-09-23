@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequestMapping("/api/restaurant/billing")
 @RequiredArgsConstructor
 @Tag(name = "Client Billing", description = "Restaurant Admin billing and subscription management")
-@PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
+@PreAuthorize("isAuthenticated()")
 public class ClientBillingController {
 
     private final SubscriptionService subscriptionService;
@@ -42,6 +42,7 @@ public class ClientBillingController {
     }
 
     @GetMapping("/history")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
     @Operation(summary = "Get payment transaction history for current restaurant")
     public ResponseEntity<ApiResponse<List<BillingDto.PaymentHistoryItem>>> getPaymentHistory() {
         UUID tenantId = TenantContext.getCurrentTenantId();
@@ -53,6 +54,7 @@ public class ClientBillingController {
     }
 
     @PostMapping("/checkout")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
     @Operation(summary = "Initiate subscription checkout for upgrade or renewal")
     public ResponseEntity<ApiResponse<BillingDto.CheckoutResponse>> initiateCheckout(
             @RequestBody BillingDto.CheckoutRequest request) {
@@ -65,6 +67,7 @@ public class ClientBillingController {
     }
 
     @PostMapping("/calculate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
     @Operation(summary = "Calculate exact price, discounts, and proration adjustments for a plan and duration")
     public ResponseEntity<ApiResponse<BillingDto.CalculatePriceResponse>> calculate(
             @RequestBody BillingDto.CalculatePriceRequest request) {
@@ -77,6 +80,7 @@ public class ClientBillingController {
     }
 
     @GetMapping("/invoices")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
     @Operation(summary = "Get all subscription invoices for current restaurant")
     public ResponseEntity<ApiResponse<List<BillingDto.InvoiceResponse>>> getInvoices() {
         UUID tenantId = TenantContext.getCurrentTenantId();
@@ -88,6 +92,7 @@ public class ClientBillingController {
     }
 
     @GetMapping("/periods")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
     @Operation(summary = "Get historical subscription periods for current restaurant")
     public ResponseEntity<ApiResponse<List<BillingDto.SubscriptionPeriodResponse>>> getPeriods() {
         UUID tenantId = TenantContext.getCurrentTenantId();
@@ -96,5 +101,18 @@ public class ClientBillingController {
         }
         List<BillingDto.SubscriptionPeriodResponse> periods = subscriptionService.getSubscriptionPeriods(tenantId);
         return ResponseEntity.ok(ApiResponse.success(periods));
+    }
+
+    @PostMapping("/mock-pay")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_ADMIN', 'MANAGER')")
+    @Operation(summary = "Process test payment via Mock Gateway (SUCCESS, FAILED, PENDING, CANCELLED)")
+    public ResponseEntity<ApiResponse<BillingDto.CurrentSubscriptionResponse>> processMockPay(
+            @RequestBody BillingDto.MockPaymentRequest request) {
+        UUID tenantId = TenantContext.getCurrentTenantId();
+        if (tenantId == null) {
+            throw PosException.badRequest("Tenant konteksti topilmadi!");
+        }
+        BillingDto.CurrentSubscriptionResponse response = subscriptionService.processMockPayment(tenantId, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Mock to'lov simulyatsiyasi bajarildi"));
     }
 }

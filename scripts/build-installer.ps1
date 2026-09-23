@@ -55,7 +55,11 @@ Write-Host "`n[2/6] Building Spring Boot Fat JAR..." -ForegroundColor Green
 Set-Location (Join-Path $ROOT_DIR "backend\restaurant-pos-api")
 $env:JAVA_HOME = $JDK_DIR
 $env:PATH = "$JDK_DIR\bin;$env:PATH"
-& mvn package -DskipTests
+if (Test-Path ".\mvnw.cmd") {
+    & .\mvnw.cmd package -DskipTests
+} else {
+    & mvn package -DskipTests
+}
 if ($LASTEXITCODE -ne 0) { throw "Backend Maven package failed!" }
 
 $JAR_FILE = Get-ChildItem (Join-Path $ROOT_DIR "backend\restaurant-pos-api\target") -Filter "*.jar" | Where-Object { $_.Name -notlike "*sources*" -and $_.Name -notlike "*.original" } | Select-Object -First 1

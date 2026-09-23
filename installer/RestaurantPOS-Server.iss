@@ -101,6 +101,12 @@ begin
 
     Exec('netsh.exe', 'advfirewall firewall delete rule name="RestaurantPOS Discovery (UDP 38888)"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('netsh.exe', 'advfirewall firewall add rule name="RestaurantPOS Discovery (UDP 38888)" dir=in action=allow protocol=UDP localport=38888 profile=any', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+    // 4. Force a completely clean install: create clean-install.flag and purge any leftover user storage
+    SaveStringToFile(ExpandConstant('{commonappdata}\RestaurantPOS\config\clean-install.flag'), 'CLEAN_INSTALL', False);
+    DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Local Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Session Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Local Storage'), True, True, True);
   end;
 end;
 

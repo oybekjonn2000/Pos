@@ -42,7 +42,7 @@ public class SecurityConfig {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
-            "/api/auth/device/register",
+            "/api/auth/device/**",
             "/api/public/**",
             "/api/webhooks/**",
             "/api-docs/**",
@@ -52,7 +52,9 @@ public class SecurityConfig {
             "/actuator/info",
             "/ws/**",
             "/uploads/**",
-            "/api/system/**"
+            "/api/system/**",
+            "/api/mobile/**",
+            "/api/mobile-app/**"
     };
 
     @Bean

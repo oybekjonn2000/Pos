@@ -125,7 +125,9 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
               <div class="form-group full-width">
                 <label for="username">Login (username) *</label>
                 <input id="username" type="text" formControlName="username" placeholder="Masalan: aziz_admin" class="form-control" />
-                @if (form.get('username')?.touched && form.get('username')?.invalid) {
+                @if (form.get('username')?.hasError('duplicate')) {
+                  <span class="field-error">Bu username login bazasida mavjud. Boshqa username tanlang.</span>
+                } @else if (form.get('username')?.touched && form.get('username')?.invalid) {
                   <span class="field-error">Login kamida 3 ta belgidan iborat bo'lishi kerak</span>
                 }
               </div>
@@ -169,19 +171,22 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                   <div class="plan-info">
                     <div class="plan-title-row">
                       <strong>{{ plan.name }}</strong>
-                      @if (plan.code === 'BUSINESS') {
+                      @if (plan.code === 'PRO') {
                         <span class="badge-popular">Tavsiya etiladi</span>
+                      }
+                      @if (plan.code === 'TRIAL') {
+                        <span class="badge-popular" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">15 kun bepul</span>
                       }
                     </div>
                     <div class="plan-price">
                       @if (plan.price === 0) {
-                        <span>Bepul</span>
+                        <span>0 so‘m (15 kun bepul)</span>
                       } @else {
                         <span>{{ formatPrice(plan.price) }} so‘m / oy</span>
                       }
                     </div>
                     <div class="plan-limits-hint">
-                      {{ plan.maxTables ? plan.maxTables + ' stol' : 'Cheksiz stol' }} • {{ plan.maxUsers ? plan.maxUsers + ' xodim' : 'Cheksiz' }}
+                      ♾️ Cheksiz xodimlar, stollar, mahsulotlar
                     </div>
                   </div>
                 </div>
@@ -531,7 +536,7 @@ export class RegisterComponent implements OnInit {
 
   form!: FormGroup;
   plans = signal<PlanResponse[]>([]);
-  selectedPlanCode = signal<string>('BUSINESS');
+  selectedPlanCode = signal<string>('TRIAL');
   submitting = signal(false);
   errorMessage = signal<string | null>(null);
 
@@ -629,7 +634,11 @@ export class RegisterComponent implements OnInit {
       },
       error: (err) => {
         this.submitting.set(false);
-        const msg = err?.error?.message || 'Ro‘yxatdan o‘tishda xatolik yuz berdi. Iltimos qayta urinib ko‘ring.';
+        let msg = err?.error?.message || 'Ro‘yxatdan o‘tishda xatolik yuz berdi. Iltimos qayta urinib ko‘ring.';
+        if (msg.includes('username') || err?.error?.errorCode === 'DUPLICATE_USERNAME' || msg.toLowerCase().includes('mavjud') || msg.toLowerCase().includes('login bazasida')) {
+          msg = 'Bu username login bazasida mavjud. Boshqa username tanlang.';
+          this.form.get('username')?.setErrors({ duplicate: true });
+        }
         this.errorMessage.set(msg);
       }
     });

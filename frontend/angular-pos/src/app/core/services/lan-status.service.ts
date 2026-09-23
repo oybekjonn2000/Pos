@@ -16,11 +16,35 @@ export interface ServerLanInfo {
 
 export type LanConnectionState = 'ONLINE' | 'RECONNECTING' | 'OFFLINE';
 
+/**
+ * Detects whether the application is running inside a Desktop environment
+ * (e.g. Electron installer / desktop packaged app).
+ */
+export function isDesktopRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  // 1. Electron IPC contextBridge exposed via preload.js
+  if (typeof (window as any).electronAPI !== 'undefined') return true;
+  // 2. Window.electron object
+  if (typeof (window as any).electron !== 'undefined') return true;
+  // 3. User agent check
+  const ua = (navigator.userAgent || '').toLowerCase();
+  if (ua.includes('electron') || ua.includes('desktop-pos')) return true;
+  // 4. Tauri or other desktop runners
+  if (typeof (window as any).__TAURI__ !== 'undefined') return true;
+  // 5. Developer override via localStorage or URL query for testing desktop features in browser
+  try {
+    if (localStorage.getItem('pos_is_desktop') === 'true') return true;
+    if (window.location && window.location.search.includes('desktop=true')) return true;
+  } catch (e) {}
+  return false;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LanStatusService implements OnDestroy {
   private http = inject(HttpClient);
   private ws = inject(WebsocketService);
 
+  readonly isDesktop = signal<boolean>(isDesktopRuntime());
   readonly connectionState = signal<LanConnectionState>('ONLINE');
   readonly currentServerUrl = signal<string>(environment.baseUrl);
   readonly serverInfo = signal<ServerLanInfo | null>(null);
@@ -34,6 +58,16 @@ export class LanStatusService implements OnDestroy {
   private retryDelayMs = 2000;
   private readonly maxRetryDelayMs = 10000;
   private isDestroyed = false;
+
+  /**
+   * Helper to manually toggle desktop mode during testing if needed
+   */
+  setDesktopMode(enabled: boolean): void {
+    try {
+      localStorage.setItem('pos_is_desktop', String(enabled));
+    } catch (e) {}
+    this.isDesktop.set(enabled);
+  }
 
   constructor() {
     this.startHeartbeat();

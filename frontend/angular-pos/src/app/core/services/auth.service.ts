@@ -186,7 +186,7 @@ export class AuthService {
     return '/dashboard';
   }
 
-  private storeTokens(data: TokenResponse): void {
+  storeTokens(data: TokenResponse): void {
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(data.user));

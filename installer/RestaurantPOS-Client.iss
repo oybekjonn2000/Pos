@@ -65,5 +65,11 @@ begin
   begin
     // Grant Full Control to BUILTIN\Users (SID S-1-5-32-545) on ProgramData
     Exec('icacls.exe', '"' + ExpandConstant('{commonappdata}\RestaurantPOS') + '" /grant:r "*S-1-5-32-545:(OI)(CI)F" /T /Q /C', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+    // Clean install enforcement: ensure no leftover demo credentials or storage
+    SaveStringToFile(ExpandConstant('{commonappdata}\RestaurantPOS\config\clean-install.flag'), 'CLEAN_INSTALL', False);
+    DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Local Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Session Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Local Storage'), True, True, True);
   end;
 end;

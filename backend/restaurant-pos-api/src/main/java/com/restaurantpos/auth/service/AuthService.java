@@ -146,6 +146,18 @@ public class AuthService {
             }
         }
 
+        // Pre-validate username uniqueness across the entire system (case-insensitive)
+        String username = (request.getUsername() != null && !request.getUsername().isBlank())
+                ? request.getUsername().trim().toLowerCase(java.util.Locale.ROOT)
+                : request.getPhone().replaceAll("[^0-9]", "");
+        if (username.isBlank()) {
+            username = "admin_" + code.toLowerCase(java.util.Locale.ROOT);
+        }
+
+        if (userRepository.existsByUsernameIgnoreCaseAndDeletedAtIsNull(username)) {
+            throw PosException.badRequest("Bu username login bazasida mavjud. Boshqa username tanlang.");
+        }
+
         // 1. Create Tenant entity
         Tenant tenant = new Tenant();
         tenant.setName(restName);
@@ -175,15 +187,8 @@ public class AuthService {
         subscriptionService.createInitialSubscription(savedTenant, request.getPlanCode());
 
         // 4. Create owner user
-        String username = (request.getUsername() != null && !request.getUsername().isBlank())
-                ? request.getUsername().trim().toLowerCase(java.util.Locale.ROOT)
-                : request.getPhone().replaceAll("[^0-9]", "");
-        if (username.isBlank()) {
-            username = "admin_" + code.toLowerCase(java.util.Locale.ROOT);
-        }
-
-        if (userRepository.existsByUsernameAndTenantIdAndDeletedAtIsNull(username, savedTenant.getId())) {
-            throw PosException.badRequest("Ushbu foydalanuvchi nomi allaqachon mavjud: " + username);
+        if (userRepository.existsByUsernameIgnoreCaseAndDeletedAtIsNull(username)) {
+            throw PosException.badRequest("Bu username login bazasida mavjud. Boshqa username tanlang.");
         }
 
         String firstName = request.getFirstName() != null ? request.getFirstName().trim() : "";
@@ -223,6 +228,13 @@ public class AuthService {
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
         user.setActive(true);
+        user.setAuthenticationType(com.restaurantpos.users.entity.AuthenticationType.PASSWORD_AND_PIN);
+        String adminPin = (request.getPin() != null && !request.getPin().isBlank()) ? request.getPin().trim() : "1111";
+        if (!adminPin.matches("^[0-9]{4,6}$")) {
+            adminPin = "1111";
+        }
+        user.setPinHash(passwordEncoder.encode(adminPin));
+        user.setPinLookupHash(com.restaurantpos.users.service.UserService.computePinLookupHash(savedTenant.getId(), adminPin));
         user.getRoles().add(adminRole);
         user.setLastLoginAt(Instant.now());
         User savedUser = userRepository.save(user);
@@ -280,6 +292,11 @@ public class AuthService {
         } catch (Exception ex) {
             log.warn("Warning while provisioning default roles/zones for new restaurant {}: {}", tenant.getCode(), ex.getMessage());
         }
+    }
+
+    public AuthDto.TokenResponse issueTokensForUser(User user) {
+        UserPrincipal principal = buildPrincipal(user);
+        return buildTokenResponse(principal, user.getTenant());
     }
 
     private UserPrincipal buildPrincipal(User user) {

@@ -95,6 +95,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.error("Data integrity violation: {}", ex.getMessage());
+        String msg = ex.getMessage() != null ? ex.getMessage().toLowerCase() : "";
+        if (msg.contains("idx_users_username") || msg.contains("users_username")) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Bu username login bazasida mavjud. Boshqa username tanlang.", "DUPLICATE_USERNAME"));
+        }
+        if (msg.contains("idx_users_tenant_pin") || msg.contains("pin_lookup")) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.", "DUPLICATE_PIN"));
+        }
         String message = "Data integrity error. Record may already exist.";
         if (ex.getMessage() != null && ex.getMessage().contains("unique")) {
             message = "Duplicate entry detected.";

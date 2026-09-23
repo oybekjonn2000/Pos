@@ -11,7 +11,7 @@
  * 6. Graceful shutdown of all backend processes on exit
  */
 
-const { app, BrowserWindow, ipcMain, shell, dialog, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, Menu, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -274,6 +274,7 @@ function createMainWindow() {
       window.__POS_SERVER_URL__ = '${targetUrl}';
       try {
         localStorage.setItem('pos_server_url', '${targetUrl}');
+        localStorage.setItem('pos_is_desktop', 'true');
       } catch(e) {}
     `);
   });
@@ -805,11 +806,43 @@ ipcMain.handle('show-message-box', async (event, options) => {
   return dialog.showMessageBox(mainWindow, options);
 });
 
+ipcMain.handle('clear-all-storage', async () => {
+  try {
+    if (session && session.defaultSession) {
+      await session.defaultSession.clearStorageData({
+        storages: ['appcache', 'cookies', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage']
+      });
+      console.log('Explicit clear-all-storage executed successfully');
+      return true;
+    }
+  } catch (e) {
+    console.error('Failed to clear storage:', e);
+  }
+  return false;
+});
+
 // ============================================================
 // Application Lifecycle
 // ============================================================
 app.whenReady().then(async () => {
   createSplashWindow();
+
+  // Check for clean-install flag (placed by installer or reset request)
+  const cleanFlag = path.join(APP_DATA, 'config', 'clean-install.flag');
+  if (fs.existsSync(cleanFlag)) {
+    console.log('Clean install flag detected! Purging all leftover Chromium storage, tokens and sessions...');
+    try {
+      if (session && session.defaultSession) {
+        await session.defaultSession.clearStorageData({
+          storages: ['appcache', 'cookies', 'filesystem', 'indexdb', 'localstorage', 'shadercache', 'websql', 'serviceworkers', 'cachestorage']
+        });
+      }
+      fs.unlinkSync(cleanFlag);
+      console.log('Chromium storage completely purged for fresh clean start.');
+    } catch (e) {
+      console.error('Failed to purge storage on clean install flag:', e);
+    }
+  }
 
   const modeCfg = getAppModeConfig();
   currentAppMode = modeCfg.mode || 'server';

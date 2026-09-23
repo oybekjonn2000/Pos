@@ -54,8 +54,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "RestaurantPOS",
-      "deleteAppDataOnUninstall": false,
-      "include": "installer/installer.nsh"
+      "deleteAppDataOnUninstall": false
     },
     "extraFiles": [
       {

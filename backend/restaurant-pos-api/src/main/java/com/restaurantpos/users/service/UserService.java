@@ -56,30 +56,39 @@ public class UserService {
         return mapToResponse(user);
     }
 
+    public static String computePinLookupHash(UUID tenantId, String rawPin) {
+        if (rawPin == null || rawPin.isBlank() || tenantId == null) return null;
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest((tenantId.toString() + ":" + rawPin.trim()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute PIN lookup hash", e);
+        }
+    }
+
+    public static void validatePinFormat(String pin) {
+        if (pin == null || !pin.trim().matches("^[0-9]{4,6}$")) {
+            throw PosException.badRequest("PIN kod faqat 4 dan 6 tagacha raqamlardan iborat bo'lishi kerak.");
+        }
+    }
+
     @Transactional
     public UserDto.Response createUser(UUID tenantId, UserDto.CreateRequest request) {
         subscriptionLimitService.checkUserLimit(tenantId);
 
-        if (userRepository.existsByUsernameAndTenantIdAndDeletedAtIsNull(request.getUsername(), tenantId)) {
-            throw new IllegalArgumentException("Username '" + request.getUsername() + "' is already taken");
+        if (request.getPhone() == null || request.getPhone().trim().isBlank()) {
+            throw PosException.badRequest("Telefon raqami kiritilishi shart.");
         }
 
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> PosException.notFound("Tenant not found with id: " + tenantId));
-
-        User user = new User();
-        user.setTenant(tenant);
-        user.setUsername(request.getUsername().trim().toLowerCase());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setFirstName(request.getFirstName().trim());
-        user.setLastName(request.getLastName() != null ? request.getLastName().trim() : "");
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setActive(true);
-
-        if (request.getPin() != null && !request.getPin().isBlank()) {
-            user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
-        }
 
         Set<Role> roles = new HashSet<>();
         if (request.getRoleId() != null) {
@@ -88,11 +97,64 @@ public class UserService {
             roleRepository.findByNameAndTenantIdAndDeletedAtIsNull(request.getRole().toUpperCase(), tenantId)
                     .ifPresent(roles::add);
         }
-        user.setRoles(roles);
 
         String createRoleName = roles.isEmpty() ? (request.getRole() != null ? request.getRole().toUpperCase() : "STAFF") : roles.iterator().next().getName();
-        boolean isCreateKitchenRole = "KITCHEN".equalsIgnoreCase(createRoleName);
+        boolean isAdmin = "ADMIN".equalsIgnoreCase(createRoleName) || "SUPER_ADMIN".equalsIgnoreCase(createRoleName);
 
+        User user = new User();
+        user.setTenant(tenant);
+        user.setFirstName(request.getFirstName().trim());
+        user.setLastName(request.getLastName() != null ? request.getLastName().trim() : "");
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone().trim());
+        user.setActive(true);
+        user.setRoles(roles);
+
+        if (isAdmin) {
+            // Admin requires username, password, and unique PIN
+            if (request.getUsername() == null || request.getUsername().trim().isBlank()) {
+                throw PosException.badRequest("Admin uchun username kiritilishi shart.");
+            }
+            if (userRepository.existsByUsernameIgnoreCaseAndDeletedAtIsNull(request.getUsername().trim())) {
+                throw PosException.badRequest("Bu username login bazasida mavjud. Boshqa username tanlang.");
+            }
+            if (request.getPassword() == null || request.getPassword().length() < 4) {
+                throw PosException.badRequest("Admin uchun parol kamida 4 belgidan iborat bo'lishi kerak.");
+            }
+            if (request.getPin() == null || request.getPin().trim().isBlank()) {
+                throw PosException.badRequest("Admin uchun PIN kod kiritilishi shart.");
+            }
+            validatePinFormat(request.getPin());
+            String pinLookupHash = computePinLookupHash(tenantId, request.getPin());
+            if (userRepository.existsByTenantIdAndPinLookupHashAndDeletedAtIsNull(tenantId, pinLookupHash)) {
+                throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
+            }
+
+            user.setUsername(request.getUsername().trim().toLowerCase());
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
+            user.setPinLookupHash(pinLookupHash);
+            user.setAuthenticationType(com.restaurantpos.users.entity.AuthenticationType.PASSWORD_AND_PIN);
+        } else {
+            // Ordinary staff: NO username, NO password, PIN is required
+            user.setUsername(null);
+            user.setPasswordHash(null);
+            user.setAuthenticationType(com.restaurantpos.users.entity.AuthenticationType.PIN_ONLY);
+
+            if (request.getPin() == null || request.getPin().trim().isBlank()) {
+                throw PosException.badRequest("Xodim uchun PIN kod kiritilishi shart.");
+            }
+            validatePinFormat(request.getPin());
+            String pinLookupHash = computePinLookupHash(tenantId, request.getPin());
+            if (userRepository.existsByTenantIdAndPinLookupHashAndDeletedAtIsNull(tenantId, pinLookupHash)) {
+                throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
+            }
+
+            user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
+            user.setPinLookupHash(pinLookupHash);
+        }
+
+        boolean isCreateKitchenRole = "KITCHEN".equalsIgnoreCase(createRoleName);
         if (isCreateKitchenRole) {
             if (request.getKitchenIds() == null || request.getKitchenIds().isEmpty()) {
                 throw PosException.badRequest("Oshpaz kamida bitta oshxonaga biriktirilishi kerak.");
@@ -112,7 +174,7 @@ public class UserService {
         }
 
         User saved = userRepository.save(user);
-        log.info("User created: {} with id {}", saved.getUsername(), saved.getId());
+        log.info("User created: {} with role {} and id {}", saved.getFullName(), createRoleName, saved.getId());
         return mapToResponse(saved);
     }
 
@@ -129,14 +191,21 @@ public class UserService {
         if (request.getEmail() != null) {
             user.setEmail(request.getEmail());
         }
-        if (request.getPhone() != null) {
-            user.setPhone(request.getPhone());
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone().trim());
         }
         if (request.getActive() != null) {
             user.setActive(request.getActive());
         }
+
         if (request.getPin() != null && !request.getPin().isBlank()) {
+            validatePinFormat(request.getPin());
+            String pinLookupHash = computePinLookupHash(tenantId, request.getPin());
+            if (userRepository.existsByTenantIdAndPinLookupHashAndIdNotAndDeletedAtIsNull(tenantId, pinLookupHash, id)) {
+                throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
+            }
             user.setPinHash(passwordEncoder.encode(request.getPin().trim()));
+            user.setPinLookupHash(pinLookupHash);
         }
 
         if (request.getRoleId() != null) {
@@ -226,6 +295,39 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void changeAdminPin(UUID userId, UUID tenantId, UserDto.ChangePinRequest request) {
+        User user = userRepository.findByIdAndTenantIdAndDeletedAtIsNull(userId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Foydalanuvchi topilmadi."));
+
+        if (request.getNewPin() == null || request.getNewPin().trim().isBlank()) {
+            throw PosException.badRequest("Yangi PIN kod kiritilishi shart.");
+        }
+        if (request.getConfirmPin() == null || !request.getNewPin().trim().equals(request.getConfirmPin().trim())) {
+            throw PosException.badRequest("Yangi PIN kod va uning tasdig'i bir xil bo'lishi kerak.");
+        }
+
+        validatePinFormat(request.getNewPin().trim());
+
+        if (request.getCurrentPinOrPassword() != null && !request.getCurrentPinOrPassword().isBlank()) {
+            boolean currentPinMatch = user.getPinHash() != null && passwordEncoder.matches(request.getCurrentPinOrPassword(), user.getPinHash());
+            boolean currentPassMatch = user.getPasswordHash() != null && passwordEncoder.matches(request.getCurrentPinOrPassword(), user.getPasswordHash());
+            if (!currentPinMatch && !currentPassMatch) {
+                throw PosException.badRequest("Eski PIN kod yoki parol noto'g'ri.");
+            }
+        }
+
+        String lookupHash = computePinLookupHash(tenantId, request.getNewPin().trim());
+        if (userRepository.existsByTenantIdAndPinLookupHashAndIdNotAndDeletedAtIsNull(tenantId, lookupHash, userId)) {
+            throw PosException.badRequest("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.");
+        }
+
+        user.setPinHash(passwordEncoder.encode(request.getNewPin().trim()));
+        user.setPinLookupHash(lookupHash);
+        userRepository.save(user);
+        log.info("Admin PIN updated successfully for user: {}", user.getId());
+    }
+
     public UserDto.Response mapToResponse(User user) {
         String roleName = user.getRoles().isEmpty() ? "STAFF" : user.getRoles().iterator().next().getName();
         UUID roleId = user.getRoles().isEmpty() ? null : user.getRoles().iterator().next().getId();
@@ -273,6 +375,8 @@ public class UserService {
                 .active(user.isActive())
                 .role(roleName)
                 .roleId(roleId)
+                .authenticationType(user.getAuthenticationType() != null ? user.getAuthenticationType().name() : "PIN_ONLY")
+                .hasPin(user.getPinHash() != null)
                 .permissions(permissions)
                 .kitchenIds(kitchenIds)
                 .kitchens(kitchens)

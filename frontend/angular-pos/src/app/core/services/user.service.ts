@@ -12,7 +12,7 @@ export interface KitchenSummary {
 
 export interface Employee {
   id: string;
-  username: string;
+  username?: string | null;
   firstName: string;
   lastName?: string;
   fullName: string;
@@ -21,6 +21,8 @@ export interface Employee {
   active: boolean;
   role: string;
   roleId?: string;
+  authenticationType?: string;
+  hasPin?: boolean;
   permissions: string[];
   kitchenIds?: string[];
   kitchens?: KitchenSummary[];
@@ -34,14 +36,15 @@ export interface Role {
 }
 
 export interface CreateEmployeeRequest {
-  username: string;
-  password: string;
   firstName: string;
   lastName?: string;
-  email?: string;
-  phone?: string;
-  pin?: string;
+  phone: string;
+  pin: string;
   role: string;
+  username?: string;
+  password?: string;
+  email?: string;
+  roleId?: string;
   kitchenIds?: string[];
 }
 
@@ -54,6 +57,12 @@ export interface UpdateEmployeeRequest {
   role: string;
   active?: boolean;
   kitchenIds?: string[];
+}
+
+export interface ChangePinRequest {
+  currentPinOrPassword?: string;
+  newPin: string;
+  confirmPin: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -79,6 +88,10 @@ export class UserService {
 
   updateUser(id: string, request: UpdateEmployeeRequest): Observable<ApiResponse<Employee>> {
     return this.http.put<ApiResponse<Employee>>(`${this.API}/${id}`, request);
+  }
+
+  changePin(request: ChangePinRequest): Observable<ApiResponse<void>> {
+    return this.http.put<ApiResponse<void>>(`${this.API}/profile/change-pin`, request);
   }
 
   deactivateUser(id: string): Observable<ApiResponse<void>> {

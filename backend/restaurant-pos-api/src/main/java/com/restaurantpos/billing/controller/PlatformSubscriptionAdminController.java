@@ -75,6 +75,23 @@ public class PlatformSubscriptionAdminController {
         return ResponseEntity.ok(ApiResponse.success(response, "Obuna qo'lda muvaffaqiyatli faollashtirildi"));
     }
 
+    @PostMapping("/{id}/suspend")
+    @Operation(summary = "Suspend a restaurant subscription (Temporarily pause POS access)")
+    public ResponseEntity<ApiResponse<BillingDto.TenantSubscriptionSummary>> suspendSubscription(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String reason) {
+        BillingDto.TenantSubscriptionSummary summary = subscriptionService.suspendSubscription(id, reason);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Obuna vaqtincha to'xtatildi"));
+    }
+
+    @PostMapping("/{id}/resume")
+    @Operation(summary = "Resume a suspended restaurant subscription (Restore POS access)")
+    public ResponseEntity<ApiResponse<BillingDto.TenantSubscriptionSummary>> resumeSubscription(
+            @PathVariable UUID id) {
+        BillingDto.TenantSubscriptionSummary summary = subscriptionService.resumeSubscription(id);
+        return ResponseEntity.ok(ApiResponse.success(summary, "Obuna qayta faollashtirildi"));
+    }
+
     @GetMapping("/invoices")
     @Operation(summary = "Get all platform invoices across all restaurants")
     public ResponseEntity<ApiResponse<List<BillingDto.InvoiceResponse>>> getAllInvoices() {

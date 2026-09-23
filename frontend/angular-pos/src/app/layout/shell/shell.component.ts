@@ -18,8 +18,8 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
       <div class="global-loading"></div>
     }
 
-    <!-- Global LAN Disconnection / Reconnection Banner -->
-    @if (lan.connectionState() !== 'ONLINE') {
+    <!-- Global LAN Disconnection / Reconnection Banner (Desktop Installer Only) -->
+    @if (lan.isDesktop() && lan.connectionState() !== 'ONLINE') {
       <div class="lan-alert-banner offline">
         <div class="banner-content">
           <span class="pulse-icon">🔴</span>
@@ -31,7 +31,7 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
       </div>
     }
 
-    @if (lan.justReconnected()) {
+    @if (lan.isDesktop() && lan.justReconnected()) {
       <div class="lan-alert-banner online">
         <div class="banner-content">
           <span class="icon">🟢</span>
@@ -125,20 +125,22 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
               <span class="sheet-action-arrow">➜</span>
             </div>
 
-            <!-- LAN Server Status Row -->
-            <div class="sheet-row" (click)="showProfileModal = false; showLanModal = true">
-              <div class="sheet-row-info">
-                <span class="sheet-icon">📡</span>
-                <div>
-                  <div class="sheet-row-title">POS Server Holati</div>
-                  <div class="sheet-row-sub">
-                    {{ lan.connectionState() === 'ONLINE' ? '🟢 Online' : '🔴 Offline' }}
-                    ({{ lan.currentServerUrl().replace('http://', '') }})
+            <!-- LAN Server Status Row (Desktop Installer Only) -->
+            @if (lan.isDesktop()) {
+              <div class="sheet-row" (click)="showProfileModal = false; showLanModal = true">
+                <div class="sheet-row-info">
+                  <span class="sheet-icon">📡</span>
+                  <div>
+                    <div class="sheet-row-title">POS Server Holati</div>
+                    <div class="sheet-row-sub">
+                      {{ lan.connectionState() === 'ONLINE' ? '🟢 Online' : '🔴 Offline' }}
+                      ({{ lan.currentServerUrl().replace('http://', '') }})
+                    </div>
                   </div>
                 </div>
+                <span class="sheet-action-arrow">⚙️</span>
               </div>
-              <span class="sheet-action-arrow">⚙️</span>
-            </div>
+            }
 
             <!-- Logout Button -->
             <button class="btn-mobile-logout" (click)="logout()">
@@ -149,8 +151,8 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
       </div>
     }
 
-    <!-- LAN Server Config Modal -->
-    @if (showLanModal) {
+    <!-- LAN Server Config Modal (Desktop Installer Only) -->
+    @if (lan.isDesktop() && showLanModal) {
       <app-lan-server-config-modal (closed)="showLanModal = false" />
     }
   `,

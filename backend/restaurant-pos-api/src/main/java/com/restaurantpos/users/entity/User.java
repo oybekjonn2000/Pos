@@ -30,7 +30,7 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<EmployeeKitchen> employeeKitchens = new HashSet<>();
 
-    @Column(name = "username", nullable = false, length = 100)
+    @Column(name = "username", length = 100)
     private String username;
 
     @Column(name = "email", length = 255)
@@ -39,7 +39,7 @@ public class User extends BaseEntity {
     @Column(name = "phone", length = 50)
     private String phone;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", length = 255)
     private String passwordHash;
 
     @Column(name = "first_name", nullable = false, length = 100)
@@ -50,6 +50,13 @@ public class User extends BaseEntity {
 
     @Column(name = "pin_hash", length = 255)
     private String pinHash;
+
+    @Column(name = "pin_lookup_hash", length = 64)
+    private String pinLookupHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "authentication_type", nullable = false, length = 30)
+    private AuthenticationType authenticationType = AuthenticationType.PIN_ONLY;
 
     @Column(name = "language", length = 10)
     private String language = "uz";
@@ -79,6 +86,22 @@ public class User extends BaseEntity {
 
     public String getFullName() {
         return firstName + (lastName != null ? " " + lastName : "");
+    }
+
+    public boolean isAdmin() {
+        if (authenticationType == AuthenticationType.PASSWORD_AND_PIN) return true;
+        return roles != null && roles.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(r.getName()) || "SUPER_ADMIN".equalsIgnoreCase(r.getName()));
+    }
+
+    public boolean isPinOnly() {
+        return authenticationType == AuthenticationType.PIN_ONLY;
+    }
+
+    public boolean isWaiter() {
+        return roles != null && roles.stream().anyMatch(r -> 
+                "WAITER".equalsIgnoreCase(r.getName()) || 
+                r.getName().toUpperCase().contains("WAITER") || 
+                r.getName().toUpperCase().contains("OFITSIANT"));
     }
 
     public boolean isLocked() {

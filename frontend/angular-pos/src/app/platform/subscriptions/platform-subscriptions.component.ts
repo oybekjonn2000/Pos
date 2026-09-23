@@ -11,7 +11,9 @@ import {
   InvoiceResponse,
   DiscountRuleDto,
   AuditLogResponse,
-  ManualActivationRequest
+  ManualActivationRequest,
+  PaymentProviderSettingResponse,
+  PaymentProviderSettingUpdateRequest
 } from '../../core/services/billing.service';
 
 @Component({
@@ -59,6 +61,22 @@ import {
         </div>
 
         <div class="kpi-card">
+          <div class="kpi-icon icon-blue">⭐️</div>
+          <div class="kpi-data">
+            <span class="kpi-label">Standard Obunalar</span>
+            <span class="kpi-value">{{ overview()?.standardSubscriptions || 0 }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon icon-gold">🚀</div>
+          <div class="kpi-data">
+            <span class="kpi-label">PRO Obunalar</span>
+            <span class="kpi-value">{{ overview()?.proSubscriptions || 0 }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
           <div class="kpi-icon icon-amber">⏳</div>
           <div class="kpi-data">
             <span class="kpi-label">Sinov Davri (Trial)</span>
@@ -79,6 +97,14 @@ import {
           <div class="kpi-data">
             <span class="kpi-label">Muddati Tugagan (Expired)</span>
             <span class="kpi-value">{{ overview()?.expiredSubscriptions || 0 }}</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon icon-warning">⏸️</div>
+          <div class="kpi-data">
+            <span class="kpi-label">To'xtatilgan (Suspended)</span>
+            <span class="kpi-value">{{ overview()?.suspendedSubscriptions || 0 }}</span>
           </div>
         </div>
 
@@ -121,6 +147,9 @@ import {
         <button class="tab-btn" [class.active]="activeTab === 'discounts'" (click)="activeTab = 'discounts'; loadDiscounts()">
           🏷️ Muddat Chegirmalari ({{ discounts().length }})
         </button>
+        <button class="tab-btn" [class.active]="activeTab === 'providers'" (click)="activeTab = 'providers'; loadPaymentProviders()">
+          💳 To'lov Sozlamalari ({{ providers().length }})
+        </button>
         <button class="tab-btn" [class.active]="activeTab === 'audit'" (click)="activeTab = 'audit'; loadAuditLogs()">
           📜 Audit Jurnali
         </button>
@@ -138,6 +167,7 @@ import {
                 <span class="filter-pill" [class.active]="statusFilter === 'TRIAL'" (click)="statusFilter = 'TRIAL'">Trial</span>
                 <span class="filter-pill" [class.active]="statusFilter === 'EXPIRING_SOON'" (click)="statusFilter = 'EXPIRING_SOON'">7 kun qolgan</span>
                 <span class="filter-pill" [class.active]="statusFilter === 'EXPIRED'" (click)="statusFilter = 'EXPIRED'">Tugagan</span>
+                <span class="filter-pill" [class.active]="statusFilter === 'SUSPENDED'" (click)="statusFilter = 'SUSPENDED'">To'xtatilgan</span>
               </div>
             </div>
           </div>
@@ -209,9 +239,19 @@ import {
                       </td>
                       <td>
                         <div class="table-actions">
-                          <button class="btn btn-sm btn-warning" (click)="openManualActivateModal(s)">
-                            ⚡ Faollashtirish
-                          </button>
+                          @if (s.status === 'SUSPENDED') {
+                            <button class="btn btn-sm btn-success" (click)="resumeSubscription(s)" title="Obunani qayta faollashtirish">
+                              ⚡ Faollashtirish
+                            </button>
+                          } @else if (s.status === 'ACTIVE' || s.status === 'TRIAL' || s.status === 'EXPIRING_SOON') {
+                            <button class="btn btn-sm btn-warning" (click)="suspendSubscription(s)" title="Obunani vaqtincha to'xtatish">
+                              ⏸️ Vaqtincha to'xtatish
+                            </button>
+                          } @else {
+                            <button class="btn btn-sm btn-primary" (click)="openManualActivateModal(s)" title="Obunani faollashtirish">
+                              ⚡ Faollashtirish
+                            </button>
+                          }
                           <a [routerLink]="['/platform/restaurants', s.tenantId]" class="btn btn-sm btn-outline">
                             Ko'rish
                           </a>
@@ -436,6 +476,116 @@ import {
                 }
               </tbody>
             </table>
+          </div>
+        </div>
+      }
+
+      <!-- TAB 6: PAYMENT PROVIDERS SETTINGS -->
+      @if (activeTab === 'providers') {
+        <div class="card table-card">
+          <div class="card-header">
+            <div>
+              <span class="card-title">To'lov Tizimlari Shlyuzlari (Payment Providers)</span>
+              <p class="provider-header-subtitle">Restoranlar uchun onlayn to'lov tizimlarini faollashtirish va API kalitlarini sozlash</p>
+            </div>
+            <button class="btn btn-sm btn-outline" (click)="loadPaymentProviders()">Yangilash</button>
+          </div>
+
+          <div class="providers-container">
+            @for (provider of providers(); track provider.id) {
+              <div class="provider-card" [class.provider-enabled]="provider.enabled">
+                <div class="provider-card-header">
+                  <div class="provider-title-wrap">
+                    <div class="provider-logo-icon">
+                      @if (provider.providerCode === 'MOCK') { 🧪 }
+                      @else if (provider.providerCode === 'PAYME') { 🔵 }
+                      @else if (provider.providerCode === 'CLICK') { 🟡 }
+                      @else if (provider.providerCode === 'UZCARD') { 💳 }
+                      @else if (provider.providerCode === 'HUMO') { 🟢 }
+                      @else { 💳 }
+                    </div>
+                    <div>
+                      <h3 class="provider-title">{{ provider.displayName }}</h3>
+                      <span class="provider-code-tag">{{ provider.providerCode }}</span>
+                    </div>
+                  </div>
+
+                  <div class="provider-header-badges">
+                    <span class="provider-status-badge" [class.badge-active]="provider.enabled" [class.badge-disabled]="!provider.enabled">
+                      {{ provider.enabled ? 'Faol (Yoqilgan)' : 'O\'chirilgan' }}
+                    </span>
+                    <span class="provider-mode-badge" [class.mode-test]="provider.testMode" [class.mode-live]="!provider.testMode">
+                      {{ provider.testMode ? 'Test Rejimi' : 'Ishchi (Live)' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="provider-card-body">
+                  <div class="provider-toggles-row">
+                    <label class="toggle-control">
+                      <input type="checkbox" [(ngModel)]="provider.enabled" />
+                      <span>Shlyuzni yoqish (Enable)</span>
+                    </label>
+
+                    <label class="toggle-control">
+                      <input type="checkbox" [(ngModel)]="provider.testMode" />
+                      <span>Test / Sandbox rejimi</span>
+                    </label>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>Ko'rsatiladigan nom:</label>
+                      <input type="text" [(ngModel)]="provider.displayName" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                      <label>Merchant / Service ID:</label>
+                      <input type="text" [(ngModel)]="provider.merchantId" class="form-control" placeholder="ID raqami..." />
+                    </div>
+                  </div>
+
+                  <div class="form-grid-2">
+                    <div class="form-group">
+                      <label>API Kalit (Public / Secret Key):</label>
+                      <input type="text" [(ngModel)]="providerApiKeys[provider.id]" class="form-control" [placeholder]="provider.maskedApiKey || 'Yangi API kalit kiriting...'" />
+                      @if (provider.hasApiKey && !providerApiKeys[provider.id]) {
+                        <span class="key-hint text-success">✓ Kalit o'rnatilgan: {{ provider.maskedApiKey }}</span>
+                      }
+                    </div>
+
+                    <div class="form-group">
+                      <label>Yashirin Kalit (Secret Key):</label>
+                      <input type="password" [(ngModel)]="providerSecretKeys[provider.id]" class="form-control" [placeholder]="provider.maskedSecretKey || 'Yangi yashirin kalit kiriting...'" />
+                      @if (provider.hasSecretKey && !providerSecretKeys[provider.id]) {
+                        <span class="key-hint text-success">✓ Yashirin kalit o'rnatilgan: {{ provider.maskedSecretKey }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Callback / Webhook URL:</label>
+                    <input type="text" [(ngModel)]="provider.callbackUrl" class="form-control" placeholder="https://api.domain.com/api/billing/webhook/..." />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Tavsif yoki yo'riqnoma:</label>
+                    <textarea [(ngModel)]="provider.description" class="form-control" rows="2" placeholder="To'lov tizimi haqida eslatma..."></textarea>
+                  </div>
+
+                  <div class="provider-card-footer">
+                    @if (providerSaveStatus[provider.id]) {
+                      <span class="save-status-msg" [class.success]="providerSaveStatus[provider.id].success" [class.error]="!providerSaveStatus[provider.id].success">
+                        {{ providerSaveStatus[provider.id].msg }}
+                      </span>
+                    }
+                    <button class="btn btn-primary btn-sm" [disabled]="savingProviderId === provider.id" (click)="saveProviderSettings(provider)">
+                      {{ savingProviderId === provider.id ? 'Saqlanmoqda...' : '💾 Sozlamalarni Saqlash' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
         </div>
       }
@@ -1064,6 +1214,152 @@ import {
       white-space: nowrap;
     }
 
+    .provider-header-subtitle {
+      font-size: 13px;
+      color: var(--text-muted, #64748b);
+      margin: 4px 0 0 0;
+    }
+
+    .providers-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 20px;
+      padding: 16px;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .provider-card {
+      background: var(--bg-primary, #0f172a);
+      border: 1px solid var(--border, #334155);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+
+      &.provider-enabled {
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+
+      .provider-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid var(--border, #334155);
+      }
+
+      .provider-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .provider-logo-icon {
+        font-size: 26px;
+      }
+
+      .provider-title {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 2px 0;
+      }
+
+      .provider-code-tag {
+        font-size: 11px;
+        font-family: monospace;
+        color: var(--text-muted, #94a3b8);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .provider-header-badges {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      .provider-status-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        text-transform: uppercase;
+
+        &.badge-active { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        &.badge-disabled { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+      }
+
+      .provider-mode-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 1px 6px;
+        border-radius: 4px;
+
+        &.mode-test { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        &.mode-live { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+      }
+
+      .provider-card-body {
+        padding: 16px;
+      }
+
+      .provider-toggles-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .toggle-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+
+        @media (max-width: 500px) {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .key-hint {
+        display: block;
+        font-size: 11px;
+        margin-top: 4px;
+        font-family: monospace;
+      }
+
+      .provider-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+        .save-status-msg {
+          font-size: 12px;
+          font-weight: 600;
+
+          &.success { color: #10b981; }
+          &.error { color: #ef4444; }
+        }
+      }
+    }
+
     .text-success { color: #10b981; }
     .font-bold { font-weight: 700; }
   `]
@@ -1076,17 +1372,24 @@ export class PlatformSubscriptionsComponent implements OnInit {
   plans = signal<PlanResponse[]>([]);
   discounts = signal<DiscountRuleDto[]>([]);
   auditLogs = signal<AuditLogResponse[]>([]);
+  providers = signal<PaymentProviderSettingResponse[]>([]);
   loading = signal(true);
 
-  activeTab: 'subscriptions' | 'invoices' | 'plans' | 'discounts' | 'audit' = 'subscriptions';
+  activeTab: 'subscriptions' | 'invoices' | 'plans' | 'discounts' | 'audit' | 'providers' = 'subscriptions';
   searchQuery = '';
   statusFilter = 'ALL';
+
+  // Providers settings state
+  providerApiKeys: { [key: string]: string } = {};
+  providerSecretKeys: { [key: string]: string } = {};
+  providerSaveStatus: { [key: string]: { success: boolean; msg: string } } = {};
+  savingProviderId: string | null = null;
 
   // Manual activate modal
   showManualModal = false;
   manualReq: ManualActivationRequest = {
     tenantId: '',
-    planCode: 'BUSINESS',
+    planCode: 'STANDARD',
     months: 6,
     discountPercent: 10,
     adjustmentAmount: 0,
@@ -1100,7 +1403,7 @@ export class PlatformSubscriptionsComponent implements OnInit {
 
   readonly allFeatureOptions = [
     'POS', 'KITCHEN', 'INVENTORY', 'RECIPES', 'REPORTS', 'ADVANCED_REPORTS',
-    'OWNER_APP', 'WAITER_APP', 'API_ACCESS', 'MULTI_BRANCH'
+    'OWNER_APP', 'WAITER_APP', 'API_ACCESS', 'MULTI_BRANCH', 'MOBILE_APP', 'KITCHEN_DISPLAY'
   ];
 
   // Discount modal
@@ -1123,6 +1426,47 @@ export class PlatformSubscriptionsComponent implements OnInit {
     this.loadPlans();
     this.loadDiscounts();
     this.loadAuditLogs();
+    this.loadPaymentProviders();
+  }
+
+  loadPaymentProviders(): void {
+    this.billingService.getPaymentProviderSettings().subscribe({
+      next: (items) => this.providers.set(items),
+      error: () => {}
+    });
+  }
+
+  saveProviderSettings(provider: PaymentProviderSettingResponse): void {
+    this.savingProviderId = provider.id;
+    this.providerSaveStatus[provider.id] = { success: false, msg: '' };
+
+    const req: PaymentProviderSettingUpdateRequest = {
+      displayName: provider.displayName,
+      enabled: provider.enabled,
+      testMode: provider.testMode,
+      merchantId: provider.merchantId,
+      callbackUrl: provider.callbackUrl,
+      description: provider.description,
+      apiKey: this.providerApiKeys[provider.id] || undefined,
+      secretKey: this.providerSecretKeys[provider.id] || undefined
+    };
+
+    this.billingService.updatePaymentProviderSetting(provider.id, req).subscribe({
+      next: () => {
+        this.savingProviderId = null;
+        this.providerSaveStatus[provider.id] = { success: true, msg: '✓ Sozlamalar muvaffaqiyatli saqlandi!' };
+        this.providerApiKeys[provider.id] = '';
+        this.providerSecretKeys[provider.id] = '';
+        this.loadPaymentProviders();
+        setTimeout(() => {
+          delete this.providerSaveStatus[provider.id];
+        }, 3500);
+      },
+      error: (err) => {
+        this.savingProviderId = null;
+        this.providerSaveStatus[provider.id] = { success: false, msg: err?.error?.message || 'Saqlashda xatolik yuz berdi' };
+      }
+    });
   }
 
   loadOverview(): void {
@@ -1180,9 +1524,18 @@ export class PlatformSubscriptionsComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('uz-UZ', {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${day}.${month}.${year}, ${hours}:${minutes}`;
+    } catch {
+      return dateStr;
+    }
   }
 
   getRestStatusClass(status: string): string {
@@ -1200,6 +1553,7 @@ export class PlatformSubscriptionsComponent implements OnInit {
       case 'TRIAL': return 'badge-amber';
       case 'EXPIRING_SOON': return 'badge-amber';
       case 'EXPIRED': return 'badge-red';
+      case 'SUSPENDED': return 'badge-red';
       case 'PENDING_PAYMENT': return 'badge-gray';
       default: return 'badge-gray';
     }
@@ -1212,6 +1566,43 @@ export class PlatformSubscriptionsComponent implements OnInit {
       case 'CANCELLED': return 'badge-red';
       default: return 'badge-gray';
     }
+  }
+
+  // Action: Suspend Subscription (Vaqtincha to'xtatish)
+  suspendSubscription(s: TenantSubscriptionSummary): void {
+    const reason = prompt(
+      `"${s.restaurantName}" obunasini vaqtincha to'xtatishni tasdiqlaysizmi?\n\n` +
+      `Eslatma: Restoran foydalanuvchilarining POS tizimiga kirishi va yangi buyurtma olishi to'xtatiladi.\n\n` +
+      `Sabab (ixtiyoriy):`,
+      'Platforma ma\'muriyati tomonidan vaqtincha to\'xtatildi'
+    );
+    if (reason === null) return;
+
+    this.billingService.suspendSubscription(s.id, reason).subscribe({
+      next: () => {
+        alert(`"${s.restaurantName}" obunasi muvaffaqiyatli vaqtincha to'xtatildi!`);
+        this.refreshAll();
+      },
+      error: (err) => alert(err?.error?.message || 'Obunani to\'xtatishda xatolik yuz berdi')
+    });
+  }
+
+  // Action: Resume Subscription (Qayta faollashtirish)
+  resumeSubscription(s: TenantSubscriptionSummary): void {
+    if (!confirm(
+      `"${s.restaurantName}" obunasini qayta faollashtirishni tasdiqlaysizmi?\n\n` +
+      `Restoranning POS tizimiga kirishi va buyurtma olish ruxsati to'liq tiklanadi.`
+    )) {
+      return;
+    }
+
+    this.billingService.resumeSubscription(s.id).subscribe({
+      next: () => {
+        alert(`"${s.restaurantName}" obunasi muvaffaqiyatli qayta faollashtirildi!`);
+        this.refreshAll();
+      },
+      error: (err) => alert(err?.error?.message || 'Obunani faollashtirishda xatolik yuz berdi')
+    });
   }
 
   // Action: Mark Invoice As Paid
@@ -1232,9 +1623,9 @@ export class PlatformSubscriptionsComponent implements OnInit {
   openManualActivateModal(sub?: TenantSubscriptionSummary): void {
     this.manualReq = {
       tenantId: sub ? sub.tenantId : '',
-      planCode: sub ? sub.planCode : 'BUSINESS',
-      months: 6,
-      discountPercent: 10,
+      planCode: sub ? sub.planCode : 'PRO',
+      months: 1,
+      discountPercent: 0,
       adjustmentAmount: 0,
       notes: 'Super Admin qo\'lda faollashtirdi'
     };

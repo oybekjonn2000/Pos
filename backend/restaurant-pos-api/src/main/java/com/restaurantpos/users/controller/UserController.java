@@ -92,6 +92,15 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(null, "Password reset successfully"));
     }
 
+    @PutMapping("/profile/change-pin")
+    @Operation(summary = "Change admin/user personal PIN")
+    public ResponseEntity<ApiResponse<Void>> changePersonalPin(
+            @AuthenticationPrincipal UserPrincipal user,
+            @Valid @RequestBody UserDto.ChangePinRequest request) {
+        userService.changeAdminPin(user.getUserId(), user.getTenantId(), request);
+        return ResponseEntity.ok(ApiResponse.success(null, "PIN kod muvaffaqiyatli o'zgartirildi"));
+    }
+
     @GetMapping("/roles")
     @PreAuthorize("hasAuthority('MANAGE_USERS') or hasAuthority('VIEW_DASHBOARD')")
     @Operation(summary = "Get all roles")

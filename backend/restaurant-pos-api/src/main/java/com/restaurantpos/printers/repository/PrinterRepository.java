@@ -19,7 +19,8 @@ public interface PrinterRepository extends JpaRepository<Printer, UUID> {
 
     List<Printer> findByTenantIdAndPurposeAndDeletedAtIsNull(UUID tenantId, Printer.PrinterPurpose purpose);
 
-    boolean existsByTenantIdAndNameIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String name);
     boolean existsByTenantIdAndWindowsPrinterNameIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String windowsPrinterName);
     Optional<Printer> findByTenantIdAndWindowsPrinterNameIgnoreCaseAndDeletedAtIsNull(UUID tenantId, String windowsPrinterName);
+
+    long countByTenantIdAndDeletedAtIsNull(UUID tenantId);
 }

@@ -9,6 +9,7 @@ import {
   InvoiceResponse,
   SubscriptionPeriodResponse
 } from '../../core/services/billing.service';
+import { FeatureService } from '../../core/services/feature.service';
 
 @Component({
   selector: 'app-restaurant-billing',
@@ -179,89 +180,151 @@ import {
             </div>
           </div>
 
-          <!-- Card 2: Resource Limits & Usage -->
+          <!-- Card 2: Resource Limits & Usage (Unlimited Architecture) -->
           <div class="card usage-card">
             <div class="card-header">
-              <span class="card-title">Resurs Limitlari va Ishlatilishi</span>
-              <span class="card-subtitle">Haqiqiy holat</span>
+              <div>
+                <span class="card-title">Resurs Limitlari va Ishlatilishi</span>
+                <span class="unlimited-pill">♾️ Barcha Tariflarda Cheksiz</span>
+              </div>
+              <span class="card-subtitle">Haqiqiy ishlatilgan miqdor</span>
             </div>
 
-            <div class="meters-container">
-              <!-- Users (Employees) -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">👥 Xodimlar (Foydalanuvchilar)</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentUsers }}</strong> / {{ sub()!.maxUsers && sub()!.maxUsers > 0 ? sub()!.maxUsers : 'Cheksiz' }}
-                  </span>
+            <div class="unlimited-notice">
+              <span class="notice-icon">✨</span>
+              <span>Tizimda hech qanday resurs cheklovi yo'q. Istalgancha xodim, stol, mahsulot va buyurtmalar yaratishingiz mumkin.</span>
+            </div>
+
+            <div class="resource-grid">
+              <!-- Users / Employees -->
+              <div class="resource-item">
+                <div class="res-icon">👥</div>
+                <div class="res-body">
+                  <span class="res-name">Xodimlar (Foydalanuvchilar)</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentUsers || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentUsers, sub()!.maxUsers)" [class.danger]="isLimitReached(sub()!.currentUsers, sub()!.maxUsers)"></div>
+              </div>
+
+              <!-- Waiters -->
+              <div class="resource-item">
+                <div class="res-icon">🍽️</div>
+                <div class="res-body">
+                  <span class="res-name">Ofitsiantlar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentWaiters || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chefs -->
+              <div class="resource-item">
+                <div class="res-icon">👨‍🍳</div>
+                <div class="res-body">
+                  <span class="res-name">Oshpazlar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentChefs || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Tables -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">🪑 Stollar soni</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentTables }}</strong> / {{ sub()!.maxTables && sub()!.maxTables > 0 ? sub()!.maxTables : 'Cheksiz' }}
-                  </span>
+              <div class="resource-item">
+                <div class="res-icon">🪑</div>
+                <div class="res-body">
+                  <span class="res-name">Stollar soni</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentTables || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentTables, sub()!.maxTables)" [class.danger]="isLimitReached(sub()!.currentTables, sub()!.maxTables)"></div>
+              </div>
+
+              <!-- Halls / Zones -->
+              <div class="resource-item">
+                <div class="res-icon">🏛️</div>
+                <div class="res-body">
+                  <span class="res-name">Zallar / Hududlar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentHalls || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Products -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">🍔 Mahsulotlar katalogi</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentProducts }}</strong> / {{ sub()!.maxProducts && sub()!.maxProducts > 0 ? sub()!.maxProducts : 'Cheksiz' }}
-                  </span>
+              <div class="resource-item">
+                <div class="res-icon">🍔</div>
+                <div class="res-body">
+                  <span class="res-name">Mahsulotlar katalogi</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentProducts || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentProducts, sub()!.maxProducts)" [class.danger]="isLimitReached(sub()!.currentProducts, sub()!.maxProducts)"></div>
+              </div>
+
+              <!-- Categories -->
+              <div class="resource-item">
+                <div class="res-icon">🏷️</div>
+                <div class="res-body">
+                  <span class="res-name">Kategoriyalar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentCategories || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Kitchens -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">👨‍🍳 Oshxonalar / Sexlar</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentKitchens }}</strong> / {{ sub()!.maxKitchens && sub()!.maxKitchens > 0 ? sub()!.maxKitchens : 'Cheksiz' }}
-                  </span>
+              <div class="resource-item">
+                <div class="res-icon">🍳</div>
+                <div class="res-body">
+                  <span class="res-name">Oshxonalar / Sexlar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentKitchens || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentKitchens, sub()!.maxKitchens)" [class.danger]="isLimitReached(sub()!.currentKitchens, sub()!.maxKitchens)"></div>
+              </div>
+
+              <!-- Orders -->
+              <div class="resource-item">
+                <div class="res-icon">🧾</div>
+                <div class="res-body">
+                  <span class="res-name">Buyurtmalar</span>
+                  <div class="res-stat">
+                    <strong>{{ (sub()!.currentOrders ?? sub()!.currentMonthOrders) || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Printers -->
+              <div class="resource-item">
+                <div class="res-icon">🖨️</div>
+                <div class="res-body">
+                  <span class="res-name">Printerlar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentPrinters || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Devices -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">📱 Ulangan Qurilmalar</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentDevices }}</strong> / {{ sub()!.maxDevices && sub()!.maxDevices > 0 ? sub()!.maxDevices : 'Cheksiz' }}
-                  </span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentDevices, sub()!.maxDevices)"></div>
-                </div>
-              </div>
-
-              <!-- Monthly Orders -->
-              <div class="meter-item">
-                <div class="meter-info">
-                  <span class="meter-label">🧾 Oylik Buyurtmalar</span>
-                  <span class="meter-counts">
-                    <strong>{{ sub()!.currentMonthOrders }}</strong> / {{ sub()!.maxOrdersPerMonth && sub()!.maxOrdersPerMonth > 0 ? sub()!.maxOrdersPerMonth : 'Cheksiz' }}
-                  </span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill" [style.width.%]="calcPercentage(sub()!.currentMonthOrders, sub()!.maxOrdersPerMonth)"></div>
+              <div class="resource-item">
+                <div class="res-icon">📱</div>
+                <div class="res-body">
+                  <span class="res-name">Ulangan Qurilmalar</span>
+                  <div class="res-stat">
+                    <strong>{{ sub()!.currentDevices || 0 }} ta</strong> ishlatilgan
+                    <span class="badge-infinite">Cheksiz</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -395,12 +458,24 @@ import {
                     @for (plan of availablePlans(); track plan.code) {
                       <div class="modal-plan-card" 
                            [class.active]="selectedPlanCode() === plan.code"
+                           [class.pro-card]="plan.code === 'PRO'"
                            (click)="selectPlan(plan.code)">
-                        <div class="p-name">{{ plan.name }}</div>
-                        <div class="p-price">{{ formatPrice(plan.price) }} so'm</div>
+                        <div class="p-header">
+                          <div class="p-name">{{ plan.name }}</div>
+                          @if (plan.code === 'PRO') {
+                            <span class="pro-tag">⚡ Tavsiya etiladi</span>
+                          }
+                        </div>
+                        <div class="p-price">{{ formatPrice(plan.price) }} so'm <small>/ oy</small></div>
+                        <div class="p-features-summary">
+                          @if (plan.code === 'PRO') {
+                            <div class="feat-badge feat-pro">✅ Barcha Standard + Oshxona Ekrani (KDS) + Mobil Ilova</div>
+                          } @else {
+                            <div class="feat-badge feat-std">Barcha POS funksiyalari (❌ KDS va Mobil Ilovasiz)</div>
+                          }
+                        </div>
                         <div class="p-limit">
-                          {{ plan.maxTables && plan.maxTables > 0 ? plan.maxTables + ' stol' : 'Cheksiz stol' }} • 
-                          {{ plan.maxUsers && plan.maxUsers > 0 ? plan.maxUsers + ' xodim' : 'Cheksiz xodim' }}
+                          ♾️ Barcha resurslar to'liq cheksiz
                         </div>
                       </div>
                     }
@@ -491,7 +566,7 @@ import {
                   </button>
                 </div>
               } @else {
-                <!-- Invoice Confirmation Screen (No Fake Billing) -->
+                <!-- Invoice Confirmation Screen & Interactive Mock Simulator -->
                 <div class="invoice-created-box">
                   <div class="invoice-icon">🧾</div>
                   <h3>Hisob-faktura Muvaffaqiyatli Yaratildi!</h3>
@@ -501,12 +576,46 @@ import {
                     To'lanadigan summa: <strong>{{ formatPrice(checkoutCreatedInvoice()!.finalAmount) }} {{ checkoutCreatedInvoice()!.currency }}</strong>
                   </p>
 
+                  <!-- Real-time Test Payment Simulator (Mock Gateway) -->
+                  <div class="mock-simulator-box">
+                    <div class="simulator-header">
+                      <span class="simulator-badge">🧪 To'lov Simulyatori (Mock Gateway)</span>
+                      <p class="simulator-desc">
+                        SaaS obunani darhol faollashtirish va imkoniyatlarni ochish uchun test to'lovini amalga oshiring:
+                      </p>
+                    </div>
+
+                    <div class="mock-btn-group">
+                      <button class="btn btn-mock-success" [disabled]="processingPayment()" (click)="handleMockPayment('SUCCESS')">
+                        🟢 Test To'lov: Muvaffaqiyatli (Success)
+                      </button>
+                      <button class="btn btn-mock-fail" [disabled]="processingPayment()" (click)="handleMockPayment('FAILED')">
+                        🔴 Test To'lov: Xatolik (Failed)
+                      </button>
+                      <button class="btn btn-mock-cancel" [disabled]="processingPayment()" (click)="handleMockPayment('CANCELLED')">
+                        ⚪ Bekor Qilish (Cancel)
+                      </button>
+                    </div>
+
+                    @if (processingPayment()) {
+                      <div class="simulator-spinner-row">
+                        <div class="spinner-sm"></div>
+                        <span>To'lov qayta ishlanmoqda...</span>
+                      </div>
+                    }
+
+                    @if (paymentMessage()) {
+                      <div class="simulator-alert" [class.alert-success]="paymentSuccess()" [class.alert-error]="!paymentSuccess()">
+                        {{ paymentMessage() }}
+                      </div>
+                    }
+                  </div>
+
                   <div class="manual-instruction-alert">
-                    <p><strong>To'lov bo'yicha ko'rsatma:</strong></p>
+                    <p><strong>To'lov tizimlari:</strong></p>
                     <p>
-                      Hozirgi vaqtda to'lovlar qo'lda (Manual) qabul qilinadi.
-                      Hisob-faktura raqami asosida administratorga to'lov amalga oshirilgach, 
-                      Super Admin hisobingizni tasdiqlaydi va tarif avtomatik faollashadi.
+                      Super Admin tomonidan Click, Payme, Uzcard va Humo sozlanishi mumkin. 
+                      Hisob-faktura raqami: <code>{{ checkoutCreatedInvoice()!.invoiceNumber }}</code>
                     </p>
                   </div>
 
@@ -688,41 +797,100 @@ import {
         }
       }
     }
+    .unlimited-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
 
-    .meters-container {
+    .unlimited-notice {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
+      align-items: center;
+      gap: 10px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #c7d2fe;
 
-      .meter-item {
-        .meter-info {
-          display: flex;
-          justify-content: space-between;
-          font-size: 13px;
-          margin-bottom: 6px;
+      .notice-icon { font-size: 16px; }
+    }
 
-          .meter-label { color: var(--text-secondary, #cbd5e1); font-weight: 500; }
-          .meter-counts { color: var(--text-primary, #f8fafc); }
+    .resource-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .resource-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--bg-primary, #0f172a);
+      border: 1px solid var(--border, #334155);
+      border-radius: 8px;
+      transition: border-color 0.2s;
+
+      &:hover {
+        border-color: rgba(99, 102, 241, 0.5);
+      }
+
+      .res-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .res-body {
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .res-name {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary, #94a3b8);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+      }
+
+      .res-stat {
+        font-size: 12px;
+        color: var(--text-primary, #f8fafc);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+
+        strong {
+          color: #f8fafc;
+          font-weight: 700;
         }
+      }
 
-        .progress-bar {
-          height: 8px;
-          background: var(--bg-primary, #0f172a);
-          border-radius: 4px;
-          overflow: hidden;
-          border: 1px solid var(--border, #334155);
-
-          .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #6366f1, #10b981);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-
-            &.danger {
-              background: #ef4444;
-            }
-          }
-        }
+      .badge-infinite {
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        padding: 1px 6px;
+        border-radius: 4px;
+        display: inline-block;
       }
     }
 
@@ -871,10 +1039,10 @@ import {
 
     .plans-selection {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
 
-      @media (max-width: 500px) {
+      @media (max-width: 550px) {
         grid-template-columns: 1fr;
       }
     }
@@ -882,21 +1050,81 @@ import {
     .modal-plan-card {
       background: var(--bg-primary, #0f172a);
       border: 2px solid var(--border, #334155);
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 12px;
+      padding: 16px;
       cursor: pointer;
-      text-align: center;
+      text-align: left;
       transition: all 0.2s;
+      position: relative;
 
       &:hover { border-color: #6366f1; }
       &.active {
         border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.1);
+        background: rgba(99, 102, 241, 0.08);
+        box-shadow: 0 0 0 1px #6366f1;
       }
 
-      .p-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-      .p-price { font-size: 14px; font-weight: 800; color: #10b981; margin-bottom: 4px; }
-      .p-limit { font-size: 10px; color: var(--text-muted, #64748b); }
+      &.pro-card {
+        border-color: rgba(245, 158, 11, 0.4);
+        &.active {
+          border-color: #f59e0b;
+          background: rgba(245, 158, 11, 0.08);
+          box-shadow: 0 0 0 1px #f59e0b;
+        }
+      }
+
+      .p-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+
+      .p-name { font-size: 15px; font-weight: 800; }
+      .pro-tag {
+        font-size: 10px;
+        font-weight: 700;
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      .p-price {
+        font-size: 16px;
+        font-weight: 800;
+        color: #10b981;
+        margin-bottom: 8px;
+        small { font-size: 11px; font-weight: 500; color: var(--text-muted, #94a3b8); }
+      }
+
+      .p-features-summary {
+        margin-bottom: 8px;
+      }
+
+      .feat-badge {
+        font-size: 11px;
+        line-height: 1.4;
+        padding: 4px 8px;
+        border-radius: 6px;
+
+        &.feat-std {
+          background: rgba(255, 255, 255, 0.04);
+          color: var(--text-secondary, #94a3b8);
+        }
+
+        &.feat-pro {
+          background: rgba(99, 102, 241, 0.15);
+          color: #c7d2fe;
+          font-weight: 600;
+        }
+      }
+
+      .p-limit {
+        font-size: 11px;
+        color: #10b981;
+        font-weight: 600;
+      }
     }
 
     .months-selection {
@@ -993,10 +1221,10 @@ import {
 
     .invoice-created-box {
       text-align: center;
-      padding: 20px;
+      padding: 16px;
 
-      .invoice-icon { font-size: 40px; margin-bottom: 12px; }
-      h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+      .invoice-icon { font-size: 40px; margin-bottom: 10px; }
+      h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
       .invoice-number-pill {
         display: inline-block;
         padding: 6px 14px;
@@ -1006,7 +1234,7 @@ import {
         font-size: 14px;
         font-weight: 700;
         border-radius: 6px;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
       }
       .invoice-amount-desc {
         font-size: 16px;
@@ -1017,13 +1245,112 @@ import {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--border, #334155);
         border-radius: 8px;
-        padding: 14px;
+        padding: 12px;
         text-align: left;
-        font-size: 13px;
+        font-size: 12px;
         color: var(--text-secondary, #94a3b8);
         line-height: 1.5;
-        margin-bottom: 20px;
-        p { margin: 0 0 6px 0; &:last-child { margin: 0; } }
+        margin-bottom: 16px;
+        p { margin: 0 0 4px 0; &:last-child { margin: 0; } }
+      }
+    }
+
+    .mock-simulator-box {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.08));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      text-align: left;
+
+      .simulator-header {
+        margin-bottom: 12px;
+      }
+
+      .simulator-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        background: #6366f1;
+        color: white;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        margin-bottom: 6px;
+      }
+
+      .simulator-desc {
+        font-size: 12px;
+        color: var(--text-secondary, #cbd5e1);
+        margin: 0;
+        line-height: 1.4;
+      }
+
+      .mock-btn-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .btn-mock-success {
+        background: #10b981;
+        color: white;
+        flex: 1;
+        min-width: 140px;
+        &:hover { background: #059669; }
+      }
+
+      .btn-mock-fail {
+        background: #ef4444;
+        color: white;
+        flex: 1;
+        min-width: 140px;
+        &:hover { background: #dc2626; }
+      }
+
+      .btn-mock-cancel {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border, #334155);
+        color: var(--text-secondary, #cbd5e1);
+        &:hover { background: rgba(255, 255, 255, 0.15); }
+      }
+
+      .simulator-spinner-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        font-size: 12px;
+        color: #818cf8;
+      }
+
+      .spinner-sm {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border, #334155);
+        border-top-color: #6366f1;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .simulator-alert {
+        margin-top: 10px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+
+        &.alert-success {
+          background: rgba(16, 185, 129, 0.15);
+          border: 1px solid rgba(16, 185, 129, 0.3);
+          color: #34d399;
+        }
+
+        &.alert-error {
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          color: #f87171;
+        }
       }
     }
 
@@ -1069,6 +1396,7 @@ import {
 })
 export class RestaurantBillingComponent implements OnInit {
   private billingService = inject(BillingService);
+  private featureService = inject(FeatureService);
 
   sub = signal<CurrentSubscriptionResponse | null>(null);
   invoices = signal<InvoiceResponse[]>([]);
@@ -1079,13 +1407,18 @@ export class RestaurantBillingComponent implements OnInit {
 
   // Checkout modal
   showCheckoutModal = signal(false);
-  selectedPlanCode = signal<string>('BUSINESS');
+  selectedPlanCode = signal<string>('STANDARD');
   selectedMonths = signal<number>(1);
   calculating = signal(false);
   calcResult = signal<CalculatePriceResponse | null>(null);
   initiatingCheckout = signal(false);
   checkoutCreatedInvoice = signal<any | null>(null);
   checkoutError = signal<string | null>(null);
+
+  // Mock Payment Simulator states
+  processingPayment = signal(false);
+  paymentMessage = signal<string | null>(null);
+  paymentSuccess = signal(false);
 
   readonly monthOptions = [
     { value: 1,  label: '1 oy',   hint: 'Standart narx', badge: '' },
@@ -1107,6 +1440,7 @@ export class RestaurantBillingComponent implements OnInit {
       next: (data) => {
         this.sub.set(data);
         this.loading.set(false);
+        this.featureService.refreshFeatures().subscribe();
       },
       error: () => this.loading.set(false)
     });
@@ -1148,9 +1482,18 @@ export class RestaurantBillingComponent implements OnInit {
 
   formatDate(dateStr: string): string {
     if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleDateString('uz-UZ', {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '-';
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${day}.${month}.${year}, ${hours}:${minutes}`;
+    } catch {
+      return dateStr;
+    }
   }
 
   getStatusLabel(status: string): string {
@@ -1190,10 +1533,15 @@ export class RestaurantBillingComponent implements OnInit {
   openCheckoutModal(): void {
     this.checkoutCreatedInvoice.set(null);
     this.checkoutError.set(null);
+    this.paymentMessage.set(null);
+    this.processingPayment.set(false);
     this.selectedMonths.set(1);
     if (this.sub()) {
-      const initialCode = (this.sub()!.planCode === 'TRIAL' || !this.sub()!.planCode) ? 'BUSINESS' : this.sub()!.planCode;
+      const currentCode = this.sub()!.planCode;
+      const initialCode = (!currentCode || currentCode === 'TRIAL' || currentCode === 'STARTER') ? 'STANDARD' : currentCode;
       this.selectedPlanCode.set(initialCode);
+    } else {
+      this.selectedPlanCode.set('STANDARD');
     }
     this.showCheckoutModal.set(true);
     this.triggerCalculate();
@@ -1203,6 +1551,8 @@ export class RestaurantBillingComponent implements OnInit {
     this.showCheckoutModal.set(false);
     this.checkoutCreatedInvoice.set(null);
     this.checkoutError.set(null);
+    this.paymentMessage.set(null);
+    this.processingPayment.set(false);
   }
 
   selectPlan(planCode: string): void {
@@ -1253,6 +1603,48 @@ export class RestaurantBillingComponent implements OnInit {
       error: (err) => {
         this.initiatingCheckout.set(false);
         this.checkoutError.set(err?.error?.message || 'Hisob-faktura yaratishda xatolik yuz berdi');
+      }
+    });
+  }
+
+  handleMockPayment(outcome: 'SUCCESS' | 'FAILED' | 'CANCELLED'): void {
+    const inv = this.checkoutCreatedInvoice();
+    if (!inv || !inv.paymentId) {
+      this.paymentSuccess.set(false);
+      this.paymentMessage.set('To‘lov identifikatori topilmadi.');
+      return;
+    }
+
+    this.processingPayment.set(true);
+    this.paymentMessage.set(null);
+
+    this.billingService.processMockPayment(inv.paymentId, outcome).subscribe({
+      next: () => {
+        this.processingPayment.set(false);
+        if (outcome === 'SUCCESS') {
+          this.paymentSuccess.set(true);
+          this.paymentMessage.set('✅ To‘lov muvaffaqiyatli qabul qilindi! Obuna darhol faollashtirildi.');
+          this.loadCurrentSubscription();
+          this.loadInvoices();
+          this.loadPeriods();
+          this.featureService.refreshFeatures().subscribe();
+          setTimeout(() => {
+            this.closeCheckoutModal();
+          }, 1800);
+        } else if (outcome === 'FAILED') {
+          this.paymentSuccess.set(false);
+          this.paymentMessage.set('❌ To‘lov rad etildi (Xatolik simulyatsiya qilindi).');
+          this.loadInvoices();
+        } else {
+          this.paymentSuccess.set(false);
+          this.paymentMessage.set('⚪ To‘lov bekor qilindi.');
+          this.loadInvoices();
+        }
+      },
+      error: (err) => {
+        this.processingPayment.set(false);
+        this.paymentSuccess.set(false);
+        this.paymentMessage.set(err?.error?.message || 'Mock to‘lovni amalga oshirishda xatolik yuz berdi.');
       }
     });
   }
