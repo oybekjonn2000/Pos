@@ -214,7 +214,7 @@ public class ReportsService {
                         cash = amt;
                     } else if (p.getPaymentMethod() == Payment.PaymentMethod.CARD && card.compareTo(BigDecimal.ZERO) == 0 && cash.compareTo(BigDecimal.ZERO) == 0) {
                         card = amt;
-                    } else if (p.getPaymentMethod() == Payment.PaymentMethod.OTHER && other.compareTo(BigDecimal.ZERO) == 0 && cash.compareTo(BigDecimal.ZERO) == 0 && card.compareTo(BigDecimal.ZERO) == 0) {
+                    } else if ((p.getPaymentMethod() == Payment.PaymentMethod.OTHER || p.getPaymentMethod() == Payment.PaymentMethod.DEBT) && other.compareTo(BigDecimal.ZERO) == 0 && cash.compareTo(BigDecimal.ZERO) == 0 && card.compareTo(BigDecimal.ZERO) == 0) {
                         other = amt;
                     } else if (p.getPaymentMethod() == Payment.PaymentMethod.MIXED) {
                         other = amt.subtract(cash).subtract(card).max(BigDecimal.ZERO);
@@ -648,7 +648,7 @@ public class ReportsService {
                         cash = amt;
                     } else if (p.getPaymentMethod() == Payment.PaymentMethod.CARD && card.compareTo(BigDecimal.ZERO) == 0 && cash.compareTo(BigDecimal.ZERO) == 0) {
                         card = amt;
-                    } else if (p.getPaymentMethod() == Payment.PaymentMethod.OTHER && other.compareTo(BigDecimal.ZERO) == 0 && cash.compareTo(BigDecimal.ZERO) == 0 && card.compareTo(BigDecimal.ZERO) == 0) {
+                    } else if ((p.getPaymentMethod() == Payment.PaymentMethod.OTHER || p.getPaymentMethod() == Payment.PaymentMethod.DEBT) && other.compareTo(BigDecimal.ZERO) == 0 && cash.compareTo(BigDecimal.ZERO) == 0 && card.compareTo(BigDecimal.ZERO) == 0) {
                         other = amt;
                     } else if (p.getPaymentMethod() == Payment.PaymentMethod.MIXED) {
                         other = amt.subtract(cash).subtract(card).max(BigDecimal.ZERO);

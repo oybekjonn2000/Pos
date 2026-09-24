@@ -64,6 +64,9 @@ public class Shift {
     @Column(name = "total_card_sales", precision = 15, scale = 2)
     private BigDecimal totalCardSales = BigDecimal.ZERO;
 
+    @Column(name = "total_debt_sales", precision = 15, scale = 2)
+    private BigDecimal totalDebtSales = BigDecimal.ZERO;
+
     @Column(name = "total_refunds", precision = 15, scale = 2)
     private BigDecimal totalRefunds = BigDecimal.ZERO;
 

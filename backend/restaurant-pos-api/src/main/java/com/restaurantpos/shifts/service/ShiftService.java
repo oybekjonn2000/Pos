@@ -106,6 +106,7 @@ public class ShiftService {
                 .totalSales(shift.getTotalSales())
                 .totalCashSales(shift.getTotalCashSales())
                 .totalCardSales(shift.getTotalCardSales())
+                .totalDebtSales(shift.getTotalDebtSales() != null ? shift.getTotalDebtSales() : java.math.BigDecimal.ZERO)
                 .totalRefunds(shift.getTotalRefunds())
                 .totalDiscounts(shift.getTotalDiscounts())
                 .ordersCount(shift.getOrdersCount())

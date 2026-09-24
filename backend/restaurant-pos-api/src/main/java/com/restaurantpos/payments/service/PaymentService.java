@@ -37,6 +37,8 @@ public class PaymentService {
     private final RestaurantTableRepository tableRepository;
     private final UserRepository userRepository;
     private final ShiftRepository shiftRepository;
+    private final com.restaurantpos.customers.repository.CustomerRepository customerRepository;
+    private final com.restaurantpos.debt.repository.DebtRepository debtRepository;
     private final EntityManager entityManager;
     private final com.restaurantpos.common.websocket.WebSocketNotificationService wsNotification;
     private final com.restaurantpos.orders.service.OrderService orderService;
@@ -88,6 +90,16 @@ public class PaymentService {
             User cashier = userRepository.findById(cashierId).orElse(null);
             Shift shift = shiftRepository.findByTenantIdAndStatus(tenantId, Shift.ShiftStatus.OPEN).orElse(null);
 
+            Payment.PaymentMethod method = Payment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+            if (method == Payment.PaymentMethod.DEBT) {
+                if (request.getCustomerName() == null || request.getCustomerName().trim().isBlank()) {
+                    throw PosException.badRequest("Qarzga to'lov uchun mijoz ismi kiritilishi shart");
+                }
+                if (request.getCustomerPhone() == null || request.getCustomerPhone().trim().isBlank()) {
+                    throw PosException.badRequest("Qarzga to'lov uchun mijoz telefon raqami kiritilishi shart");
+                }
+            }
+
             Payment payment = new Payment();
             payment.setTenant(order.getTenant());
             payment.setOrder(order);
@@ -97,22 +109,74 @@ public class PaymentService {
 
             String dateStr = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
             payment.setPaymentNumber("PAY-" + dateStr + "-" + String.format("%04d", nextPaymentSequence()));
-
-            Payment.PaymentMethod method = Payment.PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
             payment.setPaymentMethod(method);
             payment.setStatus(Payment.PaymentStatus.COMPLETED);
             payment.setAmount(request.getAmount());
-            payment.setCashAmount(request.getCashAmount() != null ? request.getCashAmount() : BigDecimal.ZERO);
-            payment.setCardAmount(request.getCardAmount() != null ? request.getCardAmount() : BigDecimal.ZERO);
-            payment.setChangeAmount(request.getChangeAmount() != null ? request.getChangeAmount() : BigDecimal.ZERO);
+
+            com.restaurantpos.customers.entity.Customer customer = null;
+            if (method == Payment.PaymentMethod.DEBT) {
+                payment.setCashAmount(BigDecimal.ZERO);
+                payment.setCardAmount(BigDecimal.ZERO);
+                payment.setOtherAmount(request.getAmount());
+                payment.setChangeAmount(BigDecimal.ZERO);
+
+                String normalizedPhone = com.restaurantpos.common.util.PhoneNormalizer.normalize(request.getCustomerPhone());
+                if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+                    customer = customerRepository.findByTenantIdAndPhoneAndDeletedAtIsNull(tenantId, normalizedPhone).orElse(null);
+                }
+
+                if (customer == null) {
+                    customer = new com.restaurantpos.customers.entity.Customer();
+                    customer.setTenant(order.getTenant());
+                    customer.setFullName(request.getCustomerName().trim());
+                    customer.setPhone(normalizedPhone);
+                    customer.setNotes(request.getNotes());
+                    customer.setTotalOrders(1);
+                    customer.setTotalSpent(payment.getAmount());
+                    customer.setLastOrderAt(Instant.now());
+                    customer = customerRepository.save(customer);
+                } else {
+                    customer.setTotalOrders(customer.getTotalOrders() + 1);
+                    customer.setTotalSpent((customer.getTotalSpent() != null ? customer.getTotalSpent() : BigDecimal.ZERO).add(payment.getAmount()));
+                    customer.setLastOrderAt(Instant.now());
+                    customer = customerRepository.save(customer);
+                }
+
+                order.setCustomer(customer);
+
+                String debtNote = "Qarz (Nasiya): " + customer.getFullName() + " (" + (customer.getPhone() != null ? customer.getPhone() : "") + ")";
+                if (request.getNotes() != null && !request.getNotes().trim().isBlank()) {
+                    debtNote += " | " + request.getNotes().trim();
+                }
+                payment.setNotes(debtNote);
+            } else {
+                payment.setCashAmount(request.getCashAmount() != null ? request.getCashAmount() : BigDecimal.ZERO);
+                payment.setCardAmount(request.getCardAmount() != null ? request.getCardAmount() : BigDecimal.ZERO);
+                payment.setChangeAmount(request.getChangeAmount() != null ? request.getChangeAmount() : BigDecimal.ZERO);
+                payment.setNotes(request.getNotes());
+            }
+
             payment.setReferenceNumber(request.getReferenceNumber());
-            payment.setNotes(request.getNotes());
             payment.setPaidAt(Instant.now());
 
             Payment saved = paymentRepository.save(payment);
 
-            log.info("[PAYMENT_SUCCESS] Payment completed successfully. paymentId: {}, paymentNumber: {}, orderId: {}, amount: {}",
-                    saved.getId(), saved.getPaymentNumber(), order.getId(), saved.getAmount());
+            if (method == Payment.PaymentMethod.DEBT && customer != null) {
+                com.restaurantpos.debt.entity.Debt debt = new com.restaurantpos.debt.entity.Debt();
+                debt.setTenant(order.getTenant());
+                debt.setCustomer(customer);
+                debt.setOrder(order);
+                debt.setPayment(saved);
+                debt.setAmount(saved.getAmount());
+                debt.setRemainingAmount(saved.getAmount());
+                debt.setStatus(com.restaurantpos.debt.entity.DebtStatus.OPEN);
+                debt.setDueDate(request.getDueDate());
+                debt.setNotes(request.getNotes());
+                debtRepository.save(debt);
+            }
+
+            log.info("[PAYMENT_SUCCESS] Payment completed successfully. paymentId: {}, paymentNumber: {}, orderId: {}, amount: {}, method: {}",
+                    saved.getId(), saved.getPaymentNumber(), order.getId(), saved.getAmount(), method);
 
             // Update Order status and payment status
             order.setStatus(Order.OrderStatus.PAID);
@@ -135,9 +199,6 @@ public class PaymentService {
                 log.error("Error deducting inventory for paid order {}: {}", order.getId(), invEx.getMessage());
             }
 
-            // PAYMENT_COMPLETED event: No receipt is printed on payment.
-            // Receipt/bill printing is exclusively done on ACCOUNT_CLOSED (hisobni yopish).
-
             // Free the table if still bound to this order
             if (order.getTable() != null) {
                 RestaurantTable table = order.getTable();
@@ -158,8 +219,12 @@ public class PaymentService {
             // Update Shift totals if shift is active
             if (shift != null) {
                 shift.setTotalSales(shift.getTotalSales().add(payment.getAmount()));
-                shift.setTotalCashSales(shift.getTotalCashSales().add(payment.getCashAmount()));
-                shift.setTotalCardSales(shift.getTotalCardSales().add(payment.getCardAmount()));
+                if (method == Payment.PaymentMethod.DEBT) {
+                    shift.setTotalDebtSales((shift.getTotalDebtSales() != null ? shift.getTotalDebtSales() : BigDecimal.ZERO).add(payment.getAmount()));
+                } else {
+                    shift.setTotalCashSales(shift.getTotalCashSales().add(payment.getCashAmount()));
+                    shift.setTotalCardSales(shift.getTotalCardSales().add(payment.getCardAmount()));
+                }
                 shift.setOrdersCount(shift.getOrdersCount() + 1);
                 shiftRepository.save(shift);
             }
@@ -208,6 +273,15 @@ public class PaymentService {
         Order order = original.getOrder();
         order.setStatus(Order.OrderStatus.REFUNDED);
         orderRepository.save(order);
+
+        // Cancel associated debt record if payment was DEBT
+        if (original.getPaymentMethod() == Payment.PaymentMethod.DEBT) {
+            debtRepository.findByTenantIdAndPaymentIdAndDeletedAtIsNull(tenantId, original.getId())
+                    .ifPresent(d -> {
+                        d.setStatus(com.restaurantpos.debt.entity.DebtStatus.CANCELLED);
+                        debtRepository.save(d);
+                    });
+        }
 
         // Update Shift refunds
         if (shift != null) {

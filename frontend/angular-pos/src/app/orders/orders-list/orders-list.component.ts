@@ -127,6 +127,7 @@ import { NotificationService } from '../../core/services/notification.service';
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'ALL'" (click)="paymentMethodFilter = 'ALL'; pageIndex = 0">Barchasi</button>
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'CASH'" (click)="paymentMethodFilter = 'CASH'; pageIndex = 0">💵 Naqd</button>
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'CARD'" (click)="paymentMethodFilter = 'CARD'; pageIndex = 0">💳 Karta</button>
+            <button class="pill-btn" [class.active]="paymentMethodFilter === 'DEBT'" (click)="paymentMethodFilter = 'DEBT'; pageIndex = 0">📝 Qarz</button>
           </div>
         </div>
 
@@ -290,8 +291,8 @@ import { NotificationService } from '../../core/services/notification.service';
                   </td>
                   <td>
                     <div class="payment-col">
-                      <span class="payment-method-badge" [class.badge-card]="order.paymentMethod === 'CARD'" [class.badge-cash]="order.paymentMethod !== 'CARD'">
-                        {{ order.paymentMethod === 'CARD' ? '💳 Karta' : '💵 Naqd' }}
+                      <span class="payment-method-badge" [class.badge-card]="order.paymentMethod === 'CARD'" [class.badge-debt]="order.paymentMethod === 'DEBT'" [class.badge-cash]="order.paymentMethod !== 'CARD' && order.paymentMethod !== 'DEBT'">
+                        {{ order.paymentMethod === 'CARD' ? '💳 Karta' : (order.paymentMethod === 'DEBT' ? '📝 Qarz' : '💵 Naqd') }}
                       </span>
                       <span class="paid-sub-amount" *ngIf="order.paidAmount">
                         {{ order.paidAmount | number:'1.0-0' }} so'm
@@ -639,6 +640,14 @@ import { NotificationService } from '../../core/services/notification.service';
                 <span class="icon">💳</span>
                 <span>Bank Kartasi (Humo/Uzcard)</span>
               </button>
+              <button
+                type="button"
+                class="method-btn"
+                [class.selected]="payMethod === 'DEBT'"
+                (click)="setPaymentMethod('DEBT')">
+                <span class="icon">📝</span>
+                <span>Qarz (Nasiya)</span>
+              </button>
             </div>
 
             <!-- Cash Input Section -->
@@ -678,6 +687,68 @@ import { NotificationService } from '../../core/services/notification.service';
               <p>POS Terminal orqali to'lovni tasdiqlang:</p>
               <h3>{{ (selectedOrder.total || selectedOrder.subtotal) | number:'1.0-0' }} so'm</h3>
             </div>
+
+            <!-- Debt Input Section -->
+            <div *ngIf="payMethod === 'DEBT'" class="debt-section">
+              <div class="debt-alert-banner">
+                <span class="alert-icon">⚠️</span>
+                <div class="alert-text">
+                  <strong>Qarzga rasmiylashtirish:</strong> Buyurtma yopilib, stol darhol yangi mijozlar uchun bo‘shatiladi.
+                  Ushbu summa kassa apparatidagi naqd/karta tushumiga <u>qo‘shilmaydi</u>.
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">
+                  Mijoz ismi (F.I.Sh) <span style="color: #ef4444;">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="debtCustomerName"
+                  class="pos-input"
+                  style="width: 100%;"
+                  placeholder="Masalan: Ali Valiyev"
+                />
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">
+                  Telefon raqami <span style="color: #ef4444;">*</span>
+                </label>
+                <input
+                  type="tel"
+                  [(ngModel)]="debtCustomerPhone"
+                  class="pos-input"
+                  style="width: 100%;"
+                  placeholder="+998 90 123 45 67"
+                />
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">
+                  Qarzni qaytarish sanasi (Ixtiyoriy)
+                </label>
+                <input
+                  type="date"
+                  [(ngModel)]="debtDueDate"
+                  class="pos-input"
+                  style="width: 100%;"
+                />
+              </div>
+
+              <div class="form-group" style="margin-bottom: 6px;">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px;">
+                  Qo‘shimcha izoh (Ixtiyoriy)
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="debtNotes"
+                  class="pos-input"
+                  style="width: 100%;"
+                  placeholder="Masalan: 1 haftadan keyin beradi"
+                />
+              </div>
+            </div>
           </div>
 
           <div class="modal-footer">
@@ -687,9 +758,9 @@ import { NotificationService } from '../../core/services/notification.service';
             <button
               class="pos-btn pos-btn--success pos-btn--lg"
               (click)="submitPayment()"
-              [disabled]="processingPayment || (payMethod === 'CASH' && changeAmount < 0)">
+              [disabled]="processingPayment || (payMethod === 'CASH' && changeAmount < 0) || (payMethod === 'DEBT' && (!debtCustomerName?.trim() || !debtCustomerPhone?.trim()))">
               <span *ngIf="processingPayment" class="spinner-sm"></span>
-              <span>{{ processingPayment ? 'To‘lov amalga oshirilmoqda...' : '✅ To‘lovni tasdiqlash' }}</span>
+              <span>{{ processingPayment ? 'To‘lov amalga oshirilmoqda...' : (payMethod === 'DEBT' ? '📝 Qarzni rasmiylashtirish' : '✅ To‘lovni tasdiqlash') }}</span>
             </button>
           </div>
         </div>
@@ -1383,6 +1454,12 @@ import { NotificationService } from '../../core/services/notification.service';
         color: #3b82f6;
         border: 1px solid rgba(59, 130, 246, 0.3);
       }
+
+      &.badge-debt {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
     }
 
     .paid-sub-amount {
@@ -1812,7 +1889,7 @@ import { NotificationService } from '../../core/services/notification.service';
 
     .payment-method-tabs {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       margin-bottom: 20px;
     }
@@ -1946,6 +2023,42 @@ import { NotificationService } from '../../core/services/notification.service';
         color: #34d399;
         font-size: 22px;
         margin-top: 8px;
+      }
+    }
+
+    .debt-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .debt-alert-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      margin-bottom: 6px;
+
+      .alert-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .alert-text {
+        font-size: 12px;
+        color: #fbbf24;
+        line-height: 1.4;
+
+        strong {
+          color: #f59e0b;
+        }
       }
     }
 
@@ -2417,7 +2530,7 @@ export class OrdersListComponent implements OnInit {
 
   // History filters
   dateFilter: 'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' = 'TODAY';
-  paymentMethodFilter: 'ALL' | 'CASH' | 'CARD' = 'ALL';
+  paymentMethodFilter: 'ALL' | 'CASH' | 'CARD' | 'DEBT' = 'ALL';
   selectedTableFilter: string = 'ALL';
 
   // Modals
@@ -2440,10 +2553,14 @@ export class OrdersListComponent implements OnInit {
   activeCancelReceipt: CancellationReceipt | null = null;
 
   // Payment form state
-  payMethod: 'CASH' | 'CARD' = 'CASH';
+  payMethod: 'CASH' | 'CARD' | 'DEBT' = 'CASH';
   cashReceived: number = 0;
   changeAmount: number = 0;
   processingPayment = false;
+  debtCustomerName = '';
+  debtCustomerPhone = '';
+  debtDueDate = '';
+  debtNotes = '';
 
   constructor(
     private orderService: OrderService,
@@ -2865,6 +2982,10 @@ export class OrdersListComponent implements OnInit {
     }
     this.selectedOrder = order;
     this.payMethod = 'CASH';
+    this.debtCustomerName = (order as any).customerName || '';
+    this.debtCustomerPhone = (order as any).customerPhone || '';
+    this.debtDueDate = '';
+    this.debtNotes = '';
     const total = order.total || order.subtotal || 0;
     this.cashReceived = total;
     this.changeAmount = 0;
@@ -2882,7 +3003,7 @@ export class OrdersListComponent implements OnInit {
     this.showReceiptModal = false;
   }
 
-  setPaymentMethod(method: 'CASH' | 'CARD'): void {
+  setPaymentMethod(method: 'CASH' | 'CARD' | 'DEBT'): void {
     this.payMethod = method;
     if (this.selectedOrder) {
       const total = this.selectedOrder.total || this.selectedOrder.subtotal || 0;
@@ -2912,6 +3033,17 @@ export class OrdersListComponent implements OnInit {
     if (!this.selectedOrder) return;
     const total = this.selectedOrder.total || this.selectedOrder.subtotal || 0;
 
+    if (this.payMethod === 'DEBT') {
+      if (!this.debtCustomerName?.trim()) {
+        this.notify.warning('Iltimos, mijoz ismini kiriting!');
+        return;
+      }
+      if (!this.debtCustomerPhone?.trim()) {
+        this.notify.warning('Iltimos, mijoz telefon raqamini kiriting!');
+        return;
+      }
+    }
+
     this.processingPayment = true;
     const req: PaymentProcessRequest = {
       orderId: this.selectedOrder.id,
@@ -2920,7 +3052,12 @@ export class OrdersListComponent implements OnInit {
       cashAmount: this.payMethod === 'CASH' ? this.cashReceived : 0,
       cardAmount: this.payMethod === 'CARD' ? total : 0,
       changeAmount: this.payMethod === 'CASH' ? Math.max(0, this.changeAmount) : 0,
-      notes: `Kassa to'lovi: ${this.payMethod}`
+      notes: this.payMethod === 'DEBT'
+        ? (this.debtNotes?.trim() || `Qarz (Nasiya): ${this.debtCustomerName.trim()}`)
+        : `Kassa to'lovi: ${this.payMethod}`,
+      customerName: this.payMethod === 'DEBT' ? this.debtCustomerName.trim() : undefined,
+      customerPhone: this.payMethod === 'DEBT' ? this.debtCustomerPhone.trim() : undefined,
+      dueDate: this.payMethod === 'DEBT' && this.debtDueDate ? this.debtDueDate : undefined
     };
 
     this.paymentService.processPayment(req).subscribe({
@@ -2933,7 +3070,7 @@ export class OrdersListComponent implements OnInit {
             error: (e) => console.warn('Could not free table', e)
           });
         }
-        this.notify.success('To‘lov muvaffaqiyatli qabul qilindi!');
+        this.notify.success(this.payMethod === 'DEBT' ? 'Qarz muvaffaqiyatli rasmiylashtirildi!' : 'To‘lov muvaffaqiyatli qabul qilindi!');
         this.closeModals();
         this.loadOrders();
       },

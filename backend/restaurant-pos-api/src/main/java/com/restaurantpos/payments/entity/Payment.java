@@ -99,7 +99,7 @@ public class Payment {
     private Instant updatedAt = Instant.now();
 
     public enum PaymentMethod {
-        CASH, CARD, OTHER, MIXED
+        CASH, CARD, OTHER, MIXED, DEBT
     }
 
     public enum PaymentStatus {

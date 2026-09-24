@@ -62,6 +62,11 @@ public class PaymentDto {
 
         private String referenceNumber;
         private String notes;
+
+        // Fields for DEBT payment method
+        private String customerName;
+        private String customerPhone;
+        private java.time.LocalDate dueDate;
     }
 
     @Data

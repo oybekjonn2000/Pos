@@ -29,6 +29,7 @@ public class ShiftDto {
         private BigDecimal totalSales;
         private BigDecimal totalCashSales;
         private BigDecimal totalCardSales;
+        private BigDecimal totalDebtSales;
         private BigDecimal totalRefunds;
         private BigDecimal totalDiscounts;
         private int ordersCount;

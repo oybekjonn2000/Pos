@@ -15,6 +15,9 @@ export interface PaymentProcessRequest {
   changeGiven?: number;
   referenceNumber?: string;
   notes?: string;
+  customerName?: string;
+  customerPhone?: string;
+  dueDate?: string;
 }
 
 export interface PaymentResponse {

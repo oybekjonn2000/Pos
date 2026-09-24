@@ -23,6 +23,31 @@ import { NotificationService } from '../core/services/notification.service';
         </button>
       </div>
 
+      <!-- Segmented Slide Switch: Faol xodimlar / Nofaol xodimlar -->
+      <div class="status-slider-strip">
+        <div class="status-segmented-slider">
+          <button
+            type="button"
+            class="slider-btn"
+            [class.active]="activeTab === 'ACTIVE'"
+            (click)="setActiveTab('ACTIVE')">
+            <span class="status-dot active-dot"></span>
+            <span class="slider-title">Faol xodimlar</span>
+            <span class="count-badge active-badge">{{ activeCount }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="slider-btn"
+            [class.active]="activeTab === 'INACTIVE'"
+            (click)="setActiveTab('INACTIVE')">
+            <span class="status-dot inactive-dot"></span>
+            <span class="slider-title">Nofaol xodimlar</span>
+            <span class="count-badge inactive-badge">{{ inactiveCount }}</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Search & Filters -->
       <div class="filter-strip" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
         <div class="search-box" style="flex: 1; min-width: 220px;">
@@ -45,12 +70,6 @@ import { NotificationService } from '../core/services/notification.service';
             <option value="KITCHEN">Oshpaz</option>
             <option value="CASHIER">Kassir</option>
           </select>
-
-          <select [(ngModel)]="statusFilter" (ngModelChange)="pageIndex = 0" class="pos-input pos-select-sm">
-            <option value="ALL">Barcha holatlar</option>
-            <option value="ACTIVE">Faol</option>
-            <option value="INACTIVE">Nofaol</option>
-          </select>
         </div>
       </div>
 
@@ -62,10 +81,15 @@ import { NotificationService } from '../core/services/notification.service';
         </div>
 
         <div *ngIf="!loading && filteredEmployees.length === 0" class="empty-state">
-          <div class="empty-icon">👥</div>
-          <h3>Xodimlar topilmadi</h3>
-          <p *ngIf="employees.length > 0" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Qidiruv yoki filtr bo'yicha hech qanday xodim topilmadi.</p>
-          <button *ngIf="employees.length === 0" class="pos-btn pos-btn--primary" (click)="openCreateModal()" style="margin-top: 12px;">
+          <div class="empty-icon">{{ activeTab === 'ACTIVE' ? '👥' : '🎉' }}</div>
+          <h3>{{ activeTab === 'ACTIVE' ? 'Faol xodimlar topilmadi' : 'Nofaol xodimlar mavjud emas' }}</h3>
+          <p *ngIf="activeTab === 'ACTIVE' && employees.length > 0" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+            Qidiruv yoki lavozim filtri bo'yicha faol xodim topilmadi.
+          </p>
+          <p *ngIf="activeTab === 'INACTIVE'" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+            Ayni paytda barcha xodimlar faol holatda ishlamoqda.
+          </p>
+          <button *ngIf="activeTab === 'ACTIVE' && employees.length === 0" class="pos-btn pos-btn--primary" (click)="openCreateModal()" style="margin-top: 12px;">
             Yangi xodim qo'shish
           </button>
         </div>
@@ -83,10 +107,10 @@ import { NotificationService } from '../core/services/notification.service';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let emp of pagedEmployees">
+              <tr *ngFor="let emp of pagedEmployees" [class.is-inactive-row]="!emp.active">
                 <td>
                   <div class="user-cell">
-                    <div class="user-avatar">{{ getInitials(emp) }}</div>
+                    <div class="user-avatar" [class.inactive-avatar]="!emp.active">{{ getInitials(emp) }}</div>
                     <div>
                       <strong>{{ emp.firstName }} {{ emp.lastName || '' }}</strong>
                       <div class="email-sub" *ngIf="emp.email">{{ emp.email }}</div>
@@ -105,7 +129,7 @@ import { NotificationService } from '../core/services/notification.service';
                 <td>{{ emp.phone || '—' }}</td>
                 <td>
                   <span class="status-pill" [class.active]="emp.active" [class.inactive]="!emp.active">
-                    {{ emp.active ? '● Faol' : '○ Nofaol' }}
+                    {{ emp.active ? '● FAOL' : '○ NOFAOL' }}
                   </span>
                 </td>
                 <td style="text-align: right;">
@@ -132,16 +156,16 @@ import { NotificationService } from '../core/services/notification.service';
                     <button
                       *ngIf="emp.active"
                       class="pos-btn pos-btn--danger pos-btn--sm"
-                      title="Nofaol qilish"
+                      title="Xodimni nofaol qilish"
                       (click)="toggleActive(emp)">
                       🚫
                     </button>
                     <button
                       *ngIf="!emp.active"
-                      class="pos-btn pos-btn--success pos-btn--sm"
-                      title="Faollashtirish"
+                      class="pos-btn pos-btn--success pos-btn--sm btn-reactivate"
+                      title="Xodimni qayta faollashtirish"
                       (click)="toggleActive(emp)">
-                      ✅
+                      ✅ Faollashtirish
                     </button>
                   </div>
                 </td>
@@ -530,10 +554,123 @@ import { NotificationService } from '../core/services/notification.service';
 
     .status-pill {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.02em;
 
-      &.active { color: var(--success); }
-      &.inactive { color: var(--danger); }
+      &.active { color: var(--success, #10b981); }
+      &.inactive { color: var(--danger, #ef4444); }
+    }
+
+    /* Segmented Slide Switch */
+    .status-slider-strip {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .status-segmented-slider {
+      display: inline-flex;
+      background: var(--bg-secondary, #1e293b);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+      gap: 6px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+    }
+
+    .slider-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 18px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary, #94a3b8);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+
+      &:hover:not(.active) {
+        color: var(--text-primary, #f8fafc);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      &.active {
+        background: var(--bg-card, #0f172a);
+        color: var(--text-primary, #ffffff);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+
+      &.active-dot {
+        background: #10b981;
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.65);
+      }
+
+      &.inactive-dot {
+        background: #ef4444;
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.65);
+      }
+    }
+
+    .slider-title {
+      letter-spacing: -0.01em;
+    }
+
+    .count-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      line-height: 1.3;
+
+      &.active-badge {
+        background: rgba(16, 185, 129, 0.16);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+      }
+
+      &.inactive-badge {
+        background: rgba(239, 68, 68, 0.16);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.25);
+      }
+    }
+
+    .is-inactive-row {
+      background: rgba(239, 68, 68, 0.02) !important;
+      opacity: 0.88;
+
+      &:hover {
+        background: rgba(239, 68, 68, 0.05) !important;
+      }
+    }
+
+    .inactive-avatar {
+      background: #64748b !important;
+      opacity: 0.85;
+    }
+
+    .btn-reactivate {
+      background: #10b981 !important;
+      border-color: #10b981 !important;
+      color: #ffffff !important;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+
+      &:hover {
+        background: #059669 !important;
+        box-shadow: 0 3px 8px rgba(16, 185, 129, 0.5);
+      }
     }
 
     .action-buttons {
@@ -757,10 +894,23 @@ export class EmployeesComponent implements OnInit {
   // Search, Filters & Pagination
   searchQuery = '';
   roleFilter = 'ALL';
-  statusFilter = 'ALL';
+  activeTab: 'ACTIVE' | 'INACTIVE' = 'ACTIVE';
   pageIndex = 0;
   pageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
+
+  setActiveTab(tab: 'ACTIVE' | 'INACTIVE'): void {
+    this.activeTab = tab;
+    this.pageIndex = 0;
+  }
+
+  get activeCount(): number {
+    return this.employees.filter(e => e.active).length;
+  }
+
+  get inactiveCount(): number {
+    return this.employees.filter(e => !e.active).length;
+  }
 
   onPageChange(event: PageEvent): void {
     this.pageIndex = event.pageIndex;
@@ -769,15 +919,18 @@ export class EmployeesComponent implements OnInit {
 
   get filteredEmployees(): Employee[] {
     return this.employees.filter(emp => {
+      // 1. Filter by Active / Inactive slide tab
+      if (this.activeTab === 'ACTIVE' && !emp.active) {
+        return false;
+      }
+      if (this.activeTab === 'INACTIVE' && emp.active) {
+        return false;
+      }
+      // 2. Filter by Role
       if (this.roleFilter !== 'ALL' && emp.role !== this.roleFilter) {
         return false;
       }
-      if (this.statusFilter === 'ACTIVE' && !emp.active) {
-        return false;
-      }
-      if (this.statusFilter === 'INACTIVE' && emp.active) {
-        return false;
-      }
+      // 3. Search query
       if (this.searchQuery.trim()) {
         const q = this.searchQuery.toLowerCase();
         const nameMatch = `${emp.firstName} ${emp.lastName || ''}`.toLowerCase().includes(q);
@@ -1081,6 +1234,14 @@ export class EmployeesComponent implements OnInit {
 
   toggleActive(emp: Employee): void {
     const updatedStatus = !emp.active;
+
+    if (!updatedStatus) {
+      const confirmDeactivate = confirm(`"${emp.firstName} ${emp.lastName || ''}". Ushbu xodimni nofaol qilmoqchimisiz?\nU "Nofaol xodimlar" bo‘limiga o‘tkaziladi.`);
+      if (!confirmDeactivate) {
+        return;
+      }
+    }
+
     const req: UpdateEmployeeRequest = {
       firstName: emp.firstName,
       lastName: emp.lastName,
@@ -1092,7 +1253,11 @@ export class EmployeesComponent implements OnInit {
     this.userService.updateUser(emp.id, req).subscribe({
       next: () => {
         emp.active = updatedStatus;
-        this.notify.success(`"${emp.firstName}" statusi ${updatedStatus ? 'faol' : 'nofaol'} qilindi`);
+        this.notify.success(
+          updatedStatus
+            ? `"${emp.firstName}" muvaffaqiyatli faollashtirildi!`
+            : `"${emp.firstName}" nofaol qilindi va nofaol xodimlar bo‘limiga o‘tkazildi!`
+        );
         this.cdr.markForCheck();
       },
       error: (err) => {
