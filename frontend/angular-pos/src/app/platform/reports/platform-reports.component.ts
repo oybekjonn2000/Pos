@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,14 +9,14 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-platform-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="platform-container">
       <!-- Header Banner -->
       <div class="platform-header">
         <div class="platform-header__info">
           <div class="platform-badge">
-            <span class="badge-icon">📈</span> Platforma Konsolidatsiyalangan Hisobotlari
+            <span class="badge-icon"><app-icon name="trending-up" [size]="14"></app-icon></span> Platforma Konsolidatsiyalangan Hisobotlari
           </div>
           <h1 class="platform-title">Tarmoq va Savdo Hisobotlari</h1>
           <p class="platform-subtitle">
@@ -24,10 +25,10 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
         <div class="platform-header__actions">
           <button type="button" class="btn btn-secondary" (click)="printReport()">
-            <span class="btn-icon">🖨️</span> Chop etish
+            <span class="btn-icon"><app-icon name="printer" [size]="14"></app-icon></span> Chop etish
           </button>
           <button type="button" class="btn btn-primary" (click)="loadReport()" [disabled]="isLoading()">
-            <span class="btn-icon">🔄</span> Hisobotni Shakllantirish
+            <span class="btn-icon"><app-icon name="refresh" [size]="14"></app-icon></span> Hisobotni Shakllantirish
           </button>
         </div>
       </div>
@@ -73,7 +74,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="kpi-card kpi-card--highlight">
           <div class="kpi-card__header">
             <span class="kpi-card__title">Yalpi Savdo Hajmi</span>
-            <span class="kpi-icon">💰</span>
+            <span class="kpi-icon"><app-icon name="dollar-sign" [size]="20"></app-icon></span>
           </div>
           <div class="kpi-card__value">{{ formatCurrency(reportData()?.totalVolume ?? 0) }}</div>
           <div class="kpi-card__footer">
@@ -84,7 +85,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="kpi-card">
           <div class="kpi-card__header">
             <span class="kpi-card__title">Jami Buyurtmalar</span>
-            <span class="kpi-icon">📋</span>
+            <span class="kpi-icon"><app-icon name="clipboard" [size]="20"></app-icon></span>
           </div>
           <div class="kpi-card__value">{{ (reportData()?.totalOrders ?? 0) | number }}</div>
           <div class="kpi-card__footer">
@@ -95,7 +96,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="kpi-card">
           <div class="kpi-card__header">
             <span class="kpi-card__title">Faol Filiallar</span>
-            <span class="kpi-icon">🏢</span>
+            <span class="kpi-icon"><app-icon name="building" [size]="20"></app-icon></span>
           </div>
           <div class="kpi-card__value text-success">{{ (reportData()?.activeRestaurantsCount ?? 0) | number }}</div>
           <div class="kpi-card__footer">
@@ -106,7 +107,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="kpi-card">
           <div class="kpi-card__header">
             <span class="kpi-card__title">O‘rtacha Filial Tushumi</span>
-            <span class="kpi-icon">📊</span>
+            <span class="kpi-icon"><app-icon name="bar-chart" [size]="20"></app-icon></span>
           </div>
           <div class="kpi-card__value">{{ formatCurrency(avgRevenuePerBranch()) }}</div>
           <div class="kpi-card__footer">
@@ -131,7 +132,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         } @else if (breakdownList().length === 0) {
           <div class="empty-box">
-            <div class="empty-icon">📈</div>
+            <div class="empty-icon"><app-icon name="trending-up" [size]="48"></app-icon></div>
             <h4>Hisobot bo‘yicha ma’lumot yo‘q</h4>
             <p>Ushbu muddat davomida buyurtmalar va to‘lovlar amalga oshirilmagan.</p>
           </div>
@@ -157,7 +158,7 @@ import { NotificationService } from '../../core/services/notification.service';
                   <tr>
                     <td>
                       <div class="restaurant-name-cell">
-                        <span class="res-avatar">🏢</span>
+                        <span class="res-avatar"><app-icon name="building" [size]="16"></app-icon></span>
                         <span class="res-title">{{ item.restaurantName }}</span>
                       </div>
                     </td>

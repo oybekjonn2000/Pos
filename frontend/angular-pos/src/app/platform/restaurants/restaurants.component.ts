@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -8,14 +9,14 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-super-admin-restaurants',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AppIconComponent],
   template: `
     <div class="platform-container">
       <!-- Header Banner -->
       <div class="platform-header">
         <div class="platform-header__info">
           <div class="platform-badge">
-            <span class="badge-icon">🌐</span> Platforma Boshqaruv Markazi
+            <span class="badge-icon"><app-icon name="globe" [size]="14"></app-icon></span> Platforma Boshqaruv Markazi
           </div>
           <h1 class="platform-title">Restoranlar Tarmog‘i (Multi-Tenant)</h1>
           <p class="platform-subtitle">
@@ -24,7 +25,7 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
         <div class="platform-header__actions">
           <button type="button" class="btn btn-primary" (click)="openCreateModal()">
-            <span class="btn-icon">➕</span> Yangi Restoran Qo‘shish
+            <span class="btn-icon"><app-icon name="plus" [size]="14"></app-icon></span> Yangi Restoran Qo‘shish
           </button>
         </div>
       </div>
@@ -32,14 +33,14 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- Overview Stats -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-card__icon" style="background: rgba(99, 102, 241, 0.15); color: #6366f1;">🏢</div>
+          <div class="stat-card__icon"><app-icon name="building" [size]="20"></app-icon></div>
           <div class="stat-card__body">
             <div class="stat-card__label">Jami Restoranlar</div>
             <div class="stat-card__val">{{ restaurants().length }}</div>
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🟢</div>
+          <div class="stat-card__icon"><app-icon name="check-circle" [size]="20"></app-icon></div>
           <div class="stat-card__body">
             <div class="stat-card__label">Faol Filiallar (Active)</div>
             <div class="stat-card__val">{{ activeCount() }}</div>
@@ -53,7 +54,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9;">🛡️</div>
+          <div class="stat-card__icon"><app-icon name="shield" [size]="20"></app-icon></div>
           <div class="stat-card__body">
             <div class="stat-card__label">Tenant Izolyatsiyasi</div>
             <div class="stat-card__val text-sm font-semibold text-emerald-500">100% Himoyalangan</div>
@@ -64,7 +65,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- Search & Filters -->
       <div class="filter-bar">
         <div class="search-input-box">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>
           <input
             type="text"
             class="search-input"
@@ -88,7 +89,7 @@ import { NotificationService } from '../../core/services/notification.service';
             [class.active]="statusFilter() === 'ACTIVE'"
             (click)="statusFilter.set('ACTIVE')"
           >
-            🟢 Faol
+            Faol
           </button>
           <button
             type="button"
@@ -110,7 +111,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         } @else if (filteredRestaurants().length === 0) {
           <div class="state-empty">
-            <div class="empty-icon">🏢</div>
+            <div class="empty-icon"><app-icon name="building" [size]="48"></app-icon></div>
             <div class="empty-title">Restoranlar topilmadi</div>
             <div class="empty-desc">Hozircha hech qanday restoran mavjud emas yoki qidiruv natija bermadi.</div>
           </div>
@@ -132,7 +133,7 @@ import { NotificationService } from '../../core/services/notification.service';
                   <tr>
                     <td>
                       <div class="res-info-cell">
-                        <div class="res-avatar">🏢</div>
+                        <div class="res-avatar"><app-icon name="building" [size]="20"></app-icon></div>
                         <div>
                           <div class="res-name">{{ res.name }}</div>
                           <div class="res-id text-muted">ID: {{ res.id.slice(0, 8) }}...</div>
@@ -158,7 +159,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         [class.status-suspended]="res.status === 'SUSPENDED'"
                         [class.status-inactive]="res.status === 'INACTIVE'"
                       >
-                        {{ res.status === 'ACTIVE' ? '🟢 FAOL' : (res.status === 'SUSPENDED' ? '⏸️ TO‘XTATILGAN' : '⚪ NOFAOL') }}
+                        {{ res.status === 'ACTIVE' ? 'FAOL' : (res.status === 'SUSPENDED' ? 'TO‘XTATILGAN' : 'NOFAOL') }}
                       </span>
                     </td>
                     <td style="text-align: right">
@@ -169,7 +170,7 @@ import { NotificationService } from '../../core/services/notification.service';
                           (click)="goToDetail(res.id)"
                           title="Restoran monitoringi va tafsilotlari"
                         >
-                          📊 Tafsilotlar
+                          <app-icon name="bar-chart" [size]="14"></app-icon> Tafsilotlar
                         </button>
                         <button
                           type="button"
@@ -177,7 +178,7 @@ import { NotificationService } from '../../core/services/notification.service';
                           (click)="openAddAdminModal(res)"
                           title="Restoran Admini yaratish"
                         >
-                          👤 + Admin
+                          <app-icon name="user-plus" [size]="14"></app-icon> Admin
                         </button>
                         @if (res.status === 'ACTIVE') {
                           <button
@@ -213,8 +214,8 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="modal-backdrop">
           <div class="modal-dialog" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3 class="modal-title">🏢 Yangi Restoran Ro‘yxatdan O‘tkazish</h3>
-              <button type="button" class="btn-close" (click)="closeCreateModal()">✕</button>
+              <h3 class="modal-title"><app-icon name="building" [size]="20"></app-icon> Yangi Restoran Ro‘yxatdan O‘tkazish</h3>
+              <button type="button" class="btn-close" (click)="closeCreateModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <form [formGroup]="createForm" (ngSubmit)="submitCreate()">
               <div class="modal-body">
@@ -291,8 +292,8 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="modal-backdrop">
           <div class="modal-dialog" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3 class="modal-title">👤 Restoran Admini Yaratish: {{ selectedRestaurant()?.name }}</h3>
-              <button type="button" class="btn-close" (click)="closeAdminModal()">✕</button>
+              <h3 class="modal-title"><app-icon name="user" [size]="20"></app-icon> Restoran Admini Yaratish: {{ selectedRestaurant()?.name }}</h3>
+              <button type="button" class="btn-close" (click)="closeAdminModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <form [formGroup]="adminForm" (ngSubmit)="submitAdmin()">
               <div class="modal-body">

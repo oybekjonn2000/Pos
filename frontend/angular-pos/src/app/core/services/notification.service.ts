@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
+import { TranslationService } from './translation.service';
 
 export interface Notification {
   id: string;
@@ -12,6 +13,7 @@ export interface Notification {
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
+  private i18n = inject(TranslationService);
   readonly notifications = signal<Notification[]>([]);
 
   success(message: string, duration = 4000): void {
@@ -40,7 +42,8 @@ export class NotificationService {
 
   private add(notification: Omit<Notification, 'id'>): void {
     const id = Date.now().toString();
-    this.notifications.update(ns => [...ns, { ...notification, id }]);
+    const translatedMessage = this.i18n.translateMessageOrKey(notification.message);
+    this.notifications.update(ns => [...ns, { ...notification, message: translatedMessage, id }]);
 
     if (notification.duration) {
       setTimeout(() => this.remove(id), notification.duration);

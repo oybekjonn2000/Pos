@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -8,14 +9,14 @@ import { ThemeService } from '../../core/services/theme.service';
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AppIconComponent],
   template: `
     <div class="landing-page">
       <!-- Public Header Navbar -->
       <header class="landing-header">
         <div class="container header-container">
           <div class="brand" routerLink="/">
-            <span class="brand-icon">🍽️</span>
+            <span class="brand-icon"><app-icon name="utensils" [size]="28"></app-icon></span>
             <span class="brand-name">Restaurant<strong>POS</strong> <span class="badge-saas">SaaS</span></span>
           </div>
 
@@ -29,7 +30,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <div class="header-actions">
             <!-- Theme toggle -->
             <button type="button" class="btn-theme-toggle" (click)="theme.toggleTheme()" [title]="theme.isDark() ? 'Kunduzgi rejim (Light)' : 'Tungi rejim (Dark)'">
-              {{ theme.isDark() ? '☀️' : '🌙' }}
+              <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="16"></app-icon>
             </button>
 
             @if (auth.isAuthenticated()) {
@@ -66,10 +67,10 @@ import { ThemeService } from '../../core/services/theme.service';
 
           <div class="hero-cta-group">
             <a routerLink="/register" class="btn btn-primary btn-lg">
-              🚀 15 kun bepul boshlash
+              <app-icon name="zap" [size]="16"></app-icon> 15 kun bepul boshlash
             </a>
             <a href="#pricing" class="btn btn-outline btn-lg">
-              💳 Tariflarni ko'rish
+              <app-icon name="credit-card" [size]="16"></app-icon> Tariflarni ko'rish
             </a>
           </div>
 
@@ -107,7 +108,7 @@ import { ThemeService } from '../../core/services/theme.service';
           <div class="features-grid">
             <!-- Feature 1 -->
             <div class="feature-card">
-              <div class="feature-icon icon-blue">📱</div>
+              <div class="feature-icon"><app-icon name="smartphone" [size]="28"></app-icon></div>
               <h3 class="feature-title">Ofitsiantlar Boshqaruvi</h3>
               <p class="feature-text">
                 Interaktiv stollar xaritasi, buyurtmalarni tezkor kiritish, ofitsiant shaxsiy PIN-kodi va stollarni boshqarish.
@@ -116,7 +117,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 2 -->
             <div class="feature-card">
-              <div class="feature-icon icon-amber">👨‍🍳</div>
+              <div class="feature-icon"><app-icon name="chef" [size]="28"></app-icon></div>
               <h3 class="feature-title">Oshxona Ekranlari (KDS)</h3>
               <p class="feature-text">
                 Buyurtmalar avtomatik sexlarga (Issiq ovqat, Mangal, Bar) taqsimlanadi. Tayyor bo'lish vaqti va holatlar nazorati.
@@ -125,7 +126,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 3 -->
             <div class="feature-card">
-              <div class="feature-icon icon-green">💵</div>
+              <div class="feature-icon"><app-icon name="dollar-sign" [size]="28"></app-icon></div>
               <h3 class="feature-title">Kassa va To'lovlar</h3>
               <p class="feature-text">
                 Naqd, karta, Click/Payme va aralash to'lovlar. Chek chiqarish, xizmat foizini hisoblash va smenani yopish.
@@ -134,7 +135,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 4 -->
             <div class="feature-card">
-              <div class="feature-icon icon-purple">📦</div>
+              <div class="feature-icon"><app-icon name="package" [size]="28"></app-icon></div>
               <h3 class="feature-title">Ombor va Retseptlar</h3>
               <p class="feature-text">
                 Mahsulotlar tarkibi (ingredientlar), xomashyo sarfi, qoldiqlar tahlili va mahsulotlar tannarxi kalkulyatsiyasi.
@@ -152,7 +153,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 6 -->
             <div class="feature-card">
-              <div class="feature-icon icon-emerald">🖨️</div>
+              <div class="feature-icon"><app-icon name="printer" [size]="28"></app-icon></div>
               <h3 class="feature-title">Printer bilan Ishlash</h3>
               <p class="feature-text">
                 80mm va 58mm termal printerlar bilan to'liq integratsiya. Oshxona va kassa cheklarini avtomatik chop etish.
@@ -161,7 +162,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 7 -->
             <div class="feature-card">
-              <div class="feature-icon icon-indigo">🌐</div>
+              <div class="feature-icon"><app-icon name="globe" [size]="28"></app-icon></div>
               <h3 class="feature-title">Online va Offline Ishlash</h3>
               <p class="feature-text">
                 Internet uzilib qolgan taqdirda ham lokal tarmoq (LAN) orqali kassa va oshxona to'xtovsiz ishlashda davom etadi.
@@ -170,7 +171,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 8 -->
             <div class="feature-card">
-              <div class="feature-icon icon-rose">👥</div>
+              <div class="feature-icon"><app-icon name="users" [size]="28"></app-icon></div>
               <h3 class="feature-title">Xodimlarni Boshqarish</h3>
               <p class="feature-text">
                 Admin, Menejer, Kassir, Ofitsiant, Oshpaz rollari. Har bir xodim uchun shaxsiy ruxsatlar va faoliyat auditi.
@@ -179,7 +180,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 9 -->
             <div class="feature-card">
-              <div class="feature-icon icon-violet">📊</div>
+              <div class="feature-icon"><app-icon name="bar-chart" [size]="28"></app-icon></div>
               <h3 class="feature-title">Moliya va Hisobotlar</h3>
               <p class="feature-text">
                 Kunlik va oylik tushum, sof foyda, eng xaridorgir taomlar, ofitsiantlar reytingi va sotuvlar dinamikasi.
@@ -255,18 +256,18 @@ import { ThemeService } from '../../core/services/theme.service';
                 </div>
 
                 <div class="plan-limits">
-                  <div class="limit-line">🪑 Stollar: <strong class="text-success">♾️ Cheksiz</strong></div>
-                  <div class="limit-line">👥 Xodimlar: <strong class="text-success">♾️ Cheksiz</strong></div>
-                  <div class="limit-line">🍔 Mahsulotlar: <strong class="text-success">♾️ Cheksiz</strong></div>
-                  <div class="limit-line">🍳 Oshxonalar: <strong class="text-success">♾️ Cheksiz</strong></div>
+                  <div class="limit-line"><app-icon name="grid" [size]="14"></app-icon> Stollar: <strong class="text-success">Cheksiz</strong></div>
+                  <div class="limit-line"><app-icon name="users" [size]="14"></app-icon> Xodimlar: <strong class="text-success">Cheksiz</strong></div>
+                  <div class="limit-line"><app-icon name="utensils" [size]="14"></app-icon> Mahsulotlar: <strong class="text-success">Cheksiz</strong></div>
+                  <div class="limit-line"><app-icon name="chef" [size]="14"></app-icon> Oshxonalar: <strong class="text-success">Cheksiz</strong></div>
                 </div>
 
                 <div class="plan-features">
                   <ul class="features-list">
                     @for (feat of getPlanFeatures(plan); track feat) {
-                      <li [class.feature-excluded]="feat.startsWith('❌')">
-                        <span class="check-icon">{{ feat.startsWith('❌') ? '—' : '✓' }}</span>
-                        {{ feat }}
+                      <li [class.feature-excluded]="feat.startsWith('- ')">
+                        <span class="check-icon"><app-icon [name]="feat.startsWith('- ') ? 'minus' : 'check'" [size]="14"></app-icon></span>
+                        {{ feat.startsWith('- ') ? feat.substring(2) : feat }}
                       </li>
                     }
                   </ul>
@@ -355,8 +356,8 @@ import { ThemeService } from '../../core/services/theme.service';
           <h2>Restoraningizni zamonaviy darajaga olib chiqing</h2>
           <p>Super-adminga bog'lanish shart emas. Hoziroq ro'yxatdan o'ting va bugunoq ish boshlang.</p>
           <div class="cta-buttons">
-            <a routerLink="/register" class="btn btn-primary btn-lg">🚀 Restoranni ro'yxatdan o'tkazish</a>
-            <a routerLink="/login" class="btn btn-outline btn-lg">🔑 Tizimga kirish</a>
+            <a routerLink="/register" class="btn btn-primary btn-lg"><app-icon name="zap" [size]="16"></app-icon> Restoranni ro'yxatdan o'tkazish</a>
+            <a routerLink="/login" class="btn btn-outline btn-lg"><app-icon name="key" [size]="16"></app-icon> Tizimga kirish</a>
           </div>
         </div>
       </section>
@@ -366,7 +367,7 @@ import { ThemeService } from '../../core/services/theme.service';
         <div class="container footer-content">
           <div class="footer-col brand-col">
             <div class="brand">
-              <span class="brand-icon">🍽️</span>
+              <span class="brand-icon"><app-icon name="utensils" [size]="28"></app-icon></span>
               <span class="brand-name">Restaurant<strong>POS</strong> SaaS</span>
             </div>
             <p class="brand-tagline">O'zbekiston restoranlari va kafelari uchun zamonaviy bulutli va lokal POS tizimi.</p>
@@ -1082,8 +1083,8 @@ export class LandingComponent implements OnInit {
     if (plan.code === 'PRO') {
       return [
         '⭐️ Barcha STANDARD imkoniyatlari',
-        '✅ Oshxona Ekrani (KDS)',
-        '✅ Mobil Ofitsiant Ilovasi',
+        'Oshxona Ekrani (KDS)',
+        'Mobil Ofitsiant Ilovasi',
         'Cheksiz xodimlar, stollar va mahsulotlar',
         'Sexlar bo‘yicha avtomatik marshrutlash',
         'LAN va Offline/Online sinxronlash',
@@ -1098,8 +1099,8 @@ export class LandingComponent implements OnInit {
         'Ombor va mahsulotlar kirim-chiqimi',
         'P&L va barcha moliya hisobotlari',
         'LAN va Offline/Online sinxronlash',
-        '❌ Oshxona Ekrani (KDS) kirmaydi',
-        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+        '- Oshxona Ekrani (KDS) kirmaydi',
+        '- Mobil Ofitsiant ilovasi kirmaydi'
       ];
     } else {
       // TRIAL
@@ -1110,8 +1111,8 @@ export class LandingComponent implements OnInit {
         'Kassa, to‘lovlar va chek chiqarish',
         'Ombor va hisobotlar',
         'LAN va Offline/Online sinxronlash',
-        '❌ Oshxona Ekrani (KDS) kirmaydi',
-        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+        '- Oshxona Ekrani (KDS) kirmaydi',
+        '- Mobil Ofitsiant ilovasi kirmaydi'
       ];
     }
   }

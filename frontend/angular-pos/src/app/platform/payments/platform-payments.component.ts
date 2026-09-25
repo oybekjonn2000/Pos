@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +7,7 @@ import { BillingService, PaymentHistoryItem } from '../../core/services/billing.
 @Component({
   selector: 'app-platform-payments',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="platform-payments-page">
       <div class="page-header">
@@ -16,7 +17,7 @@ import { BillingService, PaymentHistoryItem } from '../../core/services/billing.
         </div>
 
         <button class="btn btn-primary" (click)="loadPayments()">
-          🔄 Yangilash
+          <app-icon name="refresh" [size]="14"></app-icon> Yangilash
         </button>
       </div>
 

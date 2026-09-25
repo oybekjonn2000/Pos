@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +14,7 @@ import {
 @Component({
   selector: 'app-restaurant-billing',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="billing-container">
       <!-- Page Header -->
@@ -41,7 +42,7 @@ import {
           [class.active]="activeTab === 'form'"
           (click)="activeTab = 'form'"
         >
-          📝 Obunaga Ariza Berish
+          <app-icon name="file-text" [size]="16"></app-icon> Obunaga Ariza Berish
         </button>
         <button 
           type="button" 
@@ -49,7 +50,7 @@ import {
           [class.active]="activeTab === 'history'"
           (click)="activeTab = 'history'; loadHistory()"
         >
-          📜 Arizalar Tarixi
+          <app-icon name="clock" [size]="16"></app-icon> Arizalar Tarixi
           @if (requestHistory().length > 0) {
             <span class="tab-badge">{{ requestHistory().length }}</span>
           }
@@ -95,7 +96,7 @@ import {
               @if (latestRequest()!.receiptUrl) {
                 <div class="receipt-link-row">
                   <a [href]="resolveReceiptUrl(latestRequest()!.receiptUrl)" target="_blank" class="receipt-preview-btn">
-                    📄 Yuklangan to'lov chekini ko'rish
+                    <app-icon name="file-text" [size]="16"></app-icon> Yuklangan to'lov chekini ko'rish
                   </a>
                 </div>
               }
@@ -112,7 +113,7 @@ import {
         @if (latestRequest() && latestRequest()!.status === 'REJECTED') {
           <div class="status-banner banner-rejected">
             <div class="banner-icon-col">
-              <span class="icon-static">❌</span>
+              <span class="icon-static"><app-icon name="x" [size]="16"></app-icon></span>
             </div>
             <div class="banner-body">
               <div class="banner-badge red">RAD ETILDI</div>
@@ -162,9 +163,9 @@ import {
                     </div>
 
                     <div class="plan-features-mini">
-                      <div class="feat-item">✓ Cheksiz buyurtmalar</div>
-                      <div class="feat-item">✓ KDS Oshxona tizimi</div>
-                      <div class="feat-item">✓ Hisobotlar & Statistika</div>
+                      <div class="feat-item"><app-icon name="check" [size]="14"></app-icon> Cheksiz buyurtmalar</div>
+                      <div class="feat-item"><app-icon name="check" [size]="14"></app-icon> KDS Oshxona tizimi</div>
+                      <div class="feat-item"><app-icon name="check" [size]="14"></app-icon> Hisobotlar & Statistika</div>
                     </div>
                   </div>
                 }
@@ -259,9 +260,9 @@ import {
                     [title]="'Karta raqamini nusxalash'"
                   >
                     @if (copied()) {
-                      <span class="copied-indicator">✓ Nusxalandi!</span>
+                      <span class="copied-indicator"><app-icon name="check" [size]="14"></app-icon> Nusxalandi!</span>
                     } @else {
-                      <span class="copy-text">📋 Nusxa olish</span>
+                      <span class="copy-text"><app-icon name="clipboard" [size]="14"></app-icon> Nusxa olish</span>
                     }
                   </button>
                 </div>
@@ -280,7 +281,7 @@ import {
 
               <!-- INSTRUCTIONS BOX -->
               <div class="instructions-box">
-                <div class="inst-icon">💡</div>
+                <div class="inst-icon"><app-icon name="info" [size]="20"></app-icon></div>
                 <div class="inst-text">
                   <strong>To'lov izohi:</strong>
                   {{ paymentCard()?.instructions || 'To‘lov qilgach, chek skrinshotini quyida biriktiring va ariza yuboring.' }}
@@ -316,7 +317,7 @@ import {
 
                 @if (!selectedFile) {
                   <div class="dropzone-empty">
-                    <div class="upload-icon-circle">📤</div>
+                    <div class="upload-icon-circle"><app-icon name="upload" [size]="24"></app-icon></div>
                     <div class="dropzone-text">
                       <strong>Chek faylini tanlash</strong> yoki shu yerga tashlang
                     </div>
@@ -328,13 +329,13 @@ import {
                       @if (previewUrl) {
                         <img [src]="previewUrl" alt="Chek preview" class="preview-thumbnail" />
                       } @else {
-                        <div class="pdf-icon-box">📄</div>
+                        <div class="pdf-icon-box"><app-icon name="file-text" [size]="20"></app-icon></div>
                       }
                       <div class="file-details">
                         <span class="file-name">{{ selectedFile.name }}</span>
                         <span class="file-size">{{ formatFileSize(selectedFile.size) }}</span>
                       </div>
-                      <button type="button" class="btn-remove-file" (click)="removeFile($event)">✕</button>
+                      <button type="button" class="btn-remove-file" (click)="removeFile($event)"><app-icon name="x" [size]="14"></app-icon></button>
                     </div>
                   </div>
                 }
@@ -364,12 +365,12 @@ import {
                     <span class="spinner-sm"></span>
                     <span>Ariza yuborilmoqda...</span>
                   } @else {
-                    <span>🚀 Ariza Yuborish ({{ formatPrice(totalAmount()) }} UZS)</span>
+                    <app-icon name="send" [size]="16"></app-icon> <span>Ariza Yuborish ({{ formatPrice(totalAmount()) }} UZS)</span>
                   }
                 </button>
 
                 @if (!selectedFile) {
-                  <p class="submit-warning">⚠️ Iltimos, arizani yuborish uchun to'lov chekini biriktiring</p>
+                  <p class="submit-warning"><app-icon name="alert-triangle" [size]="14"></app-icon> Iltimos, arizani yuborish uchun to'lov chekini biriktiring</p>
                 }
               </div>
 
@@ -394,7 +395,7 @@ import {
               <p class="history-subtitle">Restoraningiz tomonidan yuborilgan barcha obuna so'rovlari va ularning holati</p>
             </div>
             <button class="btn btn-sm btn-outline-refresh" (click)="loadHistory()" [disabled]="loadingHistory()">
-              🔄 Yangilash
+              <app-icon name="refresh" [size]="14"></app-icon> Yangilash
             </button>
           </div>
 
@@ -405,7 +406,7 @@ import {
             </div>
           } @else if (requestHistory().length === 0) {
             <div class="empty-state">
-              <span class="empty-icon">📭</span>
+              <span class="empty-icon"><app-icon name="inbox" [size]="48"></app-icon></span>
               <p>Hozircha hech qanday ariza topshirilmagan.</p>
               <button class="btn btn-primary-sm mt-3" (click)="activeTab = 'form'">
                 + Yangi Ariza Berish
@@ -446,11 +447,11 @@ import {
                           @if (isImage(req.receiptUrl)) {
                             <div class="receipt-thumb-wrapper" (click)="openReceiptModal(resolveReceiptUrl(req.receiptUrl))">
                               <img [src]="resolveReceiptUrl(req.receiptUrl)" alt="Chek" class="receipt-thumb" />
-                              <span class="thumb-hover-overlay">🔍</span>
+                              <span class="thumb-hover-overlay"><app-icon name="search" [size]="20"></app-icon></span>
                             </div>
                           } @else {
                             <a [href]="resolveReceiptUrl(req.receiptUrl)" target="_blank" class="receipt-pdf-link">
-                              📄 PDF Chek
+                              <app-icon name="file-text" [size]="16"></app-icon> PDF Chek
                             </a>
                           }
                         } @else {
@@ -507,7 +508,7 @@ import {
           <div class="modal-card receipt-modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3 class="modal-title">To'lov Cheki Skrinshoti</h3>
-              <button type="button" class="btn-close-modal" (click)="activeReceiptModal.set(null)">✕</button>
+              <button type="button" class="btn-close-modal" (click)="activeReceiptModal.set(null)"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body-img">
               <img [src]="resolveReceiptUrl(activeReceiptModal())" alt="Chek to'liq rasm" class="full-receipt-img" />
@@ -2030,9 +2031,9 @@ export class RestaurantBillingComponent implements OnInit {
 
   getStatusLabel(status?: string): string {
     switch (status) {
-      case 'PENDING_APPROVAL': return '🟡 Kutilmoqda';
-      case 'APPROVED': return '✅ Faollashtirilgan';
-      case 'REJECTED': return '❌ Rad etilgan';
+      case 'PENDING_APPROVAL': return 'Kutilmoqda';
+      case 'APPROVED': return 'Faollashtirilgan';
+      case 'REJECTED': return 'Rad etilgan';
       case 'CANCELLED': return 'Bekor qilingan';
       default: return status || '';
     }

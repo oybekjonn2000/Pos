@@ -6,30 +6,32 @@ import { TableService, RestaurantTable, TableZone, CreateTableRequest } from '..
 import { NotificationService } from '../core/services/notification.service';
 import { AuthService } from '../core/services/auth.service';
 import { WebsocketService } from '../core/services/websocket.service';
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-tables',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="tables-page fade-in">
       @if (!isWaiter()) {
         <!-- Header -->
         <div class="page-header">
           <div>
-            <h1 class="page-title">Stollar Xaritasi</h1>
-            <p class="page-subtitle">Restoran stollari va ularning real holati (Band / Bo'sh)</p>
+            <h1 class="page-title">{{ 'tables.title' | translate }}</h1>
+            <p class="page-subtitle">{{ 'tables.subtitle' | translate }}</p>
           </div>
           <div class="header-actions">
             <button class="btn btn--secondary" (click)="loadAll()">
-              <span>🔄</span> Yangilash
+              <app-icon name="refresh" [size]="16"></app-icon> {{ 'common.refresh' | translate }}
             </button>
             @if (canManageTables()) {
               <button class="btn btn--secondary" (click)="openAddZoneModal()">
-                <span>🏛️</span> + Yangi Joy
+                <app-icon name="hall" [size]="16"></app-icon> + {{ 'tables.addZone' | translate }}
               </button>
               <button class="btn btn--primary" (click)="openAddModal()">
-                <span>➕</span> Stol Qo'shish
+                <app-icon name="plus" [size]="16"></app-icon> {{ 'tables.newTable' | translate }}
               </button>
             }
           </div>
@@ -38,17 +40,17 @@ import { WebsocketService } from '../core/services/websocket.service';
         <!-- Stats Summary -->
         <div class="tables-stats">
           <div class="stat-pill stat-pill--total">
-            <span class="stat-label">Jami Stollar:</span>
+            <span class="stat-label">{{ 'common.total' | translate }} {{ 'tables.table' | translate }}:</span>
             <span class="stat-value">{{ tables().length }}</span>
           </div>
           <div class="stat-pill stat-pill--free">
             <span class="stat-indicator"></span>
-            <span class="stat-label">Bo'sh (FREE):</span>
+            <span class="stat-label">{{ 'tables.statusAvailable' | translate }}:</span>
             <span class="stat-value">{{ freeCount() }}</span>
           </div>
           <div class="stat-pill stat-pill--occupied">
             <span class="stat-indicator"></span>
-            <span class="stat-label">Band (OCCUPIED):</span>
+            <span class="stat-label">{{ 'tables.statusOccupied' | translate }}:</span>
             <span class="stat-value">{{ occupiedCount() }}</span>
           </div>
         </div>
@@ -58,18 +60,18 @@ import { WebsocketService } from '../core/services/websocket.service';
       <div class="zone-filter-bar">
         <div class="zone-tabs-wrap">
           <div class="zone-filter-header">
-            <span class="zone-filter-icon">📍</span>
-            <span class="zone-filter-title">Joylashuv (Zona):</span>
+            <span class="zone-filter-icon"><app-icon name="map-pin" [size]="16"></app-icon></span>
+            <span class="zone-filter-title">{{ 'tables.zoneName' | translate }}:</span>
           </div>
           <div class="zone-tabs">
             <button class="zone-tab" [class.active]="selectedZoneId() === null" (click)="selectZone(null)">
-              <span class="zone-tab-icon">🌐</span>
-              <span class="zone-tab-name">Barchasi</span>
+              <span class="zone-tab-icon"><app-icon name="globe" [size]="16"></app-icon></span>
+              <span class="zone-tab-name">{{ 'common.all' | translate }}</span>
               <span class="zone-tab-count">{{ tables().length }}</span>
             </button>
             @for (zone of zones(); track zone.id) {
               <button class="zone-tab" [class.active]="selectedZoneId() === zone.id" (click)="selectZone(zone.id)">
-                <span class="zone-tab-icon">{{ getZoneIcon(zone.name) }}</span>
+                <span class="zone-tab-icon"><app-icon [name]="getZoneIcon(zone.name)" [size]="16"></app-icon></span>
                 <span class="zone-tab-name">{{ zone.name }}</span>
                 @if (zone.percentage && zone.percentage > 0) {
                   <span class="zone-tab-pct">+{{ zone.percentage }}%</span>
@@ -85,10 +87,10 @@ import { WebsocketService } from '../core/services/websocket.service';
         @if (canManageTables() && selectedZone()) {
           <div class="zone-action-buttons">
             <button class="btn-zone-action" (click)="openEditZoneModal(selectedZone()!)" title="Joyni tahrirlash">
-              ✏️ Tahrirlash
+              <app-icon name="edit" [size]="14"></app-icon> {{ 'common.edit' | translate }}
             </button>
             <button class="btn-zone-action btn-zone-action--danger" (click)="deleteCurrentZone(selectedZone()!)" title="Joyni o'chirish">
-              🗑️ O'chirish
+              <app-icon name="trash" [size]="14"></app-icon> {{ 'common.delete' | translate }}
             </button>
           </div>
         }
@@ -98,16 +100,16 @@ import { WebsocketService } from '../core/services/websocket.service';
       @if (loading()) {
         <div class="loading-container">
           <div class="spinner"></div>
-          <p>Stollar yuklanmoqda...</p>
+          <p>{{ 'common.loading' | translate }}</p>
         </div>
       } @else if (filteredTables().length === 0) {
         <div class="empty-state">
-          <div class="empty-icon">🪑</div>
-          <h3>Stollar topilmadi</h3>
+          <div class="empty-icon"><app-icon name="tables" [size]="48"></app-icon></div>
+          <h3>{{ 'common.noRecords' | translate }}</h3>
           <p>Ushbu zonada hozircha stollar mavjud emas.</p>
           @if (canManageTables()) {
             <button class="btn btn--primary mt-4" (click)="openAddModal()">
-              <span>➕</span> Shu zonaga stol qo'shish
+              <app-icon name="plus" [size]="16"></app-icon> Shu zonaga stol qo'shish
             </button>
           }
         </div>
@@ -123,40 +125,40 @@ import { WebsocketService } from '../core/services/websocket.service';
               <div class="table-card__header">
                 <span class="table-card__number">#{{ table.tableNumber }}</span>
                 @if (table.status === 'FREE') {
-                  <span class="table-status-badge badge--free">BOʻSH</span>
+                  <span class="table-status-badge badge--free">{{ 'tables.statusAvailable' | translate }}</span>
                 } @else if (table.myTable === false) {
-                  <span class="table-status-badge badge--other-waiter">🔒 BAND (Boshqa ofitsiant)</span>
+                  <span class="table-status-badge badge--other-waiter"><app-icon name="lock" [size]="12"></app-icon> BAND (Boshqa ofitsiant)</span>
                 } @else {
-                  <span class="table-status-badge badge--occupied">BAND (Mening stolim)</span>
+                  <span class="table-status-badge badge--occupied">{{ 'tables.statusOccupied' | translate }}</span>
                 }
               </div>
 
               <!-- Zone Badge -->
               @if (table.zoneName) {
                 <div class="table-card__zone-badge">
-                  <span>{{ getZoneIcon(table.zoneName) }} {{ table.zoneName }}</span>
+                  <span><app-icon [name]="getZoneIcon(table.zoneName)" [size]="12"></app-icon> {{ table.zoneName }}</span>
                 </div>
               }
 
               <div class="table-card__body">
                 <div class="table-card__icon">
-                  {{ table.status === 'FREE' ? '🟢' : (table.myTable === false ? '🔒' : '🔴') }}
+                  <app-icon [name]="table.status === 'FREE' ? 'tables' : (table.myTable === false ? 'lock' : 'clock')" [size]="28"></app-icon>
                 </div>
                 <div class="table-card__name">{{ table.name }}</div>
 
                 @if (table.status === 'FREE') {
                   <div class="table-card__capacity">
-                    <span>👥 {{ table.capacity }} kishilik</span>
+                    <span><app-icon name="users" [size]="14"></app-icon> {{ table.capacity }} kishilik</span>
                   </div>
                 } @else if (table.myTable === false) {
                   <div class="table-card__other-waiter-info">
-                    <span class="other-waiter-badge">👤 Boshqa ofitsiant</span>
+                    <span class="other-waiter-badge"><app-icon name="user" [size]="12"></app-icon> Boshqa ofitsiant</span>
                     <p class="other-waiter-hint">Bu stol boshqa ofitsantga biriktirilgan</p>
                   </div>
                 } @else {
                   <div class="table-card__active-order">
                     <div class="table-card__item-count">
-                      🍽️ {{ table.itemCount || 0 }} ta mahsulot
+                      <app-icon name="products" [size]="14"></app-icon> {{ table.itemCount || 0 }} ta mahsulot
                     </div>
                     <div class="table-card__amount">
                       {{ formatPrice(table.totalAmount || 0) }}
@@ -168,20 +170,20 @@ import { WebsocketService } from '../core/services/websocket.service';
               <div class="table-card__footer">
                 @if (table.status === 'FREE') {
                   <button class="btn-action btn-action--order">
-                    ➕ Buyurtma ochish
+                    <app-icon name="plus" [size]="14"></app-icon> {{ 'tables.openOrder' | translate }}
                   </button>
                 } @else if (table.myTable === false) {
                   <button class="btn-action btn-action--blocked" disabled title="Bu stol boshqa ofitsantga biriktirilgan">
-                    🚫 Biriktirilgan
+                    <app-icon name="ban" [size]="14"></app-icon> Biriktirilgan
                   </button>
                 } @else {
                   <div class="table-card__btn-group">
                     <button class="btn-action btn-action--view">
-                      👀 OCHISH
+                      <app-icon name="eye" [size]="14"></app-icon> {{ 'common.view' | translate }}
                     </button>
                     @if (!table.itemCount || table.itemCount === 0) {
                       <button class="btn-action btn-action--release" (click)="onReleaseTable($event, table)" title="Bo'sh stolni bo'shatish">
-                        🔓 Bo'shatish
+                        <app-icon name="unlock" [size]="14"></app-icon> Bo'shatish
                       </button>
                     }
                   </div>
@@ -198,10 +200,10 @@ import { WebsocketService } from '../core/services/websocket.service';
           <div class="modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div>
-                <h3 class="modal-title">Yangi Stol Qo'shish</h3>
+                <h3 class="modal-title">{{ 'tables.newTable' | translate }}</h3>
                 <p class="modal-sub">Stol ma'lumotlari va uning joylashuvini belgilang</p>
               </div>
-              <button class="modal-close" (click)="closeModal()">✕</button>
+              <button class="modal-close" (click)="closeModal()"><app-icon name="close" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <!-- Location / Zone Selection (MANDATORY) -->
@@ -214,11 +216,11 @@ import { WebsocketService } from '../core/services/websocket.service';
                   <select [(ngModel)]="newTable.zoneId" class="pos-input pos-select">
                     <option value="" disabled>-- Joylashuvni tanlang --</option>
                     @for (zone of zones(); track zone.id) {
-                      <option [value]="zone.id">{{ getZoneIcon(zone.name) }} {{ zone.name }}</option>
+                      <option [value]="zone.id">{{ zone.name }}</option>
                     }
                   </select>
                   <button type="button" class="btn-add-zone" (click)="toggleCustomZone()" [title]="showCustomZone() ? 'Yopish' : 'Yangi zona kiritish'">
-                    {{ showCustomZone() ? '✕' : '+ Yangi joy' }}
+                    {{ showCustomZone() ? 'Bekor qilish' : '+ Yangi joy' }}
                   </button>
                 </div>
                 
@@ -232,7 +234,7 @@ import { WebsocketService } from '../core/services/websocket.service';
                 }
 
                 @if (!newTable.zoneId && !newTable.zoneName) {
-                  <span class="field-validation-error">⚠️ Stol joylashuvini (zal, ko'cha, ayvon, podval...) tanlash shart!</span>
+                  <span class="field-validation-error"><app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Stol joylashuvini (zal, ko'cha, ayvon, podval...) tanlash shart!</span>
                 }
               </div>
 
@@ -256,11 +258,11 @@ import { WebsocketService } from '../core/services/websocket.service';
             </div>
 
             <div class="modal-footer">
-              <button class="btn btn--secondary" (click)="closeModal()">Bekor qilish</button>
+              <button class="btn btn--secondary" (click)="closeModal()">{{ 'common.cancel' | translate }}</button>
               <button class="btn btn--primary" 
                       (click)="saveNewTable()" 
                       [disabled]="!newTable.tableNumber || (!newTable.zoneId && !newTable.zoneName)">
-                <span>💾</span> Saqlash
+                <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
               </button>
             </div>
           </div>
@@ -276,7 +278,7 @@ import { WebsocketService } from '../core/services/websocket.service';
                 <h3 class="modal-title">{{ editingZoneId ? 'Joyni Tahrirlash' : 'Yangi Joy Qo\'shish' }}</h3>
                 <p class="modal-sub">Joy nomi va ushbu joy uchun foizni belgilang</p>
               </div>
-              <button class="modal-close" (click)="closeZoneModal()">✕</button>
+              <button class="modal-close" (click)="closeZoneModal()"><app-icon name="close" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <div class="form-group">
@@ -302,9 +304,9 @@ import { WebsocketService } from '../core/services/websocket.service';
             </div>
 
             <div class="modal-footer">
-              <button class="btn btn--secondary" (click)="closeZoneModal()">Bekor qilish</button>
+              <button class="btn btn--secondary" (click)="closeZoneModal()">{{ 'common.cancel' | translate }}</button>
               <button class="btn btn--primary" (click)="saveZone()" [disabled]="!zoneForm.name.trim() || zoneForm.percentage === null || zoneForm.percentage < 0">
-                <span>💾</span> Saqlash
+                <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
               </button>
             </div>
           </div>
@@ -1173,28 +1175,54 @@ import { WebsocketService } from '../core/services/websocket.service';
       }
     }
 
-    /* Small screens <= 359px */
+    /* Small screens <= 359px (1 column as per requirement 5) */
     @media (max-width: 359px) {
       .tables-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
+        grid-template-columns: 1fr;
+        gap: 10px;
       }
 
       .table-card {
-        padding: 8px 6px;
+        padding: 12px 14px;
 
         &__number {
-          font-size: 13.5px;
+          font-size: 15px;
         }
 
         &__name {
-          font-size: 12px;
+          font-size: 14px;
         }
 
         .btn-action {
-          min-height: 38px;
-          font-size: 11px;
-          padding: 4px;
+          min-height: 44px;
+          font-size: 13px;
+          padding: 8px;
+        }
+      }
+    }
+
+    /* POS Monitor / Full HD (>= 1536px) */
+    @media (min-width: 1536px) {
+      .tables-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 22px;
+      }
+
+      .table-card {
+        padding: 20px;
+        border-radius: 16px;
+
+        &__number {
+          font-size: 20px;
+        }
+
+        &__name {
+          font-size: 17px;
+        }
+
+        .btn-action {
+          min-height: 46px;
+          font-size: 14px;
         }
       }
     }
@@ -1328,14 +1356,14 @@ export class TablesComponent implements OnInit, OnDestroy {
   }
 
   getZoneIcon(name?: string): string {
-    if (!name) return '📍';
+    if (!name) return 'map-pin';
     const n = name.toLowerCase();
-    if (n.includes('zal')) return '🏛️';
-    if (n.includes('ko\'cha') || n.includes('kocha') || n.includes('tashqari')) return '🌳';
-    if (n.includes('ayvon') || n.includes('terrasa')) return '⛱️';
-    if (n.includes('podval') || n.includes('padval') || n.includes('lounge')) return '🍷';
-    if (n.includes('vip')) return '⭐';
-    return '📍';
+    if (n.includes('zal')) return 'hall';
+    if (n.includes('ko\'cha') || n.includes('kocha') || n.includes('tashqari')) return 'globe';
+    if (n.includes('ayvon') || n.includes('terrasa')) return 'sun';
+    if (n.includes('podval') || n.includes('padval') || n.includes('lounge')) return 'products';
+    if (n.includes('vip')) return 'crown';
+    return 'map-pin';
   }
 
   canManageTables(): boolean {

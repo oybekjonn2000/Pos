@@ -8,11 +8,14 @@ import { AuthService } from '../../core/services/auth.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { LanServerConfigModalComponent } from '../../shared/components/lan-server-config-modal/lan-server-config-modal.component';
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { LanguageSelectorComponent } from '../../shared/components/language-selector/language-selector.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, TopbarComponent, LanServerConfigModalComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, TopbarComponent, LanServerConfigModalComponent, AppIconComponent, LanguageSelectorComponent, TranslatePipe],
   template: `
     @if (loading.isLoading()) {
       <div class="global-loading"></div>
@@ -22,7 +25,7 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
     @if (lan.isDesktop() && lan.connectionState() !== 'ONLINE') {
       <div class="lan-alert-banner offline">
         <div class="banner-content">
-          <span class="pulse-icon">🔴</span>
+          <span class="pulse-icon"><app-icon name="alert-circle" [size]="18" class="icon--danger"></app-icon></span>
           <span class="banner-text">
             <strong>Server bilan aloqa uzildi!</strong> Qayta ulanilmoqda ({{ lan.currentServerUrl() }})...
           </span>
@@ -34,7 +37,7 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
     @if (lan.isDesktop() && lan.justReconnected()) {
       <div class="lan-alert-banner online">
         <div class="banner-content">
-          <span class="icon">🟢</span>
+          <span class="icon"><app-icon name="check-circle" [size]="18" class="icon--success"></app-icon></span>
           <span class="banner-text">
             <strong>Aloqa tiklandi!</strong> Markaziy server bilan barcha ma'lumotlar qayta sinxronlandi.
           </span>
@@ -44,11 +47,21 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
 
     <div class="pos-layout" [class.no-sidebar]="auth.isWaiter()">
       @if (!auth.isWaiter()) {
-        <app-sidebar (collapsedChange)="sidebarCollapsed = $event" (openLanSettings)="showLanModal = true" />
+        <app-sidebar 
+          [mobileOpen]="mobileMenuOpen"
+          (closeMobile)="mobileMenuOpen = false"
+          (collapsedChange)="sidebarCollapsed = $event" 
+          (openLanSettings)="showLanModal = true" />
+
+        @if (mobileMenuOpen) {
+          <div class="sidebar-mobile-backdrop" (click)="mobileMenuOpen = false"></div>
+        }
       }
 
       <div class="pos-content" [class.sidebar-collapsed]="sidebarCollapsed" [class.no-sidebar]="auth.isWaiter()">
-        <app-topbar (openLanSettings)="showLanModal = true" />
+        <app-topbar 
+          (toggleMobileMenu)="mobileMenuOpen = !mobileMenuOpen"
+          (openLanSettings)="showLanModal = true" />
         <main class="pos-page" [class.pos-page--in-pos]="isInPos()">
           <router-outlet />
         </main>
@@ -61,51 +74,55 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
         @if (auth.isSuperAdmin()) {
           <!-- Super Admin: Platform management links -->
           <a routerLink="/platform/dashboard" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">📊</span>
+            <span class="mobile-nav-icon"><app-icon name="dashboard" [size]="20"></app-icon></span>
             <span class="mobile-nav-label">Dashboard</span>
           </a>
           <a routerLink="/platform/restaurants" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">🏢</span>
+            <span class="mobile-nav-icon"><app-icon name="building" [size]="20"></app-icon></span>
             <span class="mobile-nav-label">Restoranlar</span>
           </a>
           <a routerLink="/platform/subscriptions" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">💳</span>
+            <span class="mobile-nav-icon"><app-icon name="credit-card" [size]="20"></app-icon></span>
             <span class="mobile-nav-label">Obunalar</span>
           </a>
         } @else if (auth.isWaiter()) {
           <a routerLink="/tables" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">🪑</span>
-            <span class="mobile-nav-label">Joylar</span>
+            <span class="mobile-nav-icon"><app-icon name="tables" [size]="20"></app-icon></span>
+            <span class="mobile-nav-label">{{ 'nav.tables' | translate }}</span>
           </a>
           <a routerLink="/orders" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">📋</span>
-            <span class="mobile-nav-label">Buyurtmalar</span>
+            <span class="mobile-nav-icon"><app-icon name="orders" [size]="20"></app-icon></span>
+            <span class="mobile-nav-label">{{ 'nav.orders' | translate }}</span>
           </a>
         } @else if (isCook()) {
           <a routerLink="/kitchen" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">👨‍🍳</span>
-            <span class="mobile-nav-label">Oshxona</span>
+            <span class="mobile-nav-icon"><app-icon name="chef" [size]="20"></app-icon></span>
+            <span class="mobile-nav-label">{{ 'nav.kitchen' | translate }}</span>
           </a>
         } @else {
-          <!-- Admin / Manager -->
+          <!-- Admin / Manager / Cashier -->
+          <a routerLink="/dashboard" routerLinkActive="active" class="mobile-nav-item">
+            <span class="mobile-nav-icon"><app-icon name="dashboard" [size]="20"></app-icon></span>
+            <span class="mobile-nav-label">{{ 'nav.dashboard' | translate }}</span>
+          </a>
           <a routerLink="/tables" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">🪑</span>
-            <span class="mobile-nav-label">Joylar</span>
+            <span class="mobile-nav-icon"><app-icon name="tables" [size]="20"></app-icon></span>
+            <span class="mobile-nav-label">Stollar</span>
           </a>
           <a routerLink="/orders" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">📋</span>
+            <span class="mobile-nav-icon"><app-icon name="orders" [size]="20"></app-icon></span>
             <span class="mobile-nav-label">Buyurtmalar</span>
           </a>
-          <a routerLink="/kitchen" routerLinkActive="active" class="mobile-nav-item">
-            <span class="mobile-nav-icon">👨‍🍳</span>
-            <span class="mobile-nav-label">Oshxona</span>
-          </a>
+          <button type="button" class="mobile-nav-item" (click)="mobileMenuOpen = true">
+            <span class="mobile-nav-icon"><app-icon name="products" [size]="20"></app-icon></span>
+            <span class="mobile-nav-label">{{ 'common.all' | translate }}</span>
+          </button>
         }
 
         <!-- Profile trigger button on bottom nav -->
         <button type="button" class="mobile-nav-item" (click)="showProfileModal = true">
-          <span class="mobile-nav-icon">👤</span>
-          <span class="mobile-nav-label">Profil</span>
+          <span class="mobile-nav-icon"><app-icon name="user" [size]="20"></app-icon></span>
+          <span class="mobile-nav-label">{{ 'nav.settings' | translate }}</span>
         </button>
       </nav>
     }
@@ -123,42 +140,48 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
               <h3 class="user-name">{{ auth.user()?.fullName }}</h3>
               <span class="user-role-badge">{{ auth.user()?.role || 'Foydalanuvchi' }}</span>
             </div>
-            <button class="sheet-close" (click)="showProfileModal = false">✕</button>
+            <button class="sheet-close" (click)="showProfileModal = false"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="sheet-body">
+            <!-- Language Row -->
+            <div class="sheet-row" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border);">
+              <span style="font-weight: 500; font-size: 14px;">{{ 'nav.language' | translate }}</span>
+              <app-language-selector></app-language-selector>
+            </div>
+
             <!-- Theme Toggle Row -->
             <div class="sheet-row" (click)="theme.toggleTheme()">
               <div class="sheet-row-info">
-                <span class="sheet-icon">{{ theme.isDark() ? '🌙' : '☀' }}</span>
+                <span class="sheet-icon"><app-icon [name]="theme.isDark() ? 'moon' : 'sun'" [size]="20"></app-icon></span>
                 <div>
                   <div class="sheet-row-title">Tungi / Kunduzgi rejim</div>
                   <div class="sheet-row-sub">{{ theme.isDark() ? 'Hozir: Dark (Tungi)' : 'Hozir: Light (Kunduzgi)' }}</div>
                 </div>
               </div>
-              <span class="sheet-action-arrow">➜</span>
+              <span class="sheet-action-arrow"><app-icon name="arrow-right" [size]="16"></app-icon></span>
             </div>
 
             <!-- LAN Server Status Row (Desktop Installer Only) -->
             @if (lan.isDesktop()) {
               <div class="sheet-row" (click)="showProfileModal = false; showLanModal = true">
                 <div class="sheet-row-info">
-                  <span class="sheet-icon">📡</span>
+                  <span class="sheet-icon"><app-icon name="wifi" [size]="20"></app-icon></span>
                   <div>
                     <div class="sheet-row-title">POS Server Holati</div>
                     <div class="sheet-row-sub">
-                      {{ lan.connectionState() === 'ONLINE' ? '🟢 Online' : '🔴 Offline' }}
+                      {{ lan.connectionState() === 'ONLINE' ? 'Online' : 'Offline' }}
                       ({{ lan.currentServerUrl().replace('http://', '') }})
                     </div>
                   </div>
                 </div>
-                <span class="sheet-action-arrow">⚙️</span>
+                <span class="sheet-action-arrow"><app-icon name="settings" [size]="16"></app-icon></span>
               </div>
             }
 
             <!-- Logout Button -->
             <button class="btn-mobile-logout" (click)="logout()">
-              <span>🚪</span> Tizimdan chiqish
+              <app-icon name="logout" [size]="16"></app-icon> Tizimdan chiqish
             </button>
           </div>
         </div>
@@ -453,10 +476,20 @@ import { LanServerConfigModalComponent } from '../../shared/components/lan-serve
         to { transform: translateY(0); }
       }
     }
+
+    .sidebar-mobile-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 10001;
+      animation: fadeInBackdrop 0.2s ease;
+    }
   `]
 })
 export class ShellComponent {
   sidebarCollapsed = false;
+  mobileMenuOpen = false;
   showLanModal = false;
   showProfileModal = false;
 

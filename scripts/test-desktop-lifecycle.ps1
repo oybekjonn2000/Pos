@@ -42,7 +42,7 @@ if ($pgConn.TcpTestSucceeded) {
 
 # 4. Verify Single Instance & Tray in Electron app.asar
 Write-Host "`n[4/4] Electron main.js (Single Instance & Tray) sozlamalari..." -ForegroundColor Yellow
-$mainJsPath = "d:\ANtiG\Pos\desktop\electron\main.js"
+$mainJsPath = Join-Path $PSScriptRoot "..\desktop\electron\main.js"
 if (Test-Path $mainJsPath) {
     $content = Get-Content $mainJsPath -Raw
     $hasSingleInstance = $content.Contains("requestSingleInstanceLock")

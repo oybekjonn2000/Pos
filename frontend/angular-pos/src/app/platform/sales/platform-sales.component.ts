@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,14 +9,14 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-platform-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="platform-container">
       <!-- Header Banner -->
       <div class="platform-header">
         <div class="platform-header__info">
           <div class="platform-badge">
-            <span class="badge-icon">💰</span> Savdo Monitoringi (Platforma Bo‘ylab)
+            <span class="badge-icon"><app-icon name="dollar-sign" [size]="14"></app-icon></span> Savdo Monitoringi (Platforma Bo‘ylab)
           </div>
           <h1 class="platform-title">Markazlashgan Savdo Tahlili</h1>
           <p class="platform-subtitle">
@@ -24,7 +25,7 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
         <div class="platform-header__actions">
           <button type="button" class="btn btn-secondary" (click)="loadData()" [disabled]="isLoading()">
-            <span class="btn-icon">🔄</span> Yangilash
+            <span class="btn-icon"><app-icon name="refresh" [size]="14"></app-icon></span> Yangilash
           </button>
         </div>
       </div>
@@ -134,7 +135,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         } @else if (filteredSales().length === 0) {
           <div class="empty-box">
-            <div class="empty-icon">📊</div>
+            <div class="empty-icon"><app-icon name="bar-chart" [size]="48"></app-icon></div>
             <h4>Ma’lumot topilmadi</h4>
             <p>Tanlangan sana va filtrlar bo‘yicha hali hech qanday savdo qayd etilmagan.</p>
           </div>
@@ -160,7 +161,7 @@ import { NotificationService } from '../../core/services/notification.service';
                   <tr>
                     <td>
                       <div class="restaurant-name-cell">
-                        <span class="res-avatar">🏢</span>
+                        <span class="res-avatar"><app-icon name="building" [size]="16"></app-icon></span>
                         <div class="res-details">
                           <span class="res-title">{{ item.restaurantName }}</span>
                         </div>
@@ -176,7 +177,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         [class.status-suspended]="item.status === 'SUSPENDED'"
                         [class.status-inactive]="item.status === 'INACTIVE'"
                       >
-                        {{ item.status === 'ACTIVE' ? '🟢 Faol' : (item.status === 'SUSPENDED' ? '⏸️ To‘xtatilgan' : '⚪ Nofaol') }}
+                        {{ item.status === 'ACTIVE' ? 'Faol' : (item.status === 'SUSPENDED' ? 'To‘xtatilgan' : 'Nofaol') }}
                       </span>
                     </td>
                     <td class="font-medium">{{ item.orderCount | number }}</td>
@@ -202,7 +203,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         (click)="goToRestaurantDetail(item.restaurantId)"
                         title="Restoran monitoringiga o‘tish"
                       >
-                        📊 Batafsil
+                        <app-icon name="bar-chart" [size]="14"></app-icon> Batafsil
                       </button>
                     </td>
                   </tr>

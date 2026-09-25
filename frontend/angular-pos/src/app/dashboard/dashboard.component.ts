@@ -4,25 +4,27 @@ import { RouterModule } from '@angular/router';
 import { OrderService, Order } from '../core/services/order.service';
 import { TableService, RestaurantTable } from '../core/services/table.service';
 import { AuthService } from '../core/services/auth.service';
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="dashboard-page fade-in">
       <!-- Welcome Header -->
       <div class="welcome-header">
         <div>
-          <h1 class="welcome-title">Xush kelibsiz, {{ currentUserName }}! 👋</h1>
-          <p class="welcome-subtitle">Bugungi restoran faoliyati va asosiy ko'rsatkichlar monitoringi</p>
+          <h1 class="welcome-title">{{ 'dashboard.welcome' | translate }}, {{ currentUserName }}!</h1>
+          <p class="welcome-subtitle">{{ 'dashboard.subtitle' | translate }}</p>
         </div>
 
         <div class="header-right">
           <span class="role-badge">{{ currentUserRole }}</span>
           <button class="pos-btn pos-btn--secondary" (click)="loadDashboardData()" [disabled]="loading">
-            <span [class.spinning]="loading">🔄</span>
-            <span>Yangilash</span>
+            <app-icon name="refresh" [size]="16" [class.spinning]="loading"></app-icon>
+            <span>{{ 'common.refresh' | translate }}</span>
           </button>
         </div>
       </div>
@@ -32,48 +34,48 @@ import { AuthService } from '../core/services/auth.service';
         <!-- KPI 1: Today's Revenue -->
         <div class="kpi-card kpi-card--revenue">
           <div class="kpi-header">
-            <span class="kpi-title">Bugungi Tushum</span>
-            <div class="kpi-icon">💰</div>
+            <span class="kpi-title">{{ 'dashboard.todayRevenue' | translate }}</span>
+            <div class="kpi-icon"><app-icon name="coins" [size]="28"></app-icon></div>
           </div>
-          <div class="kpi-value">{{ totalRevenue | number:'1.0-0' }} <small>so'm</small></div>
+          <div class="kpi-value">{{ totalRevenue | number:'1.0-0' }} <small>{{ 'common.currency' | translate }}</small></div>
           <div class="kpi-footer">
-            <span class="kpi-subtext">To'langan {{ paidOrdersCount }} ta buyurtma bo'yicha</span>
+            <span class="kpi-subtext">{{ 'dashboard.paidOrdersCount' | translate:{ count: paidOrdersCount } }}</span>
           </div>
         </div>
 
         <!-- KPI 2: Active Orders -->
         <div class="kpi-card kpi-card--orders">
           <div class="kpi-header">
-            <span class="kpi-title">Faol Buyurtmalar</span>
-            <div class="kpi-icon">📋</div>
+            <span class="kpi-title">{{ 'dashboard.activeOrders' | translate }}</span>
+            <div class="kpi-icon"><app-icon name="orders" [size]="28"></app-icon></div>
           </div>
           <div class="kpi-value">{{ activeOrdersCount }} <small>ta</small></div>
           <div class="kpi-footer">
-            <span class="kpi-subtext">{{ kitchenOrdersCount }} tasi oshxonada tayyorlanmoqda</span>
+            <span class="kpi-subtext">{{ 'dashboard.cookingCount' | translate:{ count: kitchenOrdersCount } }}</span>
           </div>
         </div>
 
         <!-- KPI 3: Occupied Tables -->
         <div class="kpi-card kpi-card--tables">
           <div class="kpi-header">
-            <span class="kpi-title">Band Stollar</span>
-            <div class="kpi-icon">🪑</div>
+            <span class="kpi-title">{{ 'dashboard.occupiedTables' | translate }}</span>
+            <div class="kpi-icon"><app-icon name="tables" [size]="28"></app-icon></div>
           </div>
           <div class="kpi-value">{{ occupiedTablesCount }} / {{ tables.length }} <small>band</small></div>
           <div class="kpi-footer">
-            <span class="kpi-subtext">{{ freeTablesCount }} ta stol bo'sh</span>
+            <span class="kpi-subtext">{{ 'dashboard.freeTablesCount' | translate:{ count: freeTablesCount } }}</span>
           </div>
         </div>
 
         <!-- KPI 4: Ready Orders -->
         <div class="kpi-card kpi-card--ready">
           <div class="kpi-header">
-            <span class="kpi-title">Tayyor Buyurtmalar</span>
-            <div class="kpi-icon">✅</div>
+            <span class="kpi-title">{{ 'dashboard.readyOrders' | translate }}</span>
+            <div class="kpi-icon"><app-icon name="check-circle" [size]="28"></app-icon></div>
           </div>
           <div class="kpi-value">{{ readyOrdersCount }} <small>ta</small></div>
           <div class="kpi-footer">
-            <span class="kpi-subtext">Yetkazishga tayyor holatda</span>
+            <span class="kpi-subtext">{{ 'dashboard.readyToServe' | translate }}</span>
           </div>
         </div>
       </div>
@@ -81,34 +83,34 @@ import { AuthService } from '../core/services/auth.service';
       <!-- Quick Action Shortcuts -->
       <div class="quick-actions-bar">
         <a routerLink="/pos" class="action-card action-card--pos">
-          <span class="act-icon">➕</span>
+          <span class="act-icon"><app-icon name="plus" [size]="22"></app-icon></span>
           <div class="act-info">
-            <strong>Yangi Buyurtma</strong>
-            <span>POS terminalni ochish</span>
+            <strong>{{ 'dashboard.newOrder' | translate }}</strong>
+            <span>{{ 'dashboard.openPos' | translate }}</span>
           </div>
         </a>
 
         <a routerLink="/tables" class="action-card action-card--tables">
-          <span class="act-icon">🪑</span>
+          <span class="act-icon"><app-icon name="tables" [size]="22"></app-icon></span>
           <div class="act-info">
-            <strong>Stollar Rejasi</strong>
-            <span>Zallar va stollar holati</span>
+            <strong>{{ 'nav.tables' | translate }}</strong>
+            <span>{{ 'dashboard.tablesStatus' | translate }}</span>
           </div>
         </a>
 
         <a routerLink="/kitchen" class="action-card action-card--kitchen">
-          <span class="act-icon">👨‍🍳</span>
+          <span class="act-icon"><app-icon name="chef" [size]="22"></app-icon></span>
           <div class="act-info">
-            <strong>Oshxona Ekrani (KDS)</strong>
-            <span>Taomlarni pishirish</span>
+            <strong>{{ 'nav.kitchen' | translate }}</strong>
+            <span>{{ 'dashboard.cookOrders' | translate }}</span>
           </div>
         </a>
 
         <a routerLink="/orders" class="action-card action-card--cashier">
-          <span class="act-icon">💳</span>
+          <span class="act-icon"><app-icon name="credit-card" [size]="22"></app-icon></span>
           <div class="act-info">
-            <strong>Kassa & To'lov</strong>
-            <span>Cheklar va to'lovlar</span>
+            <strong>{{ 'nav.pos' | translate }}</strong>
+            <span>{{ 'dashboard.checksAndPayments' | translate }}</span>
           </div>
         </a>
       </div>
@@ -118,12 +120,12 @@ import { AuthService } from '../core/services/auth.service';
         <!-- Left: Active Orders List -->
         <div class="pos-card section-card">
           <div class="pos-card__header">
-            <h2 class="pos-card__title">🕒 Oxirgi Faol Buyurtmalar</h2>
-            <a routerLink="/orders" class="view-all-link">Barchasi →</a>
+            <h2 class="pos-card__title"><app-icon name="clock" [size]="18"></app-icon> {{ 'dashboard.recentOrders' | translate }}</h2>
+            <a routerLink="/orders" class="view-all-link">{{ 'common.all' | translate }} →</a>
           </div>
 
           <div *ngIf="activeOrders.length === 0" class="empty-list">
-            <p>Hozirda faol buyurtmalar mavjud emas.</p>
+            <p>{{ 'orders.noActiveOrders' | translate }}</p>
           </div>
 
           <div *ngIf="activeOrders.length > 0" class="recent-orders-list">
@@ -136,7 +138,7 @@ import { AuthService } from '../core/services/auth.service';
                 </div>
               </div>
               <div class="row-right">
-                <span class="sum-tag">{{ (order.total || order.subtotal || 0) | number:'1.0-0' }} so'm</span>
+                <span class="sum-tag">{{ (order.total || order.subtotal || 0) | number:'1.0-0' }} {{ 'common.currency' | translate }}</span>
                 <span class="badge-mini" [ngClass]="order.status?.toLowerCase()">{{ order.status }}</span>
               </div>
             </div>
@@ -146,8 +148,8 @@ import { AuthService } from '../core/services/auth.service';
         <!-- Right: Tables Floor Overview -->
         <div class="pos-card section-card">
           <div class="pos-card__header">
-            <h2 class="pos-card__title">🪑 Stollar Xaritasi</h2>
-            <a routerLink="/tables" class="view-all-link">Boshqarish →</a>
+            <h2 class="pos-card__title"><app-icon name="tables" [size]="18"></app-icon> {{ 'dashboard.tablesMap' | translate }}</h2>
+            <a routerLink="/tables" class="view-all-link">{{ 'common.view' | translate }} →</a>
           </div>
 
           <div class="tables-mini-grid">
@@ -157,7 +159,7 @@ import { AuthService } from '../core/services/auth.service';
               [class.occupied]="t.status === 'OCCUPIED'"
               [class.free]="t.status !== 'OCCUPIED'">
               <span class="t-name">{{ t.name || ('Stol ' + t.tableNumber) }}</span>
-              <span class="t-status">{{ t.status === 'OCCUPIED' ? 'Band' : 'Bo‘sh' }}</span>
+              <span class="t-status">{{ (t.status === 'OCCUPIED' ? 'tables.statusOccupied' : 'tables.statusAvailable') | translate }}</span>
             </div>
           </div>
         </div>
@@ -176,23 +178,24 @@ import { AuthService } from '../core/services/auth.service';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
       gap: 16px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 20px 24px;
+      padding: clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 24px);
+      flex-wrap: wrap;
     }
 
     .welcome-title {
-      font-size: 24px;
+      font-size: clamp(18px, 2.5vw, 24px);
       font-weight: 800;
       color: var(--text-primary);
       margin: 0;
+      letter-spacing: -0.5px;
     }
 
     .welcome-subtitle {
-      font-size: 13px;
+      font-size: clamp(12px, 1.2vw, 13.5px);
       color: var(--text-muted);
       margin: 4px 0 0 0;
     }
@@ -204,30 +207,40 @@ import { AuthService } from '../core/services/auth.service';
     }
 
     .role-badge {
-      background: rgba(99, 102, 241, 0.2);
-      color: var(--primary-light);
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary);
       padding: 6px 14px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 700;
-      border: 1px solid rgba(99, 102, 241, 0.4);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      white-space: nowrap;
     }
 
     /* KPI Cards */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
+
+      @media (max-width: 1279px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
     }
 
     .kpi-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 20px;
+      padding: clamp(14px, 2vw, 20px);
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       transition: all var(--transition);
 
       &:hover {
@@ -282,18 +295,27 @@ import { AuthService } from '../core/services/auth.service';
     /* Quick Actions */
     .quick-actions-bar {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
+
+      @media (max-width: 767px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      @media (max-width: 359px) {
+        grid-template-columns: 1fr;
+      }
     }
 
     .action-card {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
-      padding: 16px;
+      padding: clamp(10px, 1.5vw, 16px);
       text-decoration: none;
       color: var(--text-primary);
       transition: all var(--transition);
@@ -305,17 +327,30 @@ import { AuthService } from '../core/services/auth.service';
       }
 
       .act-icon {
-        font-size: 28px;
+        font-size: 24px;
         background: var(--bg-card);
-        padding: 10px;
+        padding: 8px;
         border-radius: var(--radius-sm);
+        flex-shrink: 0;
       }
 
       .act-info {
         display: flex;
         flex-direction: column;
-        strong { font-size: 15px; }
-        span { font-size: 12px; color: var(--text-muted); }
+        min-width: 0;
+        strong {
+          font-size: 14px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        span {
+          font-size: 11.5px;
+          color: var(--text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
     }
 
@@ -327,11 +362,12 @@ import { AuthService } from '../core/services/auth.service';
 
       @media (max-width: 900px) {
         grid-template-columns: 1fr;
+        gap: 16px;
       }
     }
 
     .section-card {
-      padding: 20px;
+      padding: clamp(14px, 2vw, 20px);
     }
 
     .view-all-link {
@@ -355,12 +391,19 @@ import { AuthService } from '../core/services/auth.service';
       background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 12px 16px;
+      padding: 12px 14px;
+      gap: 10px;
+
+      @media (max-width: 599px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
 
       .row-left {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
+        min-width: 0;
       }
 
       .tbl-tag {
@@ -370,23 +413,33 @@ import { AuthService } from '../core/services/auth.service';
         font-size: 12px;
         padding: 4px 8px;
         border-radius: 4px;
+        flex-shrink: 0;
       }
 
       .meta-sub {
         font-size: 12px;
         color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .row-right {
         display: flex;
         align-items: center;
         gap: 10px;
+
+        @media (max-width: 599px) {
+          justify-content: space-between;
+          border-top: 1px solid var(--divider);
+          padding-top: 6px;
+        }
       }
 
       .sum-tag {
         font-weight: 700;
         color: #34d399;
-        font-size: 14px;
+        font-size: 13.5px;
       }
 
       .badge-mini {
@@ -397,6 +450,24 @@ import { AuthService } from '../core/services/auth.service';
         text-transform: uppercase;
         background: var(--bg-card);
         color: var(--text-secondary);
+      }
+    }
+
+    @media (max-width: 767px) {
+      .welcome-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        .header-right {
+          justify-content: space-between;
+          width: 100%;
+
+          .pos-btn {
+            min-height: 40px;
+            padding: 8px 14px;
+          }
+        }
       }
     }
 

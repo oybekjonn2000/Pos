@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -6,14 +7,14 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AppIconComponent],
   template: `
     <div class="pricing-page">
       <!-- Public Header Navbar -->
       <header class="public-nav">
         <div class="public-nav__container">
           <div class="public-nav__brand" routerLink="/">
-            <span class="brand-icon">🍽️</span>
+            <span class="brand-icon"><app-icon name="utensils" [size]="28"></app-icon></span>
             <span class="brand-text">Restaurant<strong>POS</strong> <span class="saas-badge">SaaS</span></span>
           </div>
 
@@ -27,7 +28,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
 
       <!-- Hero Header -->
       <section class="pricing-hero">
-        <div class="pricing-hero__badge">✨ O'zbekiston bo'ylab 500+ restoranlar ishonchi</div>
+        <div class="pricing-hero__badge"><app-icon name="sparkles" [size]="14"></app-icon> O'zbekiston bo'ylab 500+ restoranlar ishonchi</div>
         <h1 class="pricing-hero__title">Restoraningiz uchun shaffof va qulay tariflar</h1>
         <p class="pricing-hero__subtitle">
           Super-adminga bog'lanish shart emas. Hoziroq ro'yxatdan o'ting, 15 kun bepul sinab ko'ring va POS tizimini to'liq boshqaring.
@@ -76,22 +77,22 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                   <div class="limit-item">
                     <span class="limit-icon">🪑</span>
                     <span class="limit-label">Stollar soni:</span>
-                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
+                    <strong class="limit-val text-success">Cheksiz</strong>
                   </div>
                   <div class="limit-item">
-                    <span class="limit-icon">👥</span>
+                    <span class="limit-icon"><app-icon name="users" [size]="14"></app-icon></span>
                     <span class="limit-label">Xodimlar:</span>
-                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
+                    <strong class="limit-val text-success">Cheksiz</strong>
                   </div>
                   <div class="limit-item">
-                    <span class="limit-icon">🍔</span>
+                    <span class="limit-icon"><app-icon name="utensils" [size]="14"></app-icon></span>
                     <span class="limit-label">Mahsulotlar:</span>
-                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
+                    <strong class="limit-val text-success">Cheksiz</strong>
                   </div>
                   <div class="limit-item">
-                    <span class="limit-icon">🍳</span>
+                    <span class="limit-icon"><app-icon name="chef" [size]="14"></app-icon></span>
                     <span class="limit-label">Oshxonalar:</span>
-                    <strong class="limit-val text-success">♾️ Cheksiz</strong>
+                    <strong class="limit-val text-success">Cheksiz</strong>
                   </div>
                 </div>
 
@@ -100,9 +101,9 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                   <h4 class="features-heading">Imkoniyatlar:</h4>
                   <ul class="features-list">
                     @for (feat of getPlanFeatures(plan); track feat) {
-                      <li [class.feature-excluded]="feat.startsWith('❌')">
-                        <span class="check-icon">{{ feat.startsWith('❌') ? '—' : '✓' }}</span>
-                        {{ feat }}
+                      <li [class.feature-excluded]="feat.startsWith('- ')">
+                        <span class="check-icon"><app-icon [name]="feat.startsWith('- ') ? 'minus' : 'check'" [size]="14"></app-icon></span>
+                        {{ feat.startsWith('- ') ? feat.substring(2) : feat }}
                       </li>
                     }
                   </ul>
@@ -128,22 +129,22 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
           <h2 class="section-title">Barcha tariflarda mavjud imkoniyatlar</h2>
           <div class="features-grid">
             <div class="feature-box">
-              <div class="feature-box__icon">⚡</div>
+              <div class="feature-box__icon"><app-icon name="zap" [size]="24"></app-icon></div>
               <h4>Tezkor Ofitsiant & Kassa</h4>
               <p>Stollarni real vaqtda bron qilish, zakaz qabul qilish va chek chop etish.</p>
             </div>
             <div class="feature-box">
-              <div class="feature-box__icon">👨‍🍳</div>
+              <div class="feature-box__icon"><app-icon name="chef" [size]="24"></app-icon></div>
               <h4>Oshxona Ekrani (KDS)</h4>
               <p>Buyurtmalar statusini real vaqt rejimida yangilab oshxona ishini jadallashtiradi.</p>
             </div>
             <div class="feature-box">
-              <div class="feature-box__icon">📊</div>
+              <div class="feature-box__icon"><app-icon name="bar-chart" [size]="24"></app-icon></div>
               <h4>Moliyaviy Hisobotlar</h4>
               <p>Kunlik tushum, ofitsiantlar samaradorligi va eng ko'p sotilgan taomlar tahlili.</p>
             </div>
             <div class="feature-box">
-              <div class="feature-box__icon">🔒</div>
+              <div class="feature-box__icon"><app-icon name="lock" [size]="24"></app-icon></div>
               <h4>To'liq Ma'lumot Xavfsizligi</h4>
               <p>Har bir restoranning ma'lumotlari boshqa restoranlardan to'liq izolyatsiya qilingan.</p>
             </div>
@@ -593,8 +594,8 @@ export class PricingComponent implements OnInit {
     if (plan.code === 'PRO') {
       return [
         '⭐️ Barcha STANDARD imkoniyatlari',
-        '✅ Oshxona Ekrani (KDS - Kitchen Display System)',
-        '✅ Mobil Ofitsiant Ilovasi (Android planshet / telefon)',
+        'Oshxona Ekrani (KDS - Kitchen Display System)',
+        'Mobil Ofitsiant Ilovasi (Android planshet / telefon)',
         'Cheksiz xodimlar, stollar, mahsulotlar va buyurtmalar',
         'Sexlar bo‘yicha avtomatik buyurtma marshrutlash',
         'LAN va Offline/Online sinxronlash',
@@ -609,8 +610,8 @@ export class PricingComponent implements OnInit {
         'Ombor va mahsulotlar kirim-chiqimi',
         'P&L va barcha moliya hisobotlari',
         'LAN va Offline/Online sinxronlash',
-        '❌ Oshxona Ekrani (KDS) kirmaydi',
-        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+        '- Oshxona Ekrani (KDS) kirmaydi',
+        '- Mobil Ofitsiant ilovasi kirmaydi'
       ];
     } else {
       // TRIAL
@@ -621,8 +622,8 @@ export class PricingComponent implements OnInit {
         'Kassa, to‘lovlar va chek chop etish',
         'Ombor va tahliliy hisobotlar',
         'LAN va Offline/Online sinxronlash',
-        '❌ Oshxona Ekrani (KDS) kirmaydi',
-        '❌ Mobil Ofitsiant ilovasi kirmaydi'
+        '- Oshxona Ekrani (KDS) kirmaydi',
+        '- Mobil Ofitsiant ilovasi kirmaydi'
       ];
     }
   }

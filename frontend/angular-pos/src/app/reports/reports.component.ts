@@ -1,3 +1,5 @@
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,21 +25,21 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="reports-page fade-in">
       <!-- HEADER -->
       <div class="page-header">
         <div class="header-left">
-          <h1 class="page-title">📈 Tizim Hisobotlari & Analitika</h1>
+          <h1 class="page-title"><app-icon name="trending-up" [size]="24" class="title-icon"></app-icon> {{ 'reports.title' | translate }}</h1>
           <p class="page-subtitle">PostgreSQL bazasidan real-time hisoblangan savdo, mahsulotlar, oshxona va moliya hisobotlari</p>
         </div>
         <div class="header-actions">
           <button class="pos-btn pos-btn--secondary" (click)="loadCurrentReport()">
-            <span>🔄 Yangilash</span>
+            <app-icon name="refresh" [size]="16"></app-icon> <span>{{ 'common.refresh' | translate }}</span>
           </button>
           <button class="pos-btn pos-btn--primary" (click)="exportReportCsv()">
-            <span>📥 CSV Eksport</span>
+            <app-icon name="download" [size]="16"></app-icon> <span>{{ 'reports.exportCsv' | translate }}</span>
           </button>
         </div>
       </div>
@@ -79,26 +81,26 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
       <!-- TABS -->
       <div class="sub-nav-tabs">
         <button class="tab-btn" [class.active]="activeTab === 'sales'" (click)="setTab('sales')">
-          <span>📊 Savdo (Umumiy)</span>
+          <app-icon name="bar-chart" [size]="16"></app-icon> <span>Savdo (Umumiy)</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'products'" (click)="setTab('products')">
-          <span>🍔 Mahsulotlar Savdosi</span>
+          <app-icon name="utensils" [size]="16"></app-icon> <span>Mahsulotlar Savdosi</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'profit'" (click)="setTab('profit')">
-          <span>💵 Foyda & Zarar (P&L)</span>
+          <app-icon name="dollar-sign" [size]="16"></app-icon> <span>Foyda & Zarar (P&L)</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'cashier'" (click)="setTab('cashier')">
-          <span>🏧 Kassa & To'lovlar</span>
+          <app-icon name="credit-card" [size]="16"></app-icon> <span>Kassa & To'lovlar</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'waiters'" (click)="setTab('waiters')">
-          <span>🤵 Ofitsiantlar</span>
+          <app-icon name="users" [size]="16"></app-icon> <span>Ofitsiantlar</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'kitchens'" (click)="setTab('kitchens')">
-          <span>🍳 Oshxonalar</span>
+          <app-icon name="chef" [size]="16"></app-icon> <span>Oshxonalar</span>
         </button>
         <!-- Ombor hozircha disable:
         <button class="tab-btn" [class.active]="activeTab === 'stock'" (click)="setTab('stock')">
-          <span>📦 Ombor Harakati</span>
+          <app-icon name="package" [size]="16"></app-icon> <span>Ombor Harakati</span>
         </button>
         -->
       </div>
@@ -110,7 +112,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
         <!-- KPI METRICS -->
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--green">💰</div>
+            <div class="kpi-icon kpi-icon--green"><app-icon name="dollar-sign" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Jami Savdo</span>
               <h3 class="kpi-value text-success">{{ (salesSummary?.totalSales || 0) | number }} so'm</h3>
@@ -119,7 +121,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--blue">🧾</div>
+            <div class="kpi-icon kpi-icon--blue"><app-icon name="file-text" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Buyurtmalar Soni</span>
               <h3 class="kpi-value">{{ salesSummary?.totalOrders || 0 }} ta</h3>
@@ -128,7 +130,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--teal">💵</div>
+            <div class="kpi-icon kpi-icon--teal"><app-icon name="dollar-sign" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Naqd To'lovlar</span>
               <h3 class="kpi-value">{{ (salesSummary?.cashTotal || 0) | number }} so'm</h3>
@@ -137,7 +139,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--purple">💳</div>
+            <div class="kpi-icon kpi-icon--purple"><app-icon name="credit-card" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Karta To'lovlar</span>
               <h3 class="kpi-value">{{ (salesSummary?.cardTotal || 0) | number }} so'm</h3>
@@ -146,7 +148,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--orange">❌</div>
+            <div class="kpi-icon kpi-icon--orange"><app-icon name="x-circle" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Bekor Qilinganlar</span>
               <h3 class="kpi-value text-warning">{{ salesSummary?.cancelledOrdersCount || 0 }} ta</h3>
@@ -168,7 +170,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
         <div class="charts-grid">
           <!-- SOATLIK SAVDO GRAFIKI -->
           <div class="pos-card chart-card">
-            <h3 class="chart-title">🕒 Soatlik Savdo Taqsimoti</h3>
+            <h3 class="chart-title"><app-icon name="clock" [size]="18"></app-icon> Soatlik Savdo Taqsimoti</h3>
             <div class="hourly-chart-container">
               <div class="hourly-bar-col" *ngFor="let h of salesSummary?.hourlySales">
                 <div class="bar-wrapper">
@@ -181,11 +183,11 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
 
           <!-- TO'LOV TURLARI TAQSIMOTI -->
           <div class="pos-card chart-card">
-            <h3 class="chart-title">💳 To'lov Turlari Nisbati</h3>
+            <h3 class="chart-title"><app-icon name="credit-card" [size]="18"></app-icon> To'lov Turlari Nisbati</h3>
             <div class="payment-distribution">
               <div class="payment-dist-item">
                 <div class="dist-row">
-                  <span>💵 Naqd Pul</span>
+                  <app-icon name="dollar-sign" [size]="14"></app-icon> <span>Naqd Pul</span>
                   <strong>{{ (salesSummary?.cashTotal || 0) | number }} so'm ({{ getPaymentPercent('cash') }}%)</strong>
                 </div>
                 <div class="progress-track">
@@ -195,7 +197,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
 
               <div class="payment-dist-item">
                 <div class="dist-row">
-                  <span>💳 Bank Kartasi</span>
+                  <app-icon name="credit-card" [size]="14"></app-icon> <span>Bank Kartasi</span>
                   <strong>{{ (salesSummary?.cardTotal || 0) | number }} so'm ({{ getPaymentPercent('card') }}%)</strong>
                 </div>
                 <div class="progress-track">
@@ -205,7 +207,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
 
               <div class="payment-dist-item">
                 <div class="dist-row">
-                  <span>🌐 Boshqa / Online</span>
+                  <app-icon name="globe" [size]="14"></app-icon> <span>Boshqa / Online</span>
                   <strong>{{ (salesSummary?.otherTotal || 0) | number }} so'm ({{ getPaymentPercent('other') }}%)</strong>
                 </div>
                 <div class="progress-track">
@@ -224,7 +226,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
         <!-- TOP 3 DISHES SUMMARY -->
         <div class="top-dishes-banner mb-4" *ngIf="productSales.length > 0">
           <div class="top-dish-card" *ngFor="let top of productSales.slice(0, 3); let i = index">
-            <span class="medal-icon">{{ i === 0 ? '🥇' : (i === 1 ? '🥈' : '🥉') }}</span>
+            <span class="medal-icon">#{{ i + 1 }}</span>
             <div>
               <h4>{{ top.productName }}</h4>
               <p>{{ top.quantity | number:'1.0-2' }} dona sotilgan &bull; {{ top.revenue | number }} so'm</p>
@@ -298,7 +300,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
       <!-- ======================================================== -->
       <div *ngIf="activeTab === 'profit'" class="tab-content">
         <div class="profit-formula-card pos-card mb-4">
-          <h2 class="formula-title">📐 Foyda Formulatsiyasi (P&L)</h2>
+          <h2 class="formula-title"><app-icon name="sliders" [size]="20"></app-icon> Foyda Formulatsiyasi (P&L)</h2>
           <div class="formula-steps">
             <div class="formula-block">
               <span class="formula-lbl">Jami Tushum (Revenue)</span>
@@ -336,28 +338,28 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
         <!-- KASSA KPI SUMMARY -->
         <div class="kpi-grid mb-4" *ngIf="cashierSummaries.length > 0">
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--teal">💵</div>
+            <div class="kpi-icon kpi-icon--teal"><app-icon name="dollar-sign" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Naqd Savdo</span>
               <h3 class="kpi-value">{{ totalCashierCash | number }} so'm</h3>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--purple">💳</div>
+            <div class="kpi-icon kpi-icon--purple"><app-icon name="credit-card" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Karta Savdo</span>
               <h3 class="kpi-value">{{ totalCashierCard | number }} so'm</h3>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--blue">🌐</div>
+            <div class="kpi-icon kpi-icon--blue"><app-icon name="globe" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Boshqa To'lov</span>
               <h3 class="kpi-value">{{ totalCashierOther | number }} so'm</h3>
             </div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--green">💰</div>
+            <div class="kpi-icon kpi-icon--green"><app-icon name="dollar-sign" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Sof Kassa Tushumi</span>
               <h3 class="kpi-value text-success">{{ totalCashierNet | number }} so'm</h3>
@@ -904,6 +906,138 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
     .badge--teal {
       background: rgba(20, 184, 166, 0.15);
       color: #2dd4bf;
+    }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 1023px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 767px) {
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        .header-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          width: 100%;
+
+          .pos-btn {
+            width: 100%;
+            justify-content: center;
+            min-height: 44px;
+          }
+        }
+      }
+
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px;
+
+        .filter-presets {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 4px;
+
+          .preset-btn {
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-height: 40px;
+            padding: 8px 12px;
+          }
+        }
+
+        .filter-inputs {
+          flex-direction: column;
+          width: 100%;
+          gap: 8px;
+
+          .date-range-group {
+            width: 100%;
+            .pos-input {
+              flex: 1;
+              min-height: 42px;
+            }
+          }
+
+          .pos-select {
+            width: 100%;
+            min-height: 42px;
+          }
+        }
+      }
+
+      .sub-nav-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+
+        .tab-btn {
+          white-space: nowrap;
+          flex-shrink: 0;
+          min-height: 42px;
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+      }
+
+      .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .kpi-card {
+        padding: 14px;
+      }
+
+      .formula-steps {
+        flex-direction: column;
+        align-items: stretch;
+
+        .formula-block {
+          min-width: unset;
+          width: 100%;
+        }
+
+        .formula-op {
+          text-align: center;
+        }
+      }
+
+      .table-card {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+
+        .pos-table {
+          min-width: 580px;
+
+          th, td {
+            padding: 8px 10px;
+            font-size: 12px;
+          }
+        }
+      }
+    }
+
+    @media (max-width: 479px) {
+      .page-header .header-actions {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })

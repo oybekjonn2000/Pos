@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../icon/icon.component';
 import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,7 +7,7 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
 @Component({
   selector: 'app-lan-server-config-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="lan-modal-backdrop">
       <div class="lan-modal-card" (click)="$event.stopPropagation()">
@@ -14,13 +15,13 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
         <!-- Header -->
         <div class="lan-modal-header">
           <div class="header-title">
-            <span class="icon">🌐</span>
+            <span class="icon"><app-icon name="globe" [size]="20"></app-icon></span>
             <div>
               <h3>Mahalliy Tarmoq (LAN) Server Sozlamalari</h3>
               <p class="subtitle">Markaziy POS Server bilan ulanishni boshqarish</p>
             </div>
           </div>
-          <button class="close-btn" (click)="close()">✕</button>
+          <button class="close-btn" (click)="close()"><app-icon name="x" [size]="18"></app-icon></button>
         </div>
 
         <!-- Current Status Banner -->
@@ -29,9 +30,9 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
             <span class="pulse-dot"></span>
             <div class="status-text">
               <span class="state-label">
-                @if (lan.connectionState() === 'ONLINE') { 🟢 Serverga ulanish faol (ONLINE) }
-                @else if (lan.connectionState() === 'RECONNECTING') { 🟡 Server bilan qayta ulanilmoqda... }
-                @else { 🔴 Server bilan aloqa yo'q (OFFLINE) }
+                @if (lan.connectionState() === 'ONLINE') { <app-icon name="check-circle" [size]="14"></app-icon> Serverga ulanish faol (ONLINE) }
+                @else if (lan.connectionState() === 'RECONNECTING') { <app-icon name="refresh" [size]="14"></app-icon> Server bilan qayta ulanilmoqda... }
+                @else { <app-icon name="alert-triangle" [size]="14"></app-icon> Server bilan aloqa yo'q (OFFLINE) }
               </span>
               <span class="latency-text" *ngIf="lan.connectionState() === 'ONLINE'">
                 Kechikish: <strong>{{ lan.latencyMs() }} ms</strong> | Baza: <strong>{{ lan.serverInfo()?.databaseStatus || 'OK' }}</strong>
@@ -45,7 +46,7 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
           <div class="form-group">
             <label>Markaziy Server IP Manzili:</label>
             <div class="input-with-icon">
-              <span class="input-icon">💻</span>
+              <span class="input-icon"><app-icon name="monitor" [size]="16"></app-icon></span>
               <input type="text" [(ngModel)]="serverIp" placeholder="Masalan: 192.168.1.100 yoki localhost" class="form-input" />
             </div>
             <span class="hint">Admin kompyuterining lokal Wi-Fi yoki LAN routerdagi IP manzili</span>
@@ -54,14 +55,14 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
           <div class="form-group">
             <label>Server Porti:</label>
             <div class="input-with-icon">
-              <span class="input-icon">🔌</span>
+              <span class="input-icon"><app-icon name="link" [size]="16"></app-icon></span>
               <input type="number" [(ngModel)]="serverPort" placeholder="8080" class="form-input port-input" />
             </div>
           </div>
 
           <!-- Test result box -->
           <div *ngIf="testResult()" class="test-result-box" [class.success]="testResult()?.ok" [class.error]="!testResult()?.ok">
-            <span class="res-icon">{{ testResult()?.ok ? '✅' : '⚠️' }}</span>
+            <span class="res-icon"><app-icon [name]="testResult()?.ok ? 'check-circle' : 'alert-triangle'" [size]="16"></app-icon></span>
             <div class="res-info">
               <div class="res-msg">{{ testResult()?.ok ? 'Ulanish muvaffaqiyatli!' : (testResult()?.error || 'Ulanib bo‘lmadi') }}</div>
               <div *ngIf="testResult()?.ok" class="res-sub">
@@ -81,18 +82,18 @@ import { LanStatusService, ServerLanInfo } from '../../../core/services/lan-stat
         <div class="lan-modal-footer">
           <div class="left-actions">
             <button class="btn-discover" [disabled]="isTesting() || isDiscovering()" (click)="discoverServer()">
-              🔍 Avtomatik Qidirish
+              <app-icon name="search" [size]="14"></app-icon> Avtomatik Qidirish
             </button>
             <button class="btn-test" [disabled]="isTesting()" (click)="testConnection()">
               <span *ngIf="isTesting()" class="spinner-small"></span>
-              {{ isTesting() ? 'Tekshirilmoqda...' : '⚡ Ulanishni Tekshirish' }}
+              <span *ngIf="isTesting()">Tekshirilmoqda...</span><span *ngIf="!isTesting()"><app-icon name="zap" [size]="14"></app-icon> Ulanishni Tekshirish</span>
             </button>
           </div>
 
           <div class="right-actions">
             <button class="btn-secondary" (click)="close()">Bekor qilish</button>
             <button class="btn-primary" [disabled]="isTesting()" (click)="saveAndApply()">
-              💾 Saqlash va Ulanish
+              <app-icon name="save" [size]="14"></app-icon> Saqlash va Ulanish
             </button>
           </div>
         </div>

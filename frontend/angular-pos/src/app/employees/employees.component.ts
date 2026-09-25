@@ -1,3 +1,5 @@
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,18 +10,18 @@ import { NotificationService } from '../core/services/notification.service';
 @Component({
   selector: 'app-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="employees-page fade-in">
       <!-- Header -->
       <div class="page-header">
         <div>
-          <h1 class="page-title">👥 Xodimlar & Lavozimlar</h1>
-          <p class="page-subtitle">Ofitsiantlar, kassirlar, oshpazlar va tizim foydalanuvchilarini boshqarish</p>
+          <h1 class="page-title"><app-icon name="users" [size]="24" class="title-icon"></app-icon> {{ 'employees.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'employees.subtitle' | translate }}</p>
         </div>
 
         <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
-          <span>➕ Yangi Xodim Qo'shish</span>
+          <app-icon name="user-plus" [size]="16"></app-icon> <span>{{ 'employees.addEmployee' | translate }}</span>
         </button>
       </div>
 
@@ -32,7 +34,7 @@ import { NotificationService } from '../core/services/notification.service';
             [class.active]="activeTab === 'ACTIVE'"
             (click)="setActiveTab('ACTIVE')">
             <span class="status-dot active-dot"></span>
-            <span class="slider-title">Faol xodimlar</span>
+            <span class="slider-title">{{ 'employees.activeStaff' | translate }}</span>
             <span class="count-badge active-badge">{{ activeCount }}</span>
           </button>
 
@@ -42,7 +44,7 @@ import { NotificationService } from '../core/services/notification.service';
             [class.active]="activeTab === 'INACTIVE'"
             (click)="setActiveTab('INACTIVE')">
             <span class="status-dot inactive-dot"></span>
-            <span class="slider-title">Nofaol xodimlar</span>
+            <span class="slider-title">{{ 'employees.inactiveStaff' | translate }}</span>
             <span class="count-badge inactive-badge">{{ inactiveCount }}</span>
           </button>
         </div>
@@ -53,7 +55,7 @@ import { NotificationService } from '../core/services/notification.service';
         <div class="search-box" style="flex: 1; min-width: 220px;">
           <input
             type="text"
-            placeholder="Qidiruv (Ism, login, telefon)..."
+            [placeholder]="'common.search' | translate"
             [(ngModel)]="searchQuery"
             (ngModelChange)="pageIndex = 0"
             class="pos-input"
@@ -81,7 +83,7 @@ import { NotificationService } from '../core/services/notification.service';
         </div>
 
         <div *ngIf="!loading && filteredEmployees.length === 0" class="empty-state">
-          <div class="empty-icon">{{ activeTab === 'ACTIVE' ? '👥' : '🎉' }}</div>
+          <div class="empty-icon"><app-icon [name]="activeTab === 'ACTIVE' ? 'users' : 'check-circle'" [size]="48"></app-icon></div>
           <h3>{{ activeTab === 'ACTIVE' ? 'Faol xodimlar topilmadi' : 'Nofaol xodimlar mavjud emas' }}</h3>
           <p *ngIf="activeTab === 'ACTIVE' && employees.length > 0" style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
             Qidiruv yoki lavozim filtri bo'yicha faol xodim topilmadi.
@@ -118,16 +120,24 @@ import { NotificationService } from '../core/services/notification.service';
                   </div>
                 </td>
                 <td>
-                  <code class="username-tag" *ngIf="emp.username">&#64;{{ emp.username }}</code>
-                  <span class="pin-badge" *ngIf="!emp.username">🔢 PIN orqali</span>
+                  <span class="mobile-label">Kirish:</span>
+                  <div>
+                    <code class="username-tag" *ngIf="emp.username">&#64;{{ emp.username }}</code>
+                    <span class="pin-badge" *ngIf="!emp.username"><app-icon name="hash" [size]="12"></app-icon> PIN orqali</span>
+                  </div>
                 </td>
                 <td>
+                  <span class="mobile-label">Lavozim:</span>
                   <span class="role-badge" [ngClass]="emp.role?.toLowerCase()">
                     {{ getRoleLabel(emp.role) }}
                   </span>
                 </td>
-                <td>{{ emp.phone || '—' }}</td>
                 <td>
+                  <span class="mobile-label">Telefon:</span>
+                  <span class="phone-val">{{ emp.phone || '—' }}</span>
+                </td>
+                <td>
+                  <span class="mobile-label">Holat:</span>
                   <span class="status-pill" [class.active]="emp.active" [class.inactive]="!emp.active">
                     {{ emp.active ? '● FAOL' : '○ NOFAOL' }}
                   </span>
@@ -138,34 +148,34 @@ import { NotificationService } from '../core/services/notification.service';
                       class="pos-btn pos-btn--secondary pos-btn--sm"
                       title="Tahrirlash"
                       (click)="openEditModal(emp)">
-                      ✏️ Tahrirlash
+                      <app-icon name="edit" [size]="14"></app-icon> Tahrirlash
                     </button>
                     <button
                       *ngIf="emp.username || emp.role === 'ADMIN'"
                       class="pos-btn pos-btn--secondary pos-btn--sm"
                       title="Parolni almashtirish"
                       (click)="openResetPasswordModal(emp)">
-                      🔑 Parol
+                      <app-icon name="key" [size]="14"></app-icon> Parol
                     </button>
                     <button
                       class="pos-btn pos-btn--secondary pos-btn--sm"
                       title="PIN-kodni o'zgartirish"
                       (click)="openQuickPinModal(emp)">
-                      🔢 PIN
+                      <app-icon name="hash" [size]="14"></app-icon> PIN
                     </button>
                     <button
                       *ngIf="emp.active"
                       class="pos-btn pos-btn--danger pos-btn--sm"
                       title="Xodimni nofaol qilish"
                       (click)="toggleActive(emp)">
-                      🚫
+                      <app-icon name="slash" [size]="14"></app-icon>
                     </button>
                     <button
                       *ngIf="!emp.active"
                       class="pos-btn pos-btn--success pos-btn--sm btn-reactivate"
                       title="Xodimni qayta faollashtirish"
                       (click)="toggleActive(emp)">
-                      ✅ Faollashtirish
+                      <app-icon name="check" [size]="14"></app-icon> Faollashtirish
                     </button>
                   </div>
                 </td>
@@ -191,14 +201,14 @@ import { NotificationService } from '../core/services/notification.service';
       <div class="modal-overlay" *ngIf="showCreateModal">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">➕ Yangi Xodim Ro‘yxatga Olish</h2>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <h2 class="modal-title"><app-icon name="user-plus" [size]="20"></app-icon> Yangi Xodim Ro‘yxatga Olish</h2>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
 
           <div class="modal-body form-grid">
             <div class="form-group full-width" *ngIf="createErrorMessage">
               <div class="validation-banner">
-                ⚠️ {{ createErrorMessage }}
+                <app-icon name="alert-triangle" [size]="14"></app-icon> {{ createErrorMessage }}
               </div>
             </div>
 
@@ -274,14 +284,14 @@ import { NotificationService } from '../core/services/notification.service';
       <div class="modal-overlay" *ngIf="showEditModal && selectedEmp">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">✏️ Xodimni Tahrirlash: {{ selectedEmp.firstName }} {{ selectedEmp.lastName || '' }}</h2>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <h2 class="modal-title"><app-icon name="edit" [size]="20"></app-icon> Xodimni Tahrirlash: {{ selectedEmp.firstName }} {{ selectedEmp.lastName || '' }}</h2>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
 
           <div class="modal-body form-grid">
             <div class="form-group full-width" *ngIf="editErrorMessage">
               <div class="validation-banner">
-                ⚠️ {{ editErrorMessage }}
+                <app-icon name="alert-triangle" [size]="14"></app-icon> {{ editErrorMessage }}
               </div>
             </div>
 
@@ -343,8 +353,8 @@ import { NotificationService } from '../core/services/notification.service';
       <div class="modal-overlay" *ngIf="showPasswordModal && selectedEmp">
         <div class="modal-card modal-card--sm" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">🔑 Parolni O'zgartirish</h2>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <h2 class="modal-title"><app-icon name="key" [size]="14"></app-icon> Parolni O'zgartirish</h2>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -382,8 +392,8 @@ import { NotificationService } from '../core/services/notification.service';
       <div class="modal-overlay" *ngIf="showPinModal && selectedEmp">
         <div class="modal-card modal-card--sm" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">🔢 PIN-kodni O'zgartirish</h2>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <h2 class="modal-title"><app-icon name="hash" [size]="14"></app-icon> PIN-kodni O'zgartirish</h2>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -393,7 +403,7 @@ import { NotificationService } from '../core/services/notification.service';
 
             <div class="form-group" *ngIf="pinErrorMessage" style="margin-bottom: 12px;">
               <div class="validation-banner">
-                ⚠️ {{ pinErrorMessage }}
+                <app-icon name="alert-triangle" [size]="14"></app-icon> {{ pinErrorMessage }}
               </div>
             </div>
 
@@ -881,8 +891,149 @@ import { NotificationService } from '../core/services/notification.service';
       margin: 0 auto 12px;
     }
 
-    @keyframes spin {
-      100% { transform: rotate(360deg); }
+    .mobile-label {
+      display: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 767px) {
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        .pos-btn {
+          width: 100%;
+          min-height: 44px;
+          justify-content: center;
+        }
+      }
+
+      .status-slider-strip {
+        width: 100%;
+
+        .status-segmented-slider {
+          width: 100%;
+
+          .slider-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 8px 10px;
+            font-size: 13px;
+          }
+        }
+      }
+
+      .filter-strip {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px !important;
+
+        .search-box {
+          width: 100%;
+        }
+
+        .pos-select-sm {
+          width: 100%;
+          min-height: 42px;
+        }
+      }
+
+      .mobile-label {
+        display: inline-block;
+      }
+
+      /* Transform Employee Table into Clean Mobile Cards */
+      .pos-table {
+        display: block;
+        width: 100%;
+
+        thead {
+          display: none;
+        }
+
+        tbody {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 4px;
+        }
+
+        tr {
+          display: flex;
+          flex-direction: column;
+          background: var(--bg-card);
+          border: 1.5px solid var(--border);
+          border-radius: var(--radius-md, 12px);
+          padding: 14px;
+          gap: 8px;
+          box-shadow: var(--shadow-sm);
+        }
+
+        td {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 2px 0;
+          border-bottom: none;
+
+          &:first-child {
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--divider);
+          }
+
+          &:last-child {
+            padding-top: 10px;
+            margin-top: 4px;
+            border-top: 1px solid var(--divider);
+            display: block;
+            width: 100%;
+          }
+        }
+
+        .action-buttons {
+          width: 100%;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+
+          .pos-btn {
+            width: 100%;
+            min-height: 40px;
+            justify-content: center;
+          }
+        }
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .modal-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 92vh !important;
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: 8px;
+
+        .pos-btn {
+          width: 100%;
+          min-height: 44px;
+          justify-content: center;
+        }
+      }
     }
   `]
 })
@@ -1018,11 +1169,11 @@ export class EmployeesComponent implements OnInit {
 
   getRoleLabel(role?: string): string {
     switch (role) {
-      case 'ADMIN': return '👑 Admin';
-      case 'MANAGER': return '👔 Menejer';
-      case 'WAITER': return '🛎️ Ofitsiant';
-      case 'KITCHEN': return '👨‍🍳 Oshpaz';
-      case 'CASHIER': return '💳 Kassir';
+      case 'ADMIN': return 'Admin';
+      case 'MANAGER': return 'Menejer';
+      case 'WAITER': return 'Ofitsiant';
+      case 'KITCHEN': return 'Oshpaz';
+      case 'CASHIER': return 'Kassir';
       default: return role || 'Xodim';
     }
   }

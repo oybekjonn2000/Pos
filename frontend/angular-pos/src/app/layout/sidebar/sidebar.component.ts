@@ -1,12 +1,15 @@
-import { Component, Output, EventEmitter, signal, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
 import { FeatureService } from '../../core/services/feature.service';
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 interface NavItem {
   icon: string;
   label: string;
+  key?: string;
   route: string;
   permission?: string;
   adminOnly?: boolean;
@@ -19,17 +22,26 @@ interface NavItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, AppIconComponent, TranslatePipe],
   template: `
-    <nav class="sidebar" [class.collapsed]="collapsed()">
+    <nav class="sidebar" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen">
       <!-- Logo -->
-      <div class="sidebar__logo" (click)="toggleCollapse()">
-        <div class="sidebar__logo-icon">{{ auth.isSuperAdmin() ? '🌐' : '🍽️' }}</div>
-        @if (!collapsed()) {
-          <div class="sidebar__logo-text">
-            <span class="sidebar__brand">{{ auth.isSuperAdmin() ? 'Platform Admin' : 'RestaurantPOS' }}</span>
-            <span class="sidebar__version">{{ auth.isSuperAdmin() ? 'Markaziy Nazorat' : 'v1.0.0' }}</span>
+      <div class="sidebar__logo">
+        <div class="sidebar__logo-wrap" (click)="toggleCollapse()">
+          <div class="sidebar__logo-icon">
+            <app-icon [name]="auth.isSuperAdmin() ? 'globe' : 'restaurant'" [size]="24"></app-icon>
           </div>
+          @if (!collapsed() || mobileOpen) {
+            <div class="sidebar__logo-text">
+              <span class="sidebar__brand">{{ auth.isSuperAdmin() ? 'Platform Admin' : 'RestaurantPOS' }}</span>
+              <span class="sidebar__version">{{ auth.isSuperAdmin() ? 'Markaziy Nazorat' : 'v1.0.0' }}</span>
+            </div>
+          }
+        </div>
+        @if (mobileOpen) {
+          <button type="button" class="sidebar__mobile-close" (click)="closeMobile.emit()" aria-label="Yopish">
+            <app-icon name="close" [size]="16"></app-icon>
+          </button>
         }
       </div>
 
@@ -39,10 +51,11 @@ interface NavItem {
           <a [routerLink]="item.route"
              routerLinkActive="active"
              class="sidebar__item"
-             [title]="collapsed() ? item.label : ''">
-            <span class="sidebar__icon">{{ item.icon }}</span>
-            @if (!collapsed()) {
-              <span class="sidebar__label">{{ item.label }}</span>
+             (click)="onItemClick()"
+             [title]="collapsed() && !mobileOpen ? (item.key ? (item.key | translate) : item.label) : ''">
+            <span class="sidebar__icon"><app-icon [name]="item.icon" [size]="20"></app-icon></span>
+            @if (!collapsed() || mobileOpen) {
+              <span class="sidebar__label">{{ item.key ? (item.key | translate) : item.label }}</span>
               @if (item.proOnly) {
                 <span class="sidebar__pro-badge" [class.unlocked]="featureService.isPro()">PRO</span>
               }
@@ -59,21 +72,21 @@ interface NavItem {
         @if (lan.isDesktop()) {
           <div class="sidebar__server-badge" (click)="openLanSettings.emit()" [title]="'Markaziy POS Server: ' + lan.currentServerUrl()">
             <span class="server-dot" [class.online]="lan.connectionState() === 'ONLINE'" [class.reconnecting]="lan.connectionState() === 'RECONNECTING'" [class.offline]="lan.connectionState() === 'OFFLINE'"></span>
-            @if (!collapsed()) {
+            @if (!collapsed() || mobileOpen) {
               <div class="server-badge-text">
                 <span class="server-status-title">{{ lan.connectionState() === 'ONLINE' ? 'POS Server Online' : 'Server Offline' }}</span>
                 <span class="server-status-ip">{{ lan.currentServerUrl().replace('http://', '') }}</span>
               </div>
-              <span class="server-badge-cog">⚙️</span>
+              <span class="server-badge-cog"><app-icon name="settings" [size]="14"></app-icon></span>
             }
           </div>
         }
 
-        <div class="sidebar__user" [title]="collapsed() ? auth.user()?.fullName ?? '' : ''">
+        <div class="sidebar__user" [title]="collapsed() && !mobileOpen ? auth.user()?.fullName ?? '' : ''">
           <div class="sidebar__avatar">
             {{ getUserInitials() }}
           </div>
-          @if (!collapsed()) {
+          @if (!collapsed() || mobileOpen) {
             <div class="sidebar__user-info">
               <div class="sidebar__user-name">{{ auth.user()?.fullName }}</div>
               <div class="sidebar__user-role">{{ auth.user()?.role || auth.user()?.username }}</div>
@@ -105,13 +118,41 @@ interface NavItem {
       &__logo {
         display: flex;
         align-items: center;
-        gap: 12px;
-        padding: 16px;
+        justify-content: space-between;
+        padding: 0 16px;
         height: var(--topbar-height);
         border-bottom: 1px solid var(--divider);
-        cursor: pointer;
         user-select: none;
         flex-shrink: 0;
+      }
+
+      &__logo-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      &__mobile-close {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 13px;
+        margin-left: 8px;
+        flex-shrink: 0;
+
+        &:active {
+          background: var(--bg-hover);
+        }
       }
 
       &__logo-icon {
@@ -302,9 +343,76 @@ interface NavItem {
         color: var(--text-muted);
       }
     }
+
+    /* Tablet compact icon mode (768px - 1023px) */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .sidebar {
+        width: 68px !important;
+        transform: translateX(0) !important;
+
+        .sidebar__logo-text,
+        .sidebar__label,
+        .sidebar__user-info,
+        .server-badge-text,
+        .server-badge-cog {
+          display: none !important;
+        }
+
+        .sidebar__item {
+          justify-content: center;
+          padding: 12px 0;
+        }
+
+        .sidebar__logo {
+          justify-content: center;
+          padding: 0;
+        }
+
+        .sidebar__logo-wrap {
+          justify-content: center;
+        }
+
+        .sidebar__server-badge,
+        .sidebar__user {
+          justify-content: center;
+          padding: 8px 0;
+        }
+      }
+    }
+
+    /* Mobile drawer mode (< 768px) */
+    @media (max-width: 767px) {
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        height: 100vh;
+        width: 285px !important;
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 10002;
+        box-shadow: none;
+
+        &.mobile-open {
+          transform: translateX(0);
+          box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar__mobile-close {
+          display: flex;
+        }
+
+        .sidebar__item {
+          min-height: 44px;
+        }
+      }
+    }
   `]
 })
 export class SidebarComponent {
+  @Input() mobileOpen = false;
+  @Output() closeMobile = new EventEmitter<void>();
   @Output() collapsedChange = new EventEmitter<boolean>();
   @Output() openLanSettings = new EventEmitter<void>();
 
@@ -312,32 +420,36 @@ export class SidebarComponent {
   lan = inject(LanStatusService);
   featureService = inject(FeatureService);
 
+  onItemClick(): void {
+    this.closeMobile.emit();
+  }
+
   readonly platformNavItems: NavItem[] = [
-    { icon: '📊', label: 'Platforma Dashboard', route: '/platform/dashboard' },
-    { icon: '🏢', label: 'Restoranlar', route: '/platform/restaurants' },
-    { icon: '💳', label: 'Obunalar', route: '/platform/subscriptions' },
-    { icon: '💵', label: 'To‘lovlar', route: '/platform/payments' },
-    { icon: '💰', label: 'Savdo monitoringi', route: '/platform/sales' },
-    { icon: '👥', label: 'Xodimlar monitoringi', route: '/platform/employees' },
-    { icon: '💻', label: 'Qurilmalar', route: '/platform/devices' },
-    { icon: '📈', label: 'Platforma hisobotlari', route: '/platform/reports' }
+    { icon: 'dashboard', label: 'Platforma Dashboard', route: '/platform/dashboard' },
+    { icon: 'building', label: 'Restoranlar', route: '/platform/restaurants' },
+    { icon: 'credit-card', label: 'Obunalar', route: '/platform/subscriptions' },
+    { icon: 'cash', label: 'To‘lovlar', route: '/platform/payments' },
+    { icon: 'coins', label: 'Savdo monitoringi', route: '/platform/sales' },
+    { icon: 'users', label: 'Xodimlar monitoringi', route: '/platform/employees' },
+    { icon: 'laptop', label: 'Qurilmalar', route: '/platform/devices' },
+    { icon: 'trending-up', label: 'Platforma hisobotlari', route: '/platform/reports' }
   ];
 
   readonly restaurantNavItems: NavItem[] = [
-    { icon: '📊', label: 'Boshqaruv paneli', route: '/dashboard', permission: 'VIEW_DASHBOARD' },
-    { icon: '🪑', label: 'Joylar va Stollar', route: '/tables' },
-    { icon: '📋', label: 'Buyurtmalar', route: '/orders' },
-    { icon: '👨‍🍳', label: 'Oshxona (KDS)', route: '/kitchen', permission: 'KITCHEN_VIEW', proOnly: true },
-    { icon: '📱', label: 'Mobil Ofitsiant', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
-    { icon: '🍔', label: 'Mahsulotlar', route: '/products', permission: 'MANAGE_PRODUCTS' },
-    { icon: '📁', label: 'Kategoriyalar', route: '/categories', permission: 'MANAGE_CATEGORIES' },
-    { icon: '🥘', label: 'Oshxonalar', route: '/kitchens', permission: 'MANAGE_SETTINGS', disallowRoles: ['KITCHEN', 'WAITER'] },
-    // { icon: '📦', label: 'Ombor', route: '/inventory', permission: 'VIEW_STOCK' }, // Hozircha disable qilindi
-    { icon: '👥', label: 'Mijozlar', route: '/customers', adminOnly: true },
-    { icon: '👤', label: 'Xodimlar', route: '/employees', permission: 'MANAGE_USERS' },
-    { icon: '📈', label: 'Hisobotlar', route: '/reports', permission: 'VIEW_REPORTS' },
-    { icon: '💳', label: 'Tarif & Billing', route: '/restaurant/billing', adminOnly: true },
-    { icon: '⚙️', label: 'Sozlamalar', route: '/settings', permission: 'MANAGE_SETTINGS' }
+    { icon: 'dashboard', label: 'Boshqaruv paneli', key: 'nav.dashboard', route: '/dashboard', permission: 'VIEW_DASHBOARD' },
+    { icon: 'tables', label: 'Joylar va Stollar', key: 'nav.tables', route: '/tables' },
+    { icon: 'orders', label: 'Buyurtmalar', key: 'nav.orders', route: '/orders' },
+    { icon: 'chef', label: 'Oshxona (KDS)', key: 'nav.kitchen', route: '/kitchen', permission: 'KITCHEN_VIEW', proOnly: true },
+    { icon: 'smartphone', label: 'Mobil Ofitsiant', key: 'nav.pos', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
+    { icon: 'products', label: 'Mahsulotlar', key: 'nav.products', route: '/products', permission: 'MANAGE_PRODUCTS' },
+    { icon: 'folder', label: 'Kategoriyalar', key: 'nav.categories', route: '/categories', permission: 'MANAGE_CATEGORIES' },
+    { icon: 'cooking-pot', label: 'Oshxonalar', key: 'nav.kitchenManagement', route: '/kitchens', permission: 'MANAGE_SETTINGS', disallowRoles: ['KITCHEN', 'WAITER'] },
+    // { icon: 'products', label: 'Ombor', route: '/inventory', permission: 'VIEW_STOCK' }, // Hozircha disable qilindi
+    { icon: 'users', label: 'Mijozlar', route: '/customers', adminOnly: true },
+    { icon: 'user', label: 'Xodimlar', key: 'nav.employees', route: '/employees', permission: 'MANAGE_USERS' },
+    { icon: 'trending-up', label: 'Hisobotlar', key: 'nav.reports', route: '/reports', permission: 'VIEW_REPORTS' },
+    { icon: 'credit-card', label: 'Tarif & Billing', key: 'nav.billing', route: '/restaurant/billing', adminOnly: true },
+    { icon: 'settings', label: 'Sozlamalar', key: 'nav.settings', route: '/settings', permission: 'MANAGE_SETTINGS' }
   ];
 
   constructor(public auth: AuthService) {}

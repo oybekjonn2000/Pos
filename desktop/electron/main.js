@@ -721,12 +721,12 @@ function createTray() {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '🍽️ Restaurant POS Server',
+        label: 'Restaurant POS Server',
         enabled: false
       },
       { type: 'separator' },
       {
-        label: '🖥️ Dasturni ochish',
+        label: 'Dasturni ochish',
         click: () => {
           if (mainWindow) {
             if (mainWindow.isMinimized()) mainWindow.restore();
@@ -740,7 +740,7 @@ function createTray() {
         }
       },
       {
-        label: `📊 Server holati: ${isHealthy ? 'Faol (Online)' : 'Aloqa yo‘q'}`,
+        label: `Server holati: ${isHealthy ? 'Faol (Online)' : 'Aloqa yo‘q'}`,
         click: async () => {
           const healthy = await checkBackendHealth();
           const ipsList = getLocalLanIps();
@@ -753,7 +753,7 @@ function createTray() {
         }
       },
       {
-        label: '🔄 Serverni qayta ishga tushirish',
+        label: 'Serverni qayta ishga tushirish',
         click: async () => {
           if (currentAppMode !== 'server') {
             dialog.showMessageBox({ type: 'info', title: 'Server', message: 'Client rejimida server qayta ishga tushirilmaydi.', buttons: ['OK'] });
@@ -774,7 +774,7 @@ function createTray() {
       },
       { type: 'separator' },
       {
-        label: '❌ Dasturni butunlay yopish',
+        label: 'Dasturni butunlay yopish',
         click: () => {
           const choice = dialog.showMessageBoxSync({
             type: 'warning',

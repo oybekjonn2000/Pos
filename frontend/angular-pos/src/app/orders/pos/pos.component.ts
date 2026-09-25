@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,6 +9,9 @@ import { TableService, RestaurantTable } from '../../core/services/table.service
 import { OrderService, CreateOrderRequest, CreateOrderItemRequest, Order } from '../../core/services/order.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { TranslationService } from '../../core/services/translation.service';
 import { AuthService } from '../../core/services/auth.service';
 import { getProductImageUrl, handleImageError } from '../../core/utils/product-image.util';
 
@@ -33,7 +36,7 @@ export interface PosCartItem {
 @Component({
   selector: 'app-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="pos-screen fade-in">
       <!-- Left: Menu & Categories -->
@@ -42,10 +45,10 @@ export interface PosCartItem {
         <div class="pos-toolbar">
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <button class="btn-change-table" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); display: flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13px;" (click)="onLeaveTable()" title="Stollar xaritasiga qaytish">
-              ⬅ Stollar
+              <app-icon name="arrow-left" [size]="16"></app-icon> {{ 'nav.tables' | translate }}
             </button>
             <div class="table-badge">
-              <span class="table-badge__icon">🪑</span>
+              <span class="table-badge__icon"><app-icon name="tables" [size]="16"></app-icon></span>
               @if (selectedTable()) {
                 <div class="table-badge__info">
                   <strong>{{ selectedTable()?.name }}</strong> (#{{ selectedTable()?.tableNumber }})
@@ -53,25 +56,25 @@ export interface PosCartItem {
                     <span class="zone-pct-pill">{{ zoneName() }}: {{ zonePercentage() }}%</span>
                   }
                 </div>
-                <button class="btn-change-table" (click)="onLeaveTable()">O'zgartirish</button>
+                <button class="btn-change-table" (click)="onLeaveTable()">{{ 'common.edit' | translate }}</button>
               } @else {
                 <button class="btn-select-table" (click)="router.navigate(['/tables'])">
-                  Stol tanlang ➜
+                  Stol tanlang <app-icon name="arrow-right" [size]="14"></app-icon>
                 </button>
               }
             </div>
           </div>
 
           <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" [(ngModel)]="searchQuery" (input)="filterProducts()" placeholder="Mahsulot qidirish..." class="pos-input" />
+            <span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>
+            <input type="text" [(ngModel)]="searchQuery" (input)="filterProducts()" [placeholder]="'pos.searchProduct' | translate" class="pos-input" />
           </div>
         </div>
 
         <!-- Kitchen Station Filter Strip -->
         <div class="kitchen-stations-strip">
           <button class="station-chip" [class.station-chip--active]="!selectedKitchenId()" (click)="selectKitchen(undefined)">
-            🍽️ Barcha Oshxonalar
+            <app-icon name="restaurant" [size]="16"></app-icon> {{ 'kitchen.allStations' | translate }}
           </button>
           @for (k of kitchens(); track k.id) {
             <button class="station-chip" [class.station-chip--active]="selectedKitchenId() === k.id" (click)="selectKitchen(k.id)">
@@ -83,7 +86,7 @@ export interface PosCartItem {
         <!-- Category Tabs (Dynamically filtered by selected Kitchen) -->
         <div class="categories-tabs">
           <button class="cat-tab" [class.cat-tab--active]="!selectedCategoryId()" (click)="selectCategory(undefined)">
-            Barcha bo'limlar
+            {{ 'common.all' | translate }}
           </button>
           @for (cat of visibleCategories(); track cat.id) {
             <button class="cat-tab" [class.cat-tab--active]="selectedCategoryId() === cat.id" (click)="selectCategory(cat.id)">
@@ -97,11 +100,11 @@ export interface PosCartItem {
           @if (loadingProducts()) {
             <div class="loading-state">
               <div class="spinner"></div>
-              <p>Mahsulotlar yuklanmoqda...</p>
+              <p>{{ 'common.loading' | translate }}</p>
             </div>
           } @else if (filteredProducts().length === 0) {
             <div class="empty-products">
-              <p>Ushbu oshxona yoki bo'limda mahsulotlar topilmadi.</p>
+              <p>{{ 'common.noRecords' | translate }}</p>
             </div>
           } @else {
             <div class="products-grid">
@@ -133,7 +136,7 @@ export interface PosCartItem {
                         </div>
                       } @else {
                         <button class="product-card__add" (click)="$event.stopPropagation(); addToCart(prod)" title="Buyurtmaga qo'shish">
-                          ➕
+                          <app-icon name="plus" [size]="16"></app-icon>
                         </button>
                       }
                     </div>
@@ -150,7 +153,7 @@ export interface PosCartItem {
         <div class="mobile-cart-bar" (click)="toggleMobileCart(true)">
           <div class="mobile-cart-bar__info">
             <div class="mobile-cart-bar__count">
-              🛒 {{ totalCartItemsCount() }} ta taom
+              <app-icon name="cart" [size]="18"></app-icon> {{ totalCartItemsCount() }} ta taom
               @if (newItemsCount() > 0) {
                 <span class="new-badge">+{{ newItemsCount() }} yangi</span>
               }
@@ -176,16 +179,16 @@ export interface PosCartItem {
         <!-- Mobile Drawer Top Bar -->
         <div class="mobile-drawer-handle-bar">
           <div class="drawer-drag-line"></div>
-          <button type="button" class="btn-close-mobile-cart" (click)="toggleMobileCart(false)">✕ Yopish</button>
+          <button type="button" class="btn-close-mobile-cart" (click)="toggleMobileCart(false)"><app-icon name="close" [size]="16"></app-icon> {{ 'common.close' | translate }}</button>
         </div>
 
         <div class="cart-header">
           <div class="cart-title">
             @if (orderType() === 'TAKEAWAY') {
-              <span>🛍 Olib Ketish</span>
+              <span><app-icon name="shopping-bag" [size]="16"></app-icon> {{ 'pos.takeaway' | translate }}</span>
               <span class="cart-table-pill takeaway-pill">TAKEAWAY</span>
             } @else {
-              <span>🛒 Buyurtma</span>
+              <span><app-icon name="cart" [size]="16"></app-icon> {{ 'orders.orderNumber' | translate }}</span>
               @if (selectedTable()) {
                 <span class="cart-table-pill">{{ selectedTable()?.name }}</span>
               }
@@ -194,11 +197,11 @@ export interface PosCartItem {
           <div class="cart-header-actions">
             @if (currentOrderId()) {
               <button class="cart-rounds-btn" (click)="openRoundsModal()" title="Oshxona partiyalari tarixi">
-                📋 Partiyalar
+                <app-icon name="orders" [size]="16"></app-icon> Partiyalar
               </button>
             }
             @if (cart().length > 0) {
-              <button class="cart-clear-btn" (click)="clearCart()">Tozalash</button>
+              <button class="cart-clear-btn" (click)="clearCart()">{{ 'common.clear' | translate }}</button>
             }
           </div>
         </div>
@@ -207,8 +210,8 @@ export interface PosCartItem {
         <div class="cart-items">
           @if (cart().length === 0) {
             <div class="cart-empty">
-              <div class="cart-empty__icon">📋</div>
-              <p>Buyurtma bo'sh</p>
+              <div class="cart-empty__icon"><app-icon name="orders" [size]="48"></app-icon></div>
+              <p>{{ 'pos.cartEmpty' | translate }}</p>
               <span>Menyudan taomlarni tanlang</span>
             </div>
           } @else {
@@ -256,7 +259,7 @@ export interface PosCartItem {
                         </span>
                       }
                       @if (item.voidReason) {
-                        <div class="void-reason-tag">⚠️ {{ item.voidReason }}</div>
+                        <div class="void-reason-tag"><app-icon name="alert-triangle" [size]="12" class="icon--warning"></app-icon> {{ item.voidReason }}</div>
                       }
                     </div>
 
@@ -272,18 +275,18 @@ export interface PosCartItem {
                         <div class="cart-item__actions">
                           @if ((item.sentQuantity || 0) === 0) {
                             <button class="cart-item__remove" title="O'chirish" (click)="removeItem(item)">
-                              ✕ O'chirish
+                              <app-icon name="close" [size]="14"></app-icon> O'chirish
                             </button>
                           } @else if (currentOrderId()) {
                             <button class="btn-cancel-item" (click)="openCancelModal(item)" title="Oshxonadagi taomni bekor qilish">
-                              🚫 Bekor qilish
+                              <app-icon name="ban" [size]="14"></app-icon> Bekor qilish
                             </button>
                           }
                         </div>
                       </div>
                     } @else {
                       <div class="cart-item__voided-badge">
-                        <span>❌ Bekor qilingan ({{ item.quantity }} ta)</span>
+                        <span><app-icon name="close" [size]="14" class="icon--danger"></app-icon> Bekor qilingan ({{ item.quantity }} ta)</span>
                       </div>
                     }
                   </div>
@@ -315,7 +318,7 @@ export interface PosCartItem {
             <button class="btn-kitchen" 
                     [disabled]="!canSendToKitchen()"
                     (click)="sendToKitchen()">
-              👨‍🍳 Oshxonaga
+              <app-icon name="chef" [size]="16"></app-icon> {{ 'orders.sendToKitchen' | translate }}
               @if (newItemsCount() > 0) {
                 <span class="new-count-badge">{{ newItemsCount() }} ta yangi</span>
               }
@@ -324,7 +327,7 @@ export interface PosCartItem {
               <button class="btn-close-bill" 
                       [disabled]="!canCloseBill()"
                       (click)="closeBill()">
-                🔒 HISOBNI YOPISH
+                <app-icon name="lock" [size]="16"></app-icon> {{ 'orders.closedOrders' | translate }}
               </button>
             }
           </div>
@@ -337,10 +340,10 @@ export interface PosCartItem {
           <div class="modal-card modal-card--cancel" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">🚫</span>
-                <h3 style="margin: 0;">Taomni bekor qilish</h3>
+                <app-icon name="ban" [size]="24" class="icon--danger"></app-icon>
+                <h3 style="margin: 0;">{{ 'orders.voidItem' | translate }}</h3>
               </div>
-              <button class="modal-close" (click)="closeCancelModal()">✕</button>
+              <button class="modal-close" (click)="closeCancelModal()"><app-icon name="close" [size]="16"></app-icon></button>
             </div>
             <div class="modal-body">
               <div class="cancel-modal-info">
@@ -416,8 +419,8 @@ export interface PosCartItem {
         <div class="modal-backdrop">
           <div class="modal-card rounds-modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
-              <h3>📦 Oshxona Partiyalari Tarixi (Order Rounds)</h3>
-              <button class="modal-close" (click)="showRoundsModal.set(false)">✕</button>
+              <h3><app-icon name="products" [size]="18"></app-icon> Oshxona Partiyalari Tarixi (Order Rounds)</h3>
+              <button class="modal-close" (click)="showRoundsModal.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
             </div>
             <div class="modal-body">
               @if (loadingBatches()) {
@@ -431,16 +434,16 @@ export interface PosCartItem {
                     <div class="round-card" [class.round-card--addon]="b.batchType === 'ADDON' || b.batchNumber > 1">
                       <div class="round-header">
                         <span class="round-title">
-                          {{ (b.batchType === 'ADDON' || b.batchNumber > 1) ? '🔔 Partiya #' + b.batchNumber + ' (Qo‘shimcha buyurtma)' : 'Partiya #1 (Asosiy buyurtma)' }}
+                          {{ (b.batchType === 'ADDON' || b.batchNumber > 1) ? 'Partiya #' + b.batchNumber + ' (Qo‘shimcha buyurtma)' : 'Partiya #1 (Asosiy buyurtma)' }}
                         </span>
                         <span class="status-pill" [class]="'pill--' + (b.status || 'NEW').toLowerCase()">
                           {{ getBatchStatusLabel(b.status) }}
                         </span>
                       </div>
                       <div class="round-meta">
-                        <span>🕒 Yuborilgan: {{ formatBatchTime(b.sentAt || b.createdAt) }}</span>
+                        <span><app-icon name="clock" [size]="12"></app-icon> Yuborilgan: {{ formatBatchTime(b.sentAt || b.createdAt) }}</span>
                         @if (b.kitchenName) {
-                          <span> • 🏷️ {{ b.kitchenName }}</span>
+                          <span> • <app-icon name="tag" [size]="12"></app-icon> {{ b.kitchenName }}</span>
                         }
                       </div>
                       <div class="round-items">
@@ -1802,6 +1805,30 @@ export interface PosCartItem {
       }
     }
 
+    /* POS Monitor / Full HD (>= 1536px) */
+    @media (min-width: 1536px) {
+      .pos-screen {
+        grid-template-columns: 1fr 440px;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 16px;
+      }
+
+      .product-card__image-box {
+        height: 135px;
+      }
+
+      .product-card__name {
+        font-size: 15px;
+      }
+
+      .product-card__price {
+        font-size: 15px;
+      }
+    }
+
     @keyframes slideUpSheet {
       from { transform: translateY(100%); }
       to { transform: translateY(0); }
@@ -1809,6 +1836,7 @@ export interface PosCartItem {
   `]
 })
 export class PosComponent implements OnInit {
+  public i18n = inject(TranslationService);
   categories = signal<Category[]>([]);
   kitchens = signal<KitchenStation[]>([]);
   products = signal<Product[]>([]);
@@ -1873,12 +1901,12 @@ export class PosComponent implements OnInit {
   loadingBatches = signal(false);
 
   cancelReasonOptions = [
-    { id: 'CLIENT_REFUSED', icon: '🙅‍♂️', title: 'Mijoz rad etdi', desc: 'Mijoz buyurtmani bekor qildi' },
-    { id: 'WRONG_ITEM', icon: '⚠️', title: "Noto'g'ri urilgan", desc: 'Adashib yoki ortiqcha kiritilgan' },
-    { id: 'LONG_WAIT', icon: '⏳', title: 'Uzoq kuttirildi', desc: "Kutish cho'zildi, mijoz ketib qoldi" },
-    { id: 'OUT_OF_STOCK', icon: '📦', title: 'Mahsulot tugagan', desc: 'Xomashyo yoki porsiya qolmagan' },
-    { id: 'KITCHEN_ISSUE', icon: '👨‍🍳', title: 'Oshxona tayyorlay olmaydi', desc: 'Oshpaz ulgurmayapti yoki texnik sabab' },
-    { id: 'OTHER', icon: '✍️', title: 'Boshqa sabab', desc: "Qo'lda boshqa sabab yozish" }
+    { id: 'CLIENT_REFUSED', icon: 'ban', title: 'Mijoz rad etdi', desc: 'Mijoz buyurtmani bekor qildi' },
+    { id: 'WRONG_ITEM', icon: 'alert-triangle', title: "Noto'g'ri urilgan", desc: 'Adashib yoki ortiqcha kiritilgan' },
+    { id: 'LONG_WAIT', icon: 'hourglass', title: 'Uzoq kuttirildi', desc: "Kutish cho'zildi, mijoz ketib qoldi" },
+    { id: 'OUT_OF_STOCK', icon: 'products', title: 'Mahsulot tugagan', desc: 'Xomashyo yoki porsiya qolmagan' },
+    { id: 'KITCHEN_ISSUE', icon: 'chef', title: 'Oshxona tayyorlay olmaydi', desc: 'Oshpaz ulgurmayapti yoki texnik sabab' },
+    { id: 'OTHER', icon: 'file-edit', title: 'Boshqa sabab', desc: "Qo'lda boshqa sabab yozish" }
   ];
 
   // Real-time calculation of unsent (NEW) items: any item where total quantity > sent quantity
@@ -2052,14 +2080,14 @@ export class PosComponent implements OnInit {
   }
 
   getStationEmoji(code?: string): string {
-    if (!code) return '👨‍🍳';
+    if (!code) return 'chef';
     switch (code.toUpperCase()) {
-      case 'PALOV': case 'PALOVCHI': return '🥘';
-      case 'SOMSA': case 'SOMSAPAZ': return '🥟';
-      case 'BAR': return '🍹';
-      case 'PIZZA': case 'PITSA': return '🍕';
-      case 'MAIN': case 'MAIN_KITCHEN': return '👨‍🍳';
-      default: return '🍳';
+      case 'PALOV': case 'PALOVCHI': return 'cooking-pot';
+      case 'SOMSA': case 'SOMSAPAZ': return 'products';
+      case 'BAR': return 'products';
+      case 'PIZZA': case 'PITSA': return 'products';
+      case 'MAIN': case 'MAIN_KITCHEN': return 'chef';
+      default: return 'chef';
     }
   }
 
@@ -2154,20 +2182,20 @@ export class PosComponent implements OnInit {
   }
 
   getStatusLabel(item: PosCartItem): string {
-    if (item.voided || item.kitchenStatus === 'CANCELLED') return '🔴 BEKOR QILINDI';
+    if (item.voided || item.kitchenStatus === 'CANCELLED') return this.i18n.t('status.CANCELLED');
     const sent = item.sentQuantity || 0;
     const rem = item.quantity - sent;
-    if (sent === 0) return '🟡 YANGI';
-    if (rem > 0) return `🔵 ${sent}/${item.quantity} OSHXONADA (+${rem} YANGI)`;
+    if (sent === 0) return this.i18n.t('status.NEW');
+    if (rem > 0) return `${sent}/${item.quantity} ${this.i18n.t('orders.inKitchen')} (+${rem} ${this.i18n.t('status.NEW')})`;
     switch (item.kitchenStatus) {
-      case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';
-      case 'ACCEPTED': return '🟣 QABUL QILINDI';
+      case 'SENT_TO_KITCHEN': return this.i18n.t('orders.inKitchen');
+      case 'ACCEPTED': return this.i18n.t('status.ACCEPTED');
       case 'PREPARING':
-      case 'COOKING': return '🟠 TAYYORLANMOQDA';
-      case 'READY': return '🟢 TAYYOR';
+      case 'COOKING': return this.i18n.t('status.COOKING');
+      case 'READY': return this.i18n.t('status.READY');
       case 'DELIVERED':
-      case 'SERVED': return '✅ TARQATILDI';
-      default: return '🔵 OSHXONADA';
+      case 'SERVED': return this.i18n.t('status.SERVED');
+      default: return this.i18n.t('orders.inKitchen');
     }
   }
 
@@ -2355,8 +2383,8 @@ export class PosComponent implements OnInit {
             this.currentOrderId.set(res.data.id);
             this.updateCartFromOrder(res.data);
             const msg = this.orderType() === 'TAKEAWAY'
-              ? '🛍 Olib ketish buyurtmasi oshxonaga yuborildi!'
-              : '👨‍🍳 Buyurtma oshxonaga yuborildi va stol band qilindi!';
+              ? 'Olib ketish buyurtmasi oshxonaga yuborildi!'
+              : 'Buyurtma oshxonaga yuborildi va stol band qilindi!';
             this.notify.success(msg);
           }
         },
@@ -2504,15 +2532,15 @@ export class PosComponent implements OnInit {
 
   getBatchStatusLabel(status?: string): string {
     switch (status?.toUpperCase()) {
-      case 'NEW': return '🟡 YANGI';
-      case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';
-      case 'ACCEPTED': return '🟣 QABUL QILINDI';
+      case 'NEW': return 'YANGI';
+      case 'SENT_TO_KITCHEN': return 'OSHXONADA';
+      case 'ACCEPTED': return 'QABUL QILINDI';
       case 'PREPARING':
-      case 'COOKING': return '🟠 TAYYORLANMOQDA';
-      case 'READY': return '🟢 TAYYOR';
+      case 'COOKING': return 'TAYYORLANMOQDA';
+      case 'READY': return 'TAYYOR';
       case 'DELIVERED':
-      case 'SERVED': return '✅ TARQATILDI';
-      case 'CANCELLED': return '🔴 BEKOR QILINDI';
+      case 'SERVED': return 'TARQATILDI';
+      case 'CANCELLED': return 'BEKOR QILINDI';
       default: return status || 'YANGI';
     }
   }

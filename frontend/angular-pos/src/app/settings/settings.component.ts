@@ -1,4 +1,9 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
+import { LanguageSelectorComponent } from '../shared/components/language-selector/language-selector.component';
+import { TranslationService } from '../core/services/translation.service';
+import { SupportedLang } from '../core/i18n/lang.types';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService, AllSettingsResponse, RestaurantSettings, GeneralSettings, ReceiptSettings, PaymentSettings, TaxServiceSettings, OrderSettings, KitchenSettings, NotificationSettings, SecuritySettings, BackupSettings, SystemInfoDto, AuditLogEntry } from '../core/services/settings.service';
@@ -12,6 +17,7 @@ import { TableService, RestaurantTable, TableZone } from '../core/services/table
 type SettingsCategory = 
   | 'RESTAURANT'
   | 'GENERAL'
+  | 'LANGUAGE'
   | 'USERS'
   | 'TABLES'
   | 'PRODUCTS'
@@ -31,7 +37,7 @@ type SettingsCategory =
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="settings-container fade-in">
       <!-- HEADER -->
@@ -49,7 +55,7 @@ type SettingsCategory =
             @if (saving()) {
               <span class="spinner"></span> Saqlanmoqda...
             } @else {
-              💾 Saqlash
+              <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
             }
           </button>
         </div>
@@ -58,25 +64,30 @@ type SettingsCategory =
       <!-- TOAST BANNER -->
       @if (toastMessage()) {
         <div class="toast-banner" [class.success]="toastType() === 'success'" [class.error]="toastType() === 'error'">
-          <span>{{ toastType() === 'success' ? '✅' : '⚠️' }} {{ toastMessage() }}</span>
-          <button class="toast-close" (click)="clearToast()">✕</button>
+          <span><app-icon [name]="toastType() === 'success' ? 'check-circle' : 'alert-triangle'" [size]="16"></app-icon> {{ toastMessage() }}</span>
+          <button class="toast-close" (click)="clearToast()"><app-icon name="x" [size]="14"></app-icon></button>
         </div>
       }
 
       <div class="settings-layout">
         <!-- LEFT SIDEBAR CATEGORIES -->
-        <aside class="settings-nav">
+        <aside class="settings-nav" [class.mobile-hidden]="mobileViewingDetail()">
           <div class="nav-group-title">RESTORAN VA UMUMIY</div>
           <button class="nav-item" [class.active]="activeCategory() === 'RESTAURANT'" (click)="setCategory('RESTAURANT')">
-            <span class="nav-icon">⚙️</span>
+            <span class="nav-icon"><app-icon name="settings" [size]="18"></app-icon></span>
             <span class="nav-label">Restoran profili</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'GENERAL'" (click)="setCategory('GENERAL')">
-            <span class="nav-icon">🌐</span>
-            <span class="nav-label">Umumiy sozlamalar</span>
+            <span class="nav-icon"><app-icon name="settings" [size]="18"></app-icon></span>
+            <span class="nav-label">{{ 'settings.general' | translate }}</span>
+          </button>
+          <button class="nav-item highlight-lang" [class.active]="activeCategory() === 'LANGUAGE'" (click)="setCategory('LANGUAGE')">
+            <span class="nav-icon"><app-icon name="globe" [size]="18"></app-icon></span>
+            <span class="nav-label">{{ 'settings.languageSection' | translate }}</span>
+            <span class="nav-badge lang-badge">{{ i18n.currentLang().toUpperCase() }}</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'USERS'" (click)="setCategory('USERS')">
-            <span class="nav-icon">👥</span>
+            <span class="nav-icon"><app-icon name="users" [size]="18"></app-icon></span>
             <span class="nav-label">Xodimlar va Rollar</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'TABLES'" (click)="setCategory('TABLES')">
@@ -85,49 +96,49 @@ type SettingsCategory =
           </button>
           <div class="nav-group-title">OSXONA VA PRINTERLAR</div>
           <button class="nav-item" [class.active]="activeCategory() === 'KITCHENS'" (click)="setCategory('KITCHENS')">
-            <span class="nav-icon">👨‍🍳</span>
+            <span class="nav-icon"><app-icon name="chef" [size]="18"></app-icon></span>
             <span class="nav-label">Oshxonalar / Bo'limlar</span>
             <span class="nav-badge">{{ kitchens().length }}</span>
           </button>
           <button class="nav-item highlight" [class.active]="activeCategory() === 'PRINTERS'" (click)="setCategory('PRINTERS')">
-            <span class="nav-icon">🖨️</span>
+            <span class="nav-icon"><app-icon name="printer" [size]="18"></app-icon></span>
             <span class="nav-label">Printer Management</span>
             <span class="nav-badge printer-badge">{{ onlinePrintersCount() }}/{{ printers().length }}</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'KITCHEN_DISPLAY'" (click)="setCategory('KITCHEN_DISPLAY')">
-            <span class="nav-icon">🍳</span>
+            <span class="nav-icon"><app-icon name="chef" [size]="18"></app-icon></span>
             <span class="nav-label">Oshxona ekrani (KDS)</span>
           </button>
 
           <div class="nav-group-title">MOLIYA VA BUYURTMALAR</div>
           <button class="nav-item" [class.active]="activeCategory() === 'RECEIPT'" (click)="setCategory('RECEIPT')">
-            <span class="nav-icon">🧾</span>
+            <span class="nav-icon"><app-icon name="file-text" [size]="18"></app-icon></span>
             <span class="nav-label">Chek va Kvitansiya</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'PAYMENTS'" (click)="setCategory('PAYMENTS')">
-            <span class="nav-icon">💳</span>
+            <span class="nav-icon"><app-icon name="credit-card" [size]="18"></app-icon></span>
             <span class="nav-label">To'lov turlari</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'TAX_SERVICE'" (click)="setCategory('TAX_SERVICE')">
-            <span class="nav-icon">📊</span>
+            <span class="nav-icon"><app-icon name="bar-chart" [size]="18"></app-icon></span>
             <span class="nav-label">Xizmat haqi va Soliq</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'ORDERS'" (click)="setCategory('ORDERS')">
-            <span class="nav-icon">📋</span>
+            <span class="nav-icon"><app-icon name="clipboard" [size]="18"></app-icon></span>
             <span class="nav-label">Buyurtma sozlamalari</span>
           </button>
 
           <div class="nav-group-title">TIZIM VA XAVFSIZLIK</div>
           <button class="nav-item" [class.active]="activeCategory() === 'NOTIFICATIONS'" (click)="setCategory('NOTIFICATIONS')">
-            <span class="nav-icon">🔔</span>
+            <span class="nav-icon"><app-icon name="bell" [size]="18"></app-icon></span>
             <span class="nav-label">Bildirishnoma & Ovoz</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'SECURITY'" (click)="setCategory('SECURITY')">
-            <span class="nav-icon">🔐</span>
+            <span class="nav-icon"><app-icon name="lock" [size]="18"></app-icon></span>
             <span class="nav-label">Xavfsizlik & PIN</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'BACKUP'" (click)="setCategory('BACKUP')">
-            <span class="nav-icon">💾</span>
+            <span class="nav-icon"><app-icon name="database" [size]="18"></app-icon></span>
             <span class="nav-label">Zaxiralash & Baza</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'SYSTEM_INFO'" (click)="setCategory('SYSTEM_INFO')">
@@ -136,14 +147,17 @@ type SettingsCategory =
           </button>
           @if (!auth.isWaiter() && !auth.isKitchen()) {
             <button class="nav-item nav-item--reset" [class.active]="activeCategory() === 'RESET'" (click)="setCategory('RESET')">
-              <span class="nav-icon">🗑️</span>
+              <span class="nav-icon"><app-icon name="trash" [size]="18"></app-icon></span>
               <span class="nav-label">Reset / Tozalash</span>
             </button>
           }
         </aside>
 
         <!-- RIGHT CONTENT VIEWPORT -->
-        <main class="settings-content">
+        <main class="settings-content" [class.mobile-hidden]="!mobileViewingDetail()">
+          <button class="mobile-back-to-nav" (click)="backToCategoriesMobile()">
+            <span>⬅️ Bo'limlar ro'yxatiga qaytish</span>
+          </button>
           @if (loading()) {
             <div class="loading-state">
               <span class="spinner-large"></span>
@@ -155,7 +169,7 @@ type SettingsCategory =
             @if (activeCategory() === 'RESTAURANT') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🏛️ Restoran Profili va Rekvizitlari</h3>
+                  <h3><app-icon name="building" [size]="20"></app-icon> Restoran Profili va Rekvizitlari</h3>
                   <p>Ushbu ma'lumotlar kassa cheklarida va tizim hisobotlarida aks etadi.</p>
                 </div>
                 <div class="form-grid">
@@ -208,27 +222,87 @@ type SettingsCategory =
               </div>
             }
 
+            
+            <!-- LANGUAGE SETTINGS -->
+            @if (activeCategory() === 'LANGUAGE') {
+              <div class="category-card">
+                <div class="card-header">
+                  <h3><app-icon name="globe" [size]="20"></app-icon> {{ 'settings.languageSection' | translate }}</h3>
+                  <p>{{ 'settings.languageSubtitle' | translate }}</p>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group span-2">
+                    <label class="pos-field-label"><strong>{{ 'settings.selectLanguage' | translate }}</strong></label>
+                    <div class="custom-lang-select-wrapper">
+                      <select class="pos-select lang-dropdown-select" [ngModel]="i18n.currentLang()" (ngModelChange)="setAppLanguage($event)">
+                        <option value="uz">🇺🇿 O‘zbekcha</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="en">🇬🇧 English</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group span-2">
+                    <div class="language-cards-container">
+                      <div class="lang-card-item" [class.selected]="i18n.currentLang() === 'uz'" (click)="setAppLanguage('uz')">
+                        <div class="lang-card-flag">🇺🇿</div>
+                        <div class="lang-card-details">
+                          <span class="lang-card-name">O‘zbekcha</span>
+                          <span class="lang-card-desc">Birlamchi tizim tili (Standart)</span>
+                        </div>
+                        @if (i18n.currentLang() === 'uz') {
+                          <span class="lang-check-badge"><app-icon name="check-circle" [size]="18"></app-icon></span>
+                        }
+                      </div>
+
+                      <div class="lang-card-item" [class.selected]="i18n.currentLang() === 'ru'" (click)="setAppLanguage('ru')">
+                        <div class="lang-card-flag">🇷🇺</div>
+                        <div class="lang-card-details">
+                          <span class="lang-card-name">Русский</span>
+                          <span class="lang-card-desc">Русский интерфейс системы</span>
+                        </div>
+                        @if (i18n.currentLang() === 'ru') {
+                          <span class="lang-check-badge"><app-icon name="check-circle" [size]="18"></app-icon></span>
+                        }
+                      </div>
+
+                      <div class="lang-card-item" [class.selected]="i18n.currentLang() === 'en'" (click)="setAppLanguage('en')">
+                        <div class="lang-card-flag">🇬🇧</div>
+                        <div class="lang-card-details">
+                          <span class="lang-card-name">English</span>
+                          <span class="lang-card-desc">International English language</span>
+                        </div>
+                        @if (i18n.currentLang() === 'en') {
+                          <span class="lang-check-badge"><app-icon name="check-circle" [size]="18"></app-icon></span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
             <!-- 2. GENERAL SETTINGS -->
             @if (activeCategory() === 'GENERAL') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🌐 Umumiy Tizim Sozlamalari</h3>
+                  <h3><app-icon name="globe" [size]="20"></app-icon> Umumiy Tizim Sozlamalari</h3>
                   <p>Foydalanuvchi interfeysi, sanalar va tasdiqlash bildirishnomalari.</p>
                 </div>
                 <div class="form-grid">
                   <div class="form-group">
-                    <label>Tizim tili</label>
-                    <select class="pos-select" [(ngModel)]="general.language">
-                      <option value="uz">O'zbekcha</option>
-                      <option value="ru">Русский</option>
-                      <option value="en">English</option>
+                    <label>{{ 'settings.languageSection' | translate }}</label>
+                    <select class="pos-select" [ngModel]="i18n.currentLang()" (ngModelChange)="setAppLanguage($event)">
+                      <option value="uz">🇺🇿 O‘zbekcha</option>
+                      <option value="ru">🇷🇺 Русский</option>
+                      <option value="en">🇬🇧 English</option>
                     </select>
                   </div>
                   <div class="form-group">
                     <label>Tizim mavzusi (Theme)</label>
                     <select class="pos-select" [ngModel]="themeService.currentTheme()" (ngModelChange)="onThemeChange($event)">
-                      <option value="light">☀️ Light Mode (Kunduzgi rejim - Standart)</option>
-                      <option value="dark">🌙 Dark Mode (Tungi rejim)</option>
+                      <option value="light">Light Mode (Kunduzgi rejim - Standart)</option>
+                      <option value="dark">Dark Mode (Tungi rejim)</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -294,7 +368,7 @@ type SettingsCategory =
             @if (activeCategory() === 'USERS') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>👥 Rollar va Xavfsizlik Ruxsatlari</h3>
+                  <h3><app-icon name="shield" [size]="20"></app-icon> Rollar va Xavfsizlik Ruxsatlari</h3>
                   <p>Lavozimlar bo'yicha ruxsat etilgan huquqlar (RBAC tizimi).</p>
                 </div>
                 <div class="roles-grid">
@@ -410,11 +484,11 @@ type SettingsCategory =
             @if (activeCategory() === 'PRODUCTS') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🍔 Mahsulotlar va Oshxona Bog'lanishi</h3>
+                  <h3><app-icon name="utensils" [size]="20"></app-icon> Mahsulotlar va Oshxona Bog'lanishi</h3>
                   <p>Har bir taom oshxona stansiyasiga bog'lanadi (Product → Kitchen → Printer).</p>
                 </div>
                 <div class="info-alert">
-                  Mahsulotlar va toifalarni to'liq boshqarish uchun chap menyudagi <strong>🍔 Products</strong> bo'limiga o'ting.
+                  Mahsulotlar va toifalarni to'liq boshqarish uchun chap menyudagi <strong>Products</strong> bo'limiga o'ting.
                   Har bir mahsulot tahrirlanganda uning <strong>Oshxona bo'limi (Kitchen)</strong> to'g'ri tanlanganligiga ishonch hosil qiling.
                 </div>
               </div>
@@ -425,7 +499,7 @@ type SettingsCategory =
               <div class="category-card">
                 <div class="card-header-flex">
                   <div>
-                    <h3>👨‍🍳 Oshxonalar va Bo'limlar Sozlamalari</h3>
+                    <h3><app-icon name="chef" [size]="20"></app-icon> Oshxonalar va Bo'limlar Sozlamalari</h3>
                     <p>Taomlar tayyorlanadigan stansiyalar va ularning shaxsiy printerlari.</p>
                   </div>
                   <button class="pos-btn pos-btn-secondary" (click)="openAddKitchenModal()">+ Yangi Bo'lim</button>
@@ -459,10 +533,10 @@ type SettingsCategory =
                           <td>
                             @if (k.printerName) {
                               <span class="printer-tag" [class.online]="k.printerStatus === 'ONLINE'">
-                                🖨️ {{ k.printerName }}
+                                <app-icon name="printer" [size]="14"></app-icon> {{ k.printerName }}
                               </span>
                             } @else {
-                              <span class="printer-tag offline">❌ Printer ulanmagan</span>
+                              <span class="printer-tag offline"><app-icon name="x" [size]="12"></app-icon> Printer ulanmagan</span>
                             }
                           </td>
                           <td>
@@ -492,7 +566,7 @@ type SettingsCategory =
               <div class="category-card">
                 <div class="card-header-flex">
                   <div>
-                    <h3>🖨️ Restoran Printer Management Tizimi</h3>
+                    <h3><app-icon name="printer" [size]="20"></app-icon> Restoran Printer Management Tizimi</h3>
                     <p>Kompyuterdagi real Windows printerlari bilan to'g'ridan-to'g'ri integratsiya va oshxona routingi.</p>
                   </div>
                   <div class="action-btn-group">
@@ -532,11 +606,11 @@ type SettingsCategory =
                   <div class="test-feedback-box" [class.success]="testPrintResult()?.success" [class.error]="!testPrintResult()?.success">
                     <div class="feedback-header">
                       @if (testPrintResult()?.success) {
-                        <strong class="feedback-title success-title">✅ TEST CHOP ETISH MUVAFFAQIYATLI</strong>
+                        <strong class="feedback-title success-title"><app-icon name="check-circle" [size]="16"></app-icon> TEST CHOP ETISH MUVAFFAQIYATLI</strong>
                       } @else {
-                        <strong class="feedback-title error-title">❌ PRINTERGA ULANISH IMKONI BO'LMADI</strong>
+                        <strong class="feedback-title error-title"><app-icon name="alert-triangle" [size]="16"></app-icon> PRINTERGA ULANISH IMKONI BO'LMADI</strong>
                       }
-                      <button class="toast-close" (click)="clearTestResult()">✕</button>
+                      <button class="toast-close" (click)="clearTestResult()"><app-icon name="x" [size]="14"></app-icon></button>
                     </div>
                     <div class="feedback-body">
                       <div><strong>Printer:</strong> {{ testPrintResult()?.printerName }}</div>
@@ -556,7 +630,7 @@ type SettingsCategory =
                       <div class="printer-card-top">
                         <div>
                           <div class="printer-name">
-                            🖨️ {{ p.name }}
+                            <app-icon name="printer" [size]="16"></app-icon> {{ p.name }}
                             @if (p.isDefault) {
                               <span class="default-badge">ASOSIY KASSA</span>
                             }
@@ -605,12 +679,12 @@ type SettingsCategory =
                         @if (p.fallbackPrinterName) {
                           <div class="detail-row">
                             <span class="lbl">Zaxira (Fallback):</span>
-                            <span class="val fallback-tag">🔄 {{ p.fallbackPrinterName }}</span>
+                            <span class="val fallback-tag"><app-icon name="refresh" [size]="12"></app-icon> {{ p.fallbackPrinterName }}</span>
                           </div>
                         }
                         @if (p.lastError) {
                           <div class="last-error-box">
-                            ⚠️ {{ p.lastError }}
+                            <app-icon name="alert-triangle" [size]="14"></app-icon> {{ p.lastError }}
                           </div>
                         }
                       </div>
@@ -620,7 +694,7 @@ type SettingsCategory =
                           @if (testingId() === p.id) {
                             <span class="spinner"></span> Sinov...
                           } @else {
-                            ⚡ TEST PRINT
+                            <app-icon name="zap" [size]="14"></app-icon> TEST PRINT
                           }
                         </button>
                         <button class="pos-btn-sm" (click)="editPrinter(p)">Tahrirlash</button>
@@ -636,7 +710,7 @@ type SettingsCategory =
             @if (activeCategory() === 'RECEIPT') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🧾 Kassa Cheki va Kvitansiya Sozlamalari</h3>
+                  <h3><app-icon name="file-text" [size]="20"></app-icon> Kassa Cheki va Kvitansiya Sozlamalari</h3>
                   <p>Mijozlarga beriladigan to'lov cheki formati va rekvizitlari.</p>
                 </div>
                 <div class="receipt-settings-split">
@@ -761,7 +835,7 @@ type SettingsCategory =
             @if (activeCategory() === 'PAYMENTS') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>💳 To'lov Usullari va Kassa Integratsiyasi</h3>
+                  <h3><app-icon name="credit-card" [size]="20"></app-icon> To'lov Usullari va Kassa Integratsiyasi</h3>
                   <p>Mijozlardan qabul qilinadigan to'lov tizimlari sozlamalari.</p>
                 </div>
                 <div class="form-grid">
@@ -828,7 +902,7 @@ type SettingsCategory =
             @if (activeCategory() === 'TAX_SERVICE') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>📊 Xizmat Haqi va Soliq Foizlari</h3>
+                  <h3><app-icon name="sliders" [size]="20"></app-icon> Xizmat Haqi va Soliq Foizlari</h3>
                   <p>Restoran xizmati va davlat soliqlari avtomatik hisob-kitobi.</p>
                 </div>
                 <div class="form-grid">
@@ -863,7 +937,7 @@ type SettingsCategory =
             @if (activeCategory() === 'ORDERS') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>📋 Buyurtmalar Ishlash Tartibi</h3>
+                  <h3><app-icon name="clipboard" [size]="20"></app-icon> Buyurtmalar Ishlash Tartibi</h3>
                   <p>Buyurtma raqamlash, bekor qilish va tahrirlash qoidalari.</p>
                 </div>
                 <div class="form-grid">
@@ -907,7 +981,7 @@ type SettingsCategory =
             @if (activeCategory() === 'KITCHEN_DISPLAY') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🍳 Oshxona Ekrani (KDS) Sozlamalari</h3>
+                  <h3><app-icon name="chef" [size]="20"></app-icon> Oshxona Ekrani (KDS) Sozlamalari</h3>
                   <p>Oshpazlar monitori va ticketlar ko'rinishi parametrlari.</p>
                 </div>
                 <div class="form-grid">
@@ -951,7 +1025,7 @@ type SettingsCategory =
             @if (activeCategory() === 'NOTIFICATIONS') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🔔 Bildirishnomalar va Audio Signallar</h3>
+                  <h3><app-icon name="bell" [size]="20"></app-icon> Bildirishnomalar va Audio Signallar</h3>
                   <p>Yangi buyurtmalar va taomlar tayyor bo'lganda ovozli xabarlar.</p>
                 </div>
                 <div class="form-grid">
@@ -987,7 +1061,7 @@ type SettingsCategory =
             @if (activeCategory() === 'SECURITY') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>🔐 Xavfsizlik va Kirish Nazorati</h3>
+                  <h3><app-icon name="lock" [size]="20"></app-icon> Xavfsizlik va Kirish Nazorati</h3>
                   <p>Kassir PIN kodlari va sessiya xavfsizligi qoidalari.</p>
                 </div>
                 <div class="form-grid">
@@ -1017,7 +1091,7 @@ type SettingsCategory =
               <!-- 14.1 ADMIN PERSONAL PIN CHANGE -->
               <div class="category-card" style="margin-top: 20px;">
                 <div class="card-header">
-                  <h3>🔢 Admin Shaxsiy PIN-kodini O'zgartirish</h3>
+                  <h3><app-icon name="hash" [size]="20"></app-icon> Admin Shaxsiy PIN-kodini O'zgartirish</h3>
                   <p>Desktop POS terminaliga tezkor kirish uchun 1–4 raqamli shaxsiy PIN kodingizni yangilang.</p>
                 </div>
 
@@ -1025,14 +1099,14 @@ type SettingsCategory =
                   @if (adminPinSuccess()) {
                     <div class="form-group span-2">
                       <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;">
-                        ✅ {{ adminPinSuccess() }}
+                        <app-icon name="check-circle" [size]="14"></app-icon> {{ adminPinSuccess() }}
                       </div>
                     </div>
                   }
                   @if (adminPinError()) {
                     <div class="form-group span-2">
                       <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;">
-                        ⚠️ {{ adminPinError() }}
+                        <app-icon name="alert-triangle" [size]="14"></app-icon> {{ adminPinError() }}
                       </div>
                     </div>
                   }
@@ -1078,7 +1152,7 @@ type SettingsCategory =
                       class="pos-btn pos-btn-primary"
                       (click)="saveAdminPin()"
                       [disabled]="savingAdminPin() || !adminPinForm.currentPinOrPassword || !adminPinForm.newPin || !adminPinForm.confirmPin">
-                      <span>{{ savingAdminPin() ? 'Saqlanmoqda...' : '🔐 PIN-kodni Saqlash' }}</span>
+                      <span *ngIf="savingAdminPin()">Saqlanmoqda...</span><span *ngIf="!savingAdminPin()"><app-icon name="lock" [size]="14"></app-icon> PIN-kodni Saqlash</span>
                     </button>
                   </div>
                 </div>
@@ -1089,7 +1163,7 @@ type SettingsCategory =
             @if (activeCategory() === 'BACKUP') {
               <div class="category-card">
                 <div class="card-header">
-                  <h3>💾 Ma'lumotlar Bazasi va Zaxiralash (Backup)</h3>
+                  <h3><app-icon name="database" [size]="20"></app-icon> Ma'lumotlar Bazasi va Zaxiralash (Backup)</h3>
                   <p>Mahalliy PostgreSQL bazasining xavfsizligi va zaxira nusxalari.</p>
                 </div>
                 <div class="stats-cards-row">
@@ -1127,7 +1201,7 @@ type SettingsCategory =
                     @if (backingUp()) {
                       <span class="spinner"></span> Zaxira olinmoqda...
                     } @else {
-                      ⚡ Hozir zaxira nusxa yaratish
+                      <app-icon name="zap" [size]="14"></app-icon> Hozir zaxira nusxa yaratish
                     }
                   </button>
                 </div>
@@ -1169,7 +1243,7 @@ type SettingsCategory =
                 </div>
 
                 <div class="audit-log-section">
-                  <h4>📝 Oxirgi Sozlamalar Audit Tarixi (Kim, qachon, nima o'zgardi)</h4>
+                  <h4><app-icon name="file-text" [size]="16"></app-icon> Oxirgi Sozlamalar Audit Tarixi (Kim, qachon, nima o'zgardi)</h4>
                   <div class="audit-table-wrapper">
                     <table class="pos-table">
                       <thead>
@@ -1203,7 +1277,7 @@ type SettingsCategory =
               <div class="category-card reset-card fade-in">
                 <div class="card-header">
                   <div class="header-with-badge">
-                    <h3>🧹 Ma'lumotlarni Tozalash (Reset Center)</h3>
+                    <h3><app-icon name="trash" [size]="20"></app-icon> Ma'lumotlarni Tozalash (Reset Center)</h3>
                     <span class="badge-dev">Faqat Test / Development uchun</span>
                   </div>
                   <p>Tizimga test davomida kiritilgan ma'lumotlarni xavfsiz tozalash. Barcha amallar tranzaksiya (ACID) ichida xavfsiz bajariladi.</p>
@@ -1211,7 +1285,7 @@ type SettingsCategory =
 
                 <!-- Info Alert -->
                 <div class="info-alert reset-info-banner">
-                  <span class="info-icon">💡</span>
+                  <span class="info-icon"><app-icon name="info" [size]="18"></app-icon></span>
                   <div>
                     <strong>Xavfsiz Tozalash Printsipi:</strong>
                     Har bir operatsiya alohida va tranzaksiya ichida ishlaydi. Xodimlar (users), rollar (roles), tizim printerlari va sozlamalar o'chirilmaydi.
@@ -1222,7 +1296,7 @@ type SettingsCategory =
                 <div class="reset-grid">
                   <!-- 1. Orders -->
                   <div class="reset-item-card">
-                    <div class="reset-item-icon">📋</div>
+                    <div class="reset-item-icon"><app-icon name="clipboard" [size]="24"></app-icon></div>
                     <div class="reset-item-info">
                       <h4>Buyurtmalar Tarixi</h4>
                       <p>Barcha buyurtmalar, to'lovlar, oshxona buyurtmalari (KDS) va bekor qilish cheklari tozalanadi. Stollar bo'shatiladi. Mahsulotlar saqlanadi.</p>
@@ -1234,7 +1308,7 @@ type SettingsCategory =
 
                   <!-- 2. Products -->
                   <div class="reset-item-card">
-                    <div class="reset-item-icon">🍔</div>
+                    <div class="reset-item-icon"><app-icon name="utensils" [size]="24"></app-icon></div>
                     <div class="reset-item-info">
                       <h4>Mahsulotlar</h4>
                       <p>Barcha test mahsulotlari o'chiriladi. (Eslatma: Agar buyurtmalar mavjud bo'lsa, avval buyurtmalar tarixini tozalash talab qilinadi).</p>
@@ -1246,7 +1320,7 @@ type SettingsCategory =
 
                   <!-- 3. Categories -->
                   <div class="reset-item-card">
-                    <div class="reset-item-icon">📑</div>
+                    <div class="reset-item-icon"><app-icon name="layers" [size]="24"></app-icon></div>
                     <div class="reset-item-info">
                       <h4>Kategoriyalar</h4>
                       <p>Barcha toifalar tozalanadi. (Eslatma: Agar toifada mahsulotlar bo'lsa, avval mahsulotlarni tozalash talab qilinadi).</p>
@@ -1258,7 +1332,7 @@ type SettingsCategory =
 
                   <!-- 4. Kitchens -->
                   <div class="reset-item-card">
-                    <div class="reset-item-icon">👨‍🍳</div>
+                    <div class="reset-item-icon"><app-icon name="chef" [size]="24"></app-icon></div>
                     <div class="reset-item-info">
                       <h4>Oshxonalar / Bo'limlar</h4>
                       <p>Oshxona bo'limlari tozalanadi. Xodimlar (users) hisoblari saqlanib qoladi va bo'limdan ajratiladi.</p>
@@ -1282,7 +1356,7 @@ type SettingsCategory =
 
                   <!-- 6. Zones -->
                   <div class="reset-item-card">
-                    <div class="reset-item-icon">🏷️</div>
+                    <div class="reset-item-icon"><app-icon name="tag" [size]="24"></app-icon></div>
                     <div class="reset-item-info">
                       <h4>Joylar / Zallar</h4>
                       <p>Barcha zonalar va zallar tozalanadi. (Eslatma: Zonalarda stollar mavjud bo'lsa, avval stollarni tozalash talab qilinadi).</p>
@@ -1297,14 +1371,14 @@ type SettingsCategory =
                 <div class="danger-zone-card">
                   <div class="danger-zone-header">
                     <div class="danger-zone-title">
-                      <span class="danger-badge">⚠️ XAVFLI HUDUD</span>
+                      <span class="danger-badge"><app-icon name="alert-triangle" [size]="12"></app-icon> XAVFLI HUDUD</span>
                       <h4>HAMMASINI TOZALASH (Full Environment Reset)</h4>
                     </div>
                     <p>Barcha test ma'lumotlari: buyurtmalar, mahsulotlar, kategoriyalar, oshxonalar, stollar va joylar to'liq tozalanadi. Xodimlar (users), rollar, printerlar va tizim sozlamalari saqlanib qoladi.</p>
                   </div>
                   <div class="danger-zone-actions">
                     <button class="pos-btn pos-btn-danger pos-btn-lg" [disabled]="resetting()" (click)="openFullResetModal()">
-                      ⚠️ HAMMASINI TOZALASH
+                      <app-icon name="alert-triangle" [size]="14"></app-icon> HAMMASINI TOZALASH
                     </button>
                   </div>
                 </div>
@@ -1326,14 +1400,14 @@ type SettingsCategory =
                   {{ editingPrinter() ? 'POS printer parametrlarini sozlang' : 'Windows tizimidan aniqlangan printerni tanlang va konfiguratsiya qiling' }}
                 </p>
               </div>
-              <button class="modal-close" (click)="closePrinterModal()">✕</button>
+              <button class="modal-close" (click)="closePrinterModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               @if (!editingPrinter()) {
                 <!-- 1. WINDOWS DISCOVERED PRINTERS LIST -->
                 <div class="discovery-section">
                   <div class="discovery-header">
-                    <span class="section-title">🔍 Windows tizimidagi o'rnatilgan printerlar:</span>
+                    <span class="section-title"><app-icon name="search" [size]="16"></app-icon> Windows tizimidagi o'rnatilgan printerlar:</span>
                     <button class="pos-btn-sm" (click)="loadAvailableWindowsPrinters()" [disabled]="loadingAvailablePrinters()">
                       @if (loadingAvailablePrinters()) {
                         <span class="spinner"></span> Qidirilmoqda...
@@ -1349,7 +1423,7 @@ type SettingsCategory =
                     </div>
                   } @else if (availableWindowsPrinters().length === 0) {
                     <div class="empty-printers-alert">
-                      ⚠️ Ushbu kompyuterda Windows tomonidan o'rnatilgan printerlar topilmadi.
+                      <app-icon name="alert-triangle" [size]="14"></app-icon> Ushbu kompyuterda Windows tomonidan o'rnatilgan printerlar topilmadi.
                       Iltimos, Windows "Printers & Scanners" menyusi orqali printerni o'rnating.
                     </div>
                   } @else {
@@ -1362,7 +1436,7 @@ type SettingsCategory =
                             <span class="radio-circle">{{ selectedWindowsPrinter()?.systemPrinterName === wp.systemPrinterName ? '●' : '○' }}</span>
                             <div>
                               <div class="win-printer-name">
-                                🖨️ {{ wp.systemPrinterName }}
+                                <app-icon name="printer" [size]="14"></app-icon> {{ wp.systemPrinterName }}
                                 @if (wp.isDefault) {
                                   <span class="default-badge">Windows Asosiy</span>
                                 }
@@ -1465,7 +1539,7 @@ type SettingsCategory =
           <div class="pos-modal confirm-modal fade-in">
             <div class="modal-header">
               <h3>Printerni o'chirish</h3>
-              <button class="modal-close" (click)="cancelDeletePrinter()">✕</button>
+              <button class="modal-close" (click)="cancelDeletePrinter()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <p>Haqiqatan ham <strong>{{ deletingPrinter()?.name }}</strong> printerini POS tizimidan olib tashlamoqchimisiz?</p>
@@ -1474,7 +1548,7 @@ type SettingsCategory =
               </div>
               @if (deletingPrinter()?.assignedKitchenName) {
                 <div class="warning-alert">
-                  ⚠️ Bu printer hozir <strong>{{ deletingPrinter()?.assignedKitchenName }}</strong> oshxonasiga biriktirilgan.
+                  <app-icon name="alert-triangle" [size]="14"></app-icon> Bu printer hozir <strong>{{ deletingPrinter()?.assignedKitchenName }}</strong> oshxonasiga biriktirilgan.
                 </div>
               }
             </div>
@@ -1492,7 +1566,7 @@ type SettingsCategory =
           <div class="pos-modal kitchen-modal fade-in">
             <div class="modal-header">
               <h3>Oshxona bo'limi: {{ editingKitchen()?.name }}</h3>
-              <button class="modal-close" (click)="closeKitchenModal()">✕</button>
+              <button class="modal-close" (click)="closeKitchenModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <div class="form-grid">
@@ -1550,12 +1624,12 @@ type SettingsCategory =
           <div class="pos-modal confirm-modal fade-in">
             <div class="modal-header">
               <h3>{{ getResetEntityTitle(pendingResetType) }}ni tozalash</h3>
-              <button class="modal-close" (click)="closeResetModal()">✕</button>
+              <button class="modal-close" (click)="closeResetModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <p>Haqiqatan ham <strong>{{ getResetEntityTitle(pendingResetType) }}</strong> ma'lumotlarini tozalamoqchimisiz?</p>
               <div class="warning-alert">
-                ⚠️ {{ getResetEntityWarning(pendingResetType) }}
+                <app-icon name="alert-triangle" [size]="14"></app-icon> {{ getResetEntityWarning(pendingResetType) }}
               </div>
               <p class="muted-small mt-2">Bu amal qaytarib bo'lmaydi. Tranzaksiya ichida xavfsiz o'chiriladi.</p>
             </div>
@@ -1578,8 +1652,8 @@ type SettingsCategory =
         <div class="modal-backdrop">
           <div class="pos-modal confirm-modal fade-in">
             <div class="modal-header modal-header--danger">
-              <h3>⚠️ DIQQAT: Barcha test ma'lumotlarini tozalash</h3>
-              <button class="modal-close" (click)="closeResetModal()">✕</button>
+              <h3><app-icon name="alert-triangle" [size]="20"></app-icon> DIQQAT: Barcha test ma'lumotlarini tozalash</h3>
+              <button class="modal-close" (click)="closeResetModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <div class="danger-alert">
@@ -1591,7 +1665,7 @@ type SettingsCategory =
             </div>
             <div class="modal-footer">
               <button class="pos-btn pos-btn-secondary" (click)="closeResetModal()">Bekor qilish</button>
-              <button class="pos-btn pos-btn-danger" (click)="proceedToStep2()">Davom etish (2-bosqich) ➔</button>
+              <button class="pos-btn pos-btn-danger" (click)="proceedToStep2()">Davom etish (2-bosqich) <app-icon name="arrow-right" [size]="14"></app-icon></button>
             </div>
           </div>
         </div>
@@ -1602,8 +1676,8 @@ type SettingsCategory =
         <div class="modal-backdrop">
           <div class="pos-modal confirm-modal fade-in">
             <div class="modal-header modal-header--danger">
-              <h3>🛑 YAKUNIY TASDIQLASH (2/2)</h3>
-              <button class="modal-close" (click)="closeResetModal()">✕</button>
+              <h3><app-icon name="alert-triangle" [size]="20"></app-icon> YAKUNIY TASDIQLASH (2/2)</h3>
+              <button class="modal-close" (click)="closeResetModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <div class="danger-alert">
@@ -1627,7 +1701,7 @@ type SettingsCategory =
                 @if (resetting()) {
                   <span class="spinner"></span> Baza tozalanmoqda...
                 } @else {
-                  🔥 HA, BARCHASINI TOZALASH
+                  <app-icon name="trash" [size]="16"></app-icon> HA, BARCHASINI TOZALASH
                 }
               </button>
             </div>
@@ -1640,8 +1714,8 @@ type SettingsCategory =
         <div class="modal-backdrop">
           <div class="pos-modal fade-in" style="max-width: 550px;">
             <div class="modal-header">
-              <h3>✅ {{ resetResultTitle }}</h3>
-              <button class="modal-close" (click)="closeResetModal()">✕</button>
+              <h3><app-icon name="check-circle" [size]="20"></app-icon> {{ resetResultTitle }}</h3>
+              <button class="modal-close" (click)="closeResetModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <div class="info-alert mb-3" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #10b981;">
@@ -1657,46 +1731,46 @@ type SettingsCategory =
                   </thead>
                   <tbody>
                     @if (resetResult.orders !== undefined) {
-                      <tr><td>📋 Buyurtmalar (Orders)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.orders }} ta</td></tr>
+                      <tr><td><app-icon name="clipboard" [size]="14"></app-icon> Buyurtmalar (Orders)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.orders }} ta</td></tr>
                     }
                     @if (resetResult.orderItems !== undefined) {
-                      <tr><td>🍱 Buyurtma mahsulotlari (Order Items)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.orderItems }} ta</td></tr>
+                      <tr><td><app-icon name="utensils" [size]="14"></app-icon> Buyurtma mahsulotlari (Order Items)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.orderItems }} ta</td></tr>
                     }
                     @if (resetResult.payments !== undefined) {
-                      <tr><td>💳 To'lovlar (Payments)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.payments }} ta</td></tr>
+                      <tr><td><app-icon name="credit-card" [size]="14"></app-icon> To'lovlar (Payments)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.payments }} ta</td></tr>
                     }
                     @if (resetResult.kitchenBatches !== undefined) {
-                      <tr><td>👨‍🍳 Oshxona partiyalari (Kitchen Batches)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.kitchenBatches }} ta</td></tr>
+                      <tr><td><app-icon name="chef" [size]="14"></app-icon> Oshxona partiyalari (Kitchen Batches)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.kitchenBatches }} ta</td></tr>
                     }
                     @if (resetResult.cancellationReceipts !== undefined && resetResult.cancellationReceipts > 0) {
-                      <tr><td>🚫 Bekor qilish cheklari</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.cancellationReceipts }} ta</td></tr>
+                      <tr><td><app-icon name="slash" [size]="14"></app-icon> Bekor qilish cheklari</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.cancellationReceipts }} ta</td></tr>
                     }
                     @if (resetResult.tablesFreed !== undefined && resetResult.tablesFreed > 0) {
                       <tr><td>🪑 Bo'shatilgan stollar</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.tablesFreed }} ta</td></tr>
                     }
                     @if (resetResult.products !== undefined) {
-                      <tr><td>🍔 Mahsulotlar (Products)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.products }} ta</td></tr>
+                      <tr><td><app-icon name="utensils" [size]="14"></app-icon> Mahsulotlar (Products)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.products }} ta</td></tr>
                     }
                     @if (resetResult.categories !== undefined) {
-                      <tr><td>📑 Kategoriyalar (Categories)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.categories }} ta</td></tr>
+                      <tr><td><app-icon name="layers" [size]="14"></app-icon> Kategoriyalar (Categories)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.categories }} ta</td></tr>
                     }
                     @if (resetResult.kitchens !== undefined) {
-                      <tr><td>🍳 Oshxonalar (Kitchens)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.kitchens }} ta</td></tr>
+                      <tr><td><app-icon name="chef" [size]="14"></app-icon> Oshxonalar (Kitchens)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.kitchens }} ta</td></tr>
                     }
                     @if (resetResult.tables !== undefined) {
                       <tr><td>🪑 Stollar (Tables)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.tables }} ta</td></tr>
                     }
                     @if (resetResult.zones !== undefined) {
-                      <tr><td>🏷️ Joylar / Zallar (Zones)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.zones }} ta</td></tr>
+                      <tr><td><app-icon name="tag" [size]="14"></app-icon> Joylar / Zallar (Zones)</td><td style="text-align: right; font-weight: 700; color: #ef4444;">{{ resetResult.zones }} ta</td></tr>
                     }
                     @if (resetResult.usersPreserved !== undefined) {
-                      <tr style="background: rgba(16, 185, 129, 0.05);"><td>👤 Saqlangan foydalanuvchilar (Users)</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.usersPreserved }} ta (saqlandi)</td></tr>
+                      <tr style="background: rgba(16, 185, 129, 0.05);"><td><app-icon name="user" [size]="14"></app-icon> Saqlangan foydalanuvchilar (Users)</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.usersPreserved }} ta (saqlandi)</td></tr>
                     }
                     @if (resetResult.printersPreserved !== undefined) {
-                      <tr style="background: rgba(16, 185, 129, 0.05);"><td>🖨️ Saqlangan printerlar (Printers)</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.printersPreserved }} ta (saqlandi)</td></tr>
+                      <tr style="background: rgba(16, 185, 129, 0.05);"><td><app-icon name="printer" [size]="14"></app-icon> Saqlangan printerlar (Printers)</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.printersPreserved }} ta (saqlandi)</td></tr>
                     }
                     @if (resetResult.rolesPreserved !== undefined) {
-                      <tr style="background: rgba(16, 185, 129, 0.05);"><td>🛡️ Saqlangan rollar & huquqlar</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.rolesPreserved }} ta (saqlandi)</td></tr>
+                      <tr style="background: rgba(16, 185, 129, 0.05);"><td><app-icon name="shield" [size]="14"></app-icon> Saqlangan rollar & huquqlar</td><td style="text-align: right; font-weight: 700; color: #10b981;">{{ resetResult.rolesPreserved }} ta (saqlandi)</td></tr>
                     }
                   </tbody>
                 </table>
@@ -1711,6 +1785,74 @@ type SettingsCategory =
     </div>
   `,
   styles: [`
+    .lang-dropdown-select {
+      font-size: 15px;
+      font-weight: 600;
+      padding: 10px 14px;
+      cursor: pointer;
+      width: 100%;
+      border-radius: var(--radius-md, 8px);
+    }
+    .language-cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .lang-card-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      border-radius: var(--radius-lg, 12px);
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .lang-card-item:hover {
+      border-color: var(--primary, #2563eb);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .lang-card-item.selected {
+      border-color: var(--primary, #2563eb);
+      background: rgba(37, 99, 235, 0.08);
+    }
+    .lang-card-flag {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .lang-card-details {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .lang-card-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .lang-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .lang-check-badge {
+      color: var(--primary, #2563eb);
+      display: flex;
+      align-items: center;
+    }
+    .lang-badge {
+      background: var(--primary, #2563eb);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
     .settings-container {
       padding: 0 0 32px 0;
       color: var(--text-primary);
@@ -2658,12 +2800,159 @@ type SettingsCategory =
         }
       }
     }
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    .mobile-back-to-nav {
+      display: none;
+    }
+
+    @media (max-width: 1023px) {
+      .settings-layout {
+        grid-template-columns: 220px 1fr;
+        gap: 16px;
+      }
+      .receipt-settings-split {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .settings-container {
+        padding: 0;
+      }
+
+      .settings-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        .header-actions {
+          width: 100%;
+          justify-content: space-between;
+
+          .pos-btn {
+            min-height: 44px;
+            padding: 8px 18px;
+          }
+        }
+      }
+
+      .settings-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .settings-nav {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+
+        &.mobile-hidden {
+          display: none !important;
+        }
+
+        .nav-item {
+          padding: 12px 14px;
+          font-size: 14px;
+          min-height: 46px;
+        }
+      }
+
+      .settings-content {
+        width: 100%;
+
+        &.mobile-hidden {
+          display: none !important;
+        }
+      }
+
+      .mobile-back-to-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-md);
+        color: var(--primary-light);
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        margin-bottom: 16px;
+        min-height: 44px;
+      }
+
+      .category-card {
+        padding: 16px 14px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+
+        .span-2 {
+          grid-column: span 1 !important;
+        }
+      }
+
+      .stats-cards-row {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px;
+      }
+
+      .printers-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .roles-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .reset-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .sys-details-list {
+        grid-template-columns: 1fr !important;
+      }
+
+      .receipt-settings-split {
+        grid-template-columns: 1fr !important;
+      }
+
+      .receipt-paper {
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      .modal-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 90vh !important;
+      }
+    }
+
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
 export class SettingsComponent implements OnInit {
+  public i18n = inject(TranslationService);
+
+  setAppLanguage(lang: SupportedLang): void {
+    this.i18n.setLanguage(lang);
+    this.general.language = lang;
+    if (this.general?.autoSave) { this.saveActiveCategory(); }
+  }
+
 
   activeCategory = signal<SettingsCategory>('PRINTERS');
+  mobileViewingDetail = signal<boolean>(false);
   loading = signal(true);
   saving = signal(false);
 
@@ -2899,7 +3188,12 @@ export class SettingsComponent implements OnInit {
 
   setCategory(cat: SettingsCategory): void {
     this.activeCategory.set(cat);
+    this.mobileViewingDetail.set(true);
     this.clearTestResult();
+  }
+
+  backToCategoriesMobile(): void {
+    this.mobileViewingDetail.set(false);
   }
 
   saveActiveCategory(): void {
@@ -2918,7 +3212,8 @@ export class SettingsComponent implements OnInit {
           this.showToast(err.error?.message || 'Saqlashda xatolik yuz berdi', 'error');
         }
       });
-    } else if (cat === 'GENERAL') {
+    } else if (cat === 'LANGUAGE' || cat === 'GENERAL') {
+      this.general.language = this.i18n.currentLang();
       this.settingsService.updateCategorySettings('GENERAL', this.general).subscribe(this.handleSaveResponse('Umumiy sozlamalar'));
     } else if (cat === 'RECEIPT') {
       this.settingsService.updateCategorySettings('RECEIPT', this.receipt).subscribe(this.handleSaveResponse('Chek sozlamalari'));

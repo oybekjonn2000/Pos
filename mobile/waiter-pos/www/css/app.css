@@ -34,6 +34,50 @@
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Unified Monochrome Icon Color Standard (Dark default) */
+  --icon-color: #A9BCE6;
+  --icon-color-rgb: 169, 188, 230;
+  --icon-size-btn: 18px;
+  --icon-size-nav: 22px;
+  --icon-size-lg: 28px;
+}
+
+[data-theme="light"],
+.theme-light {
+  --icon-color: #243B64;
+  --icon-color-rgb: 36, 59, 100;
+}
+
+/* Unified Monochrome Icon Styles */
+.pos-icon,
+.app-icon,
+.ui-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
+  color: var(--icon-color);
+  flex-shrink: 0;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+    color: inherit;
+  }
+}
+
+svg.pos-icon,
+svg.app-icon {
+  color: var(--icon-color);
+  stroke: currentColor;
 }
 
 * {

@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +12,7 @@ import {
 @Component({
   selector: 'app-platform-subscriptions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="platform-container">
       <!-- HEADER -->
@@ -23,7 +24,7 @@ import {
 
         <div class="header-actions">
           <button class="btn btn-refresh" (click)="refreshAll()" [disabled]="loading()">
-            🔄 Yangilash
+            <app-icon name="refresh" [size]="14"></app-icon> Yangilash
           </button>
         </div>
       </div>
@@ -36,7 +37,7 @@ import {
           [class.active]="activeTab === 'requests'" 
           (click)="activeTab = 'requests'"
         >
-          📥 Kelib Tushgan Arizalar
+          <app-icon name="inbox" [size]="16"></app-icon> Kelib Tushgan Arizalar
           @if (pendingCount() > 0) {
             <span class="tab-badge-pulse">{{ pendingCount() }}</span>
           }
@@ -48,7 +49,7 @@ import {
           [class.active]="activeTab === 'card'" 
           (click)="activeTab = 'card'"
         >
-          💳 Karta Rekvizitlari Sozlamasi
+          <app-icon name="credit-card" [size]="16"></app-icon> Karta Rekvizitlari Sozlamasi
         </button>
       </div>
 
@@ -112,7 +113,7 @@ import {
             </div>
           } @else if (filteredRequests().length === 0) {
             <div class="empty-state">
-              <span class="empty-icon">📭</span>
+              <span class="empty-icon"><app-icon name="inbox" [size]="48"></app-icon></span>
               <p>Hozircha hech qanday ariza mavjud emas.</p>
             </div>
           } @else {
@@ -140,7 +141,7 @@ import {
                         </div>
                         @if (req.clientNotes) {
                           <div class="client-notes-tip" [title]="req.clientNotes">
-                            💬 "{{ req.clientNotes }}"
+                            <app-icon name="message-square" [size]="14"></app-icon> "{{ req.clientNotes }}"
                           </div>
                         }
                       </td>
@@ -161,11 +162,11 @@ import {
                           @if (isImage(req.receiptUrl)) {
                             <div class="receipt-thumb-wrapper" (click)="openReceiptModal(resolveReceiptUrl(req.receiptUrl))">
                               <img [src]="resolveReceiptUrl(req.receiptUrl)" alt="Chek" class="receipt-thumb" />
-                              <span class="thumb-hover-overlay">🔍</span>
+                              <span class="thumb-hover-overlay"><app-icon name="search" [size]="20"></app-icon></span>
                             </div>
                           } @else {
                             <a [href]="resolveReceiptUrl(req.receiptUrl)" target="_blank" class="receipt-pdf-link">
-                              📄 PDF Chek
+                              <app-icon name="file-text" [size]="16"></app-icon> PDF Chek
                             </a>
                           }
                         } @else {
@@ -196,7 +197,7 @@ import {
                               @if (actionLoading() === req.id) {
                                 <span class="btn-spinner"></span>
                               } @else {
-                                <span>✅ Faollashtirish</span>
+                                <span><app-icon name="check" [size]="14"></app-icon> Faollashtirish</span>
                               }
                             </button>
 
@@ -207,11 +208,11 @@ import {
                               (click)="openRejectModal(req)"
                               title="Arizani rad etish"
                             >
-                              ❌ Rad etish
+                              <app-icon name="x" [size]="14"></app-icon> Rad etish
                             </button>
                           </div>
                         } @else if (req.status === 'APPROVED') {
-                          <span class="approved-check">✓ Faollashtirilgan</span>
+                          <span class="approved-check"><app-icon name="check" [size]="14"></app-icon> Faollashtirilgan</span>
                         } @else {
                           <span class="text-muted">—</span>
                         }
@@ -245,7 +246,7 @@ import {
                   Karta Raqami: <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                  <span class="input-icon">💳</span>
+                  <span class="input-icon"><app-icon name="credit-card" [size]="16"></app-icon></span>
                   <input 
                     id="cardNumber"
                     type="text" 
@@ -265,7 +266,7 @@ import {
                   Karta Egasining To'liq Ismi: <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                  <span class="input-icon">👤</span>
+                  <span class="input-icon"><app-icon name="user" [size]="16"></app-icon></span>
                   <input 
                     id="cardHolder"
                     type="text" 
@@ -283,7 +284,7 @@ import {
                   Bank Nomi: <span class="required">*</span>
                 </label>
                 <div class="input-with-icon">
-                  <span class="input-icon">🏦</span>
+                  <span class="input-icon"><app-icon name="building" [size]="16"></app-icon></span>
                   <input 
                     id="bankName"
                     type="text" 
@@ -321,12 +322,12 @@ import {
                     <span class="btn-spinner"></span>
                     <span>Saqlanmoqda...</span>
                   } @else {
-                    <span>💾 Rekvizitlarni Saqlash</span>
+                    <span><app-icon name="save" [size]="14"></app-icon> Rekvizitlarni Saqlash</span>
                   }
                 </button>
 
                 @if (cardSavedSuccess()) {
-                  <span class="save-success-msg">✓ Rekvizitlar muvaffaqiyatli saqlandi!</span>
+                  <span class="save-success-msg"><app-icon name="check" [size]="14"></app-icon> Rekvizitlar muvaffaqiyatli saqlandi!</span>
                 }
               </div>
             </form>
@@ -362,7 +363,7 @@ import {
               <div class="card-number-wrapper">
                 <div class="card-number">{{ formatCardNumber(cardForm.cardNumber) }}</div>
                 <button type="button" class="btn-copy-dummy" title="Nusxalash namunasi">
-                  📋 Nusxa olish
+                  <app-icon name="clipboard" [size]="14"></app-icon> Nusxa olish
                 </button>
               </div>
 
@@ -379,7 +380,7 @@ import {
 
             <!-- INSTRUCTIONS PREVIEW -->
             <div class="inst-preview-box">
-              <div class="inst-icon">💡</div>
+              <div class="inst-icon"><app-icon name="info" [size]="20"></app-icon></div>
               <div class="inst-text">
                 <strong>Ko'rinadigan izoh:</strong>
                 {{ cardForm.instructions || 'To‘lov qilgach, chek skrinshotini biriktiring.' }}
@@ -397,7 +398,7 @@ import {
           <div class="modal-card receipt-modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3 class="modal-title">To'lov Cheki Skrinshoti</h3>
-              <button type="button" class="btn-close-modal" (click)="activeReceiptModal.set(null)">✕</button>
+              <button type="button" class="btn-close-modal" (click)="activeReceiptModal.set(null)"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body-img">
               <img [src]="resolveReceiptUrl(activeReceiptModal())" alt="Chek to'liq rasm" class="full-receipt-img" />
@@ -422,7 +423,7 @@ import {
           <div class="modal-card reject-modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <h3 class="modal-title">Arizani Rad Etish</h3>
-              <button type="button" class="btn-close-modal" (click)="closeRejectModal()">✕</button>
+              <button type="button" class="btn-close-modal" (click)="closeRejectModal()"><app-icon name="x" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
               <p class="modal-desc">
@@ -449,7 +450,7 @@ import {
                 [disabled]="!rejectReason.trim()" 
                 (click)="confirmReject()"
               >
-                ❌ Rad etishni tasdiqlash
+                <app-icon name="x" [size]="14"></app-icon> Rad etishni tasdiqlash
               </button>
             </div>
           </div>
@@ -1454,9 +1455,9 @@ export class PlatformSubscriptionsComponent implements OnInit {
 
   getStatusLabel(status?: string): string {
     switch (status) {
-      case 'PENDING_APPROVAL': return '🟡 Kutilmoqda';
-      case 'APPROVED': return '✅ Faollashtirilgan';
-      case 'REJECTED': return '❌ Rad etilgan';
+      case 'PENDING_APPROVAL': return 'Kutilmoqda';
+      case 'APPROVED': return 'Faollashtirilgan';
+      case 'REJECTED': return 'Rad etilgan';
       case 'CANCELLED': return 'Bekor qilingan';
       default: return status || '';
     }

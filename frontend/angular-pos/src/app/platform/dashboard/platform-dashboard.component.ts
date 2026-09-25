@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -7,14 +8,14 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-platform-dashboard',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, RouterLink],
+  imports: [CommonModule, DecimalPipe, RouterLink, AppIconComponent],
   template: `
     <div class="platform-dashboard">
       <!-- Header Banner -->
       <div class="dash-header">
         <div class="dash-header__info">
           <div class="platform-chip">
-            <span class="chip-icon">🌐</span> PLATFORM SUPER ADMIN
+            <span class="chip-icon"><app-icon name="globe" [size]="14"></app-icon></span> PLATFORM SUPER ADMIN
           </div>
           <h1 class="dash-title">Platforma Nazorat Markazi</h1>
           <p class="dash-desc">
@@ -67,7 +68,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
 
           <a routerLink="/platform/restaurants" class="btn btn-primary">
-            ➕ Yangi Restoran Qo‘shish
+            <app-icon name="plus" [size]="16"></app-icon> Yangi Restoran Qo‘shish
           </a>
         </div>
       </div>
@@ -78,11 +79,11 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="metric-card">
           <div class="metric-card__header">
             <span class="metric-label">Jami Restoranlar</span>
-            <span class="metric-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1;">🏢</span>
+            <span class="metric-icon"><app-icon name="building" [size]="22"></app-icon></span>
           </div>
           <div class="metric-val">{{ stats()?.totalRestaurants ?? 0 }}</div>
           <div class="metric-footer">
-            <span class="sub-stat text-success">🟢 {{ stats()?.activeRestaurants ?? 0 }} faol</span>
+            <span class="sub-stat text-success">{{ stats()?.activeRestaurants ?? 0 }} faol</span>
             <span class="sub-stat text-warning">⏸️ {{ stats()?.suspendedRestaurants ?? 0 }} to‘xtatilgan</span>
           </div>
         </div>
@@ -91,7 +92,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="metric-card">
           <div class="metric-card__header">
             <span class="metric-label">{{ getPeriodLabel() }} Savdo</span>
-            <span class="metric-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">💰</span>
+            <span class="metric-icon"><app-icon name="dollar-sign" [size]="22"></app-icon></span>
           </div>
           <div class="metric-val text-success">
             {{ (stats()?.periodSales ?? 0) | number:'1.0-0' }} <span class="currency">so‘m</span>
@@ -105,7 +106,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="metric-card">
           <div class="metric-card__header">
             <span class="metric-label">{{ getPeriodLabel() }} Buyurtmalar</span>
-            <span class="metric-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">📋</span>
+            <span class="metric-icon"><app-icon name="clipboard" [size]="22"></app-icon></span>
           </div>
           <div class="metric-val">{{ stats()?.periodOrders ?? 0 }}</div>
           <div class="metric-footer">
@@ -117,7 +118,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="metric-card">
           <div class="metric-card__header">
             <span class="metric-label">Jami Tizim Xodimlari</span>
-            <span class="metric-icon" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;">👥</span>
+            <span class="metric-icon"><app-icon name="users" [size]="22"></app-icon></span>
           </div>
           <div class="metric-val">{{ stats()?.totalEmployees ?? 0 }}</div>
           <div class="metric-footer">
@@ -131,7 +132,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="metric-card">
           <div class="metric-card__header">
             <span class="metric-label">O‘rtacha Chek</span>
-            <span class="metric-icon" style="background: rgba(168, 85, 247, 0.12); color: #a855f7;">🧾</span>
+            <span class="metric-icon"><app-icon name="file-text" [size]="22"></app-icon></span>
           </div>
           <div class="metric-val">
             {{ (stats()?.averageCheck ?? 0) | number:'1.0-0' }} <span class="currency">so‘m</span>
@@ -145,7 +146,7 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="metric-card">
           <div class="metric-card__header">
             <span class="metric-label">Bugungi To‘lovlar</span>
-            <span class="metric-icon" style="background: rgba(236, 72, 153, 0.12); color: #ec4899;">💳</span>
+            <span class="metric-icon"><app-icon name="credit-card" [size]="22"></app-icon></span>
           </div>
           <div class="metric-val">{{ stats()?.todayPayments ?? 0 }}</div>
           <div class="metric-footer">
@@ -159,7 +160,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- Quick Nav Hub -->
       <div class="quick-nav-grid">
         <a routerLink="/platform/restaurants" class="nav-tile">
-          <div class="nav-tile__icon">🏢</div>
+          <div class="nav-tile__icon"><app-icon name="building" [size]="24"></app-icon></div>
           <div class="nav-tile__content">
             <div class="nav-tile__title">Restoranlar Tarmog‘i</div>
             <div class="nav-tile__desc">Barcha filiallar ro‘yxati, aktivlashtirish va yangi filial ochish</div>
@@ -167,7 +168,7 @@ import { NotificationService } from '../../core/services/notification.service';
           <span class="nav-tile__arrow">⟶</span>
         </a>
         <a routerLink="/platform/sales" class="nav-tile">
-          <div class="nav-tile__icon">💰</div>
+          <div class="nav-tile__icon"><app-icon name="dollar-sign" [size]="24"></app-icon></div>
           <div class="nav-tile__content">
             <div class="nav-tile__title">Savdo Monitoringi</div>
             <div class="nav-tile__desc">Filiallar bo‘yicha tushumlar, naqd va karta to‘lovlari tahlili</div>
@@ -175,7 +176,7 @@ import { NotificationService } from '../../core/services/notification.service';
           <span class="nav-tile__arrow">⟶</span>
         </a>
         <a routerLink="/platform/employees" class="nav-tile">
-          <div class="nav-tile__icon">👥</div>
+          <div class="nav-tile__icon"><app-icon name="users" [size]="24"></app-icon></div>
           <div class="nav-tile__content">
             <div class="nav-tile__title">Xodimlar Nazorati</div>
             <div class="nav-tile__desc">Barcha ofitsiant, oshpaz, kassir va adminlar reyestri</div>
@@ -183,7 +184,7 @@ import { NotificationService } from '../../core/services/notification.service';
           <span class="nav-tile__arrow">⟶</span>
         </a>
         <a routerLink="/platform/reports" class="nav-tile">
-          <div class="nav-tile__icon">📈</div>
+          <div class="nav-tile__icon"><app-icon name="trending-up" [size]="24"></app-icon></div>
           <div class="nav-tile__content">
             <div class="nav-tile__title">Platforma Hisobotlari</div>
             <div class="nav-tile__desc">Konsolidatsiyalashgan platforma moliyaviy hisobotlari</div>
@@ -196,11 +197,11 @@ import { NotificationService } from '../../core/services/notification.service';
       <div class="card table-card">
         <div class="table-card__header">
           <div>
-            <h2 class="section-title">🏢 Restoran Filiallari va Real Ko‘rsatkichlar</h2>
+            <h2 class="section-title"><app-icon name="building" [size]="20"></app-icon> Restoran Filiallari va Real Ko‘rsatkichlar</h2>
             <p class="section-desc">Har bir restoranning joriy holati, savdosi va xodimlari</p>
           </div>
           <button type="button" class="btn btn-secondary btn-sm" (click)="loadData()">
-            🔄 Yangilash
+            <app-icon name="refresh" [size]="14"></app-icon> Yangilash
           </button>
         </div>
 
@@ -211,7 +212,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         } @else if (restaurants().length === 0) {
           <div class="state-empty">
-            <div class="empty-icon">🏢</div>
+            <div class="empty-icon"><app-icon name="building" [size]="48"></app-icon></div>
             <div class="empty-title">Restoranlar topilmadi</div>
           </div>
         } @else {
@@ -234,7 +235,7 @@ import { NotificationService } from '../../core/services/notification.service';
                   <tr (click)="goToDetail(r.id)" class="clickable-row">
                     <td>
                       <div class="res-cell">
-                        <div class="res-avatar">🏢</div>
+                        <div class="res-avatar"><app-icon name="building" [size]="20"></app-icon></div>
                         <div>
                           <div class="res-name">{{ r.name }}</div>
                           <div class="text-xs text-muted">{{ r.phone || r.address || '—' }}</div>
@@ -251,7 +252,7 @@ import { NotificationService } from '../../core/services/notification.service';
                       </div>
                     </td>
                     <td>
-                      <span class="badge-employees">👤 {{ r.employeeCount }} ta</span>
+                      <span class="badge-employees"><app-icon name="user" [size]="12"></app-icon> {{ r.employeeCount }} ta</span>
                     </td>
                     <td>
                       <span class="text-success font-semibold">
@@ -270,7 +271,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         [class.status-suspended]="r.status === 'SUSPENDED'"
                         [class.status-inactive]="r.status === 'INACTIVE'"
                       >
-                        {{ r.status === 'ACTIVE' ? '🟢 FAOL' : (r.status === 'SUSPENDED' ? '⏸️ TO‘XTATILGAN' : '⚪ NOFAOL') }}
+                        {{ r.status === 'ACTIVE' ? 'FAOL' : (r.status === 'SUSPENDED' ? 'TO‘XTATILGAN' : 'NOFAOL') }}
                       </span>
                     </td>
                     <td style="text-align: right" (click)="$event.stopPropagation()">

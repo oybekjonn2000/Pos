@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -12,7 +13,7 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-platform-restaurant-detail',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, DatePipe, RouterLink],
+  imports: [CommonModule, DecimalPipe, DatePipe, RouterLink, AppIconComponent],
   template: `
     <div class="detail-container">
       <!-- Back Navigation Bar -->
@@ -31,7 +32,7 @@ import { NotificationService } from '../../../core/services/notification.service
         <!-- Restaurant Passport Banner -->
         <div class="res-banner">
           <div class="res-banner__left">
-            <div class="res-icon">🏢</div>
+            <div class="res-icon"><app-icon name="building" [size]="28"></app-icon></div>
             <div class="res-header-info">
               <div class="res-badge-row">
                 <span class="code-badge">{{ detail()?.code }}</span>
@@ -41,15 +42,15 @@ import { NotificationService } from '../../../core/services/notification.service
                   [class.status-suspended]="detail()?.status === 'SUSPENDED'"
                   [class.status-inactive]="detail()?.status === 'INACTIVE'"
                 >
-                  {{ detail()?.status === 'ACTIVE' ? '🟢 FAOL' : (detail()?.status === 'SUSPENDED' ? '⏸️ TO‘XTATILGAN' : '⚪ NOFAOL') }}
+                  {{ detail()?.status === 'ACTIVE' ? 'FAOL' : (detail()?.status === 'SUSPENDED' ? 'TO‘XTATILGAN' : 'NOFAOL') }}
                 </span>
                 <span class="created-badge">Ochilgan: {{ detail()?.createdAt | date:'mediumDate' }}</span>
               </div>
               <h1 class="res-title">{{ detail()?.name }}</h1>
               <div class="res-contact-row">
-                <span>📞 {{ detail()?.phone || 'Telefon kiritilmagan' }}</span>
-                <span>📍 {{ detail()?.address || 'Manzil kiritilmagan' }}</span>
-                <span>📋 INN / STIR: <strong>{{ detail()?.inn || '—' }}</strong></span>
+                <span><app-icon name="phone" [size]="14"></app-icon> {{ detail()?.phone || 'Telefon kiritilmagan' }}</span>
+                <span><app-icon name="map-pin" [size]="14"></app-icon> {{ detail()?.address || 'Manzil kiritilmagan' }}</span>
+                <span><app-icon name="file-text" [size]="14"></app-icon> INN / STIR: <strong>{{ detail()?.inn || '—' }}</strong></span>
               </div>
             </div>
           </div>
@@ -73,7 +74,7 @@ import { NotificationService } from '../../../core/services/notification.service
           <div class="kpi-card">
             <div class="kpi-header">
               <span class="kpi-label">Savdo Ko‘rsatkichlari</span>
-              <span class="kpi-icon">💰</span>
+              <span class="kpi-icon"><app-icon name="dollar-sign" [size]="20"></app-icon></span>
             </div>
             <div class="kpi-main-val text-success">
               {{ (detail()?.todaySales ?? 0) | number:'1.0-0' }} <span class="currency">so‘m (Bugun)</span>
@@ -98,26 +99,26 @@ import { NotificationService } from '../../../core/services/notification.service
           <div class="kpi-card">
             <div class="kpi-header">
               <span class="kpi-label">Xodimlar Taqsimoti</span>
-              <span class="kpi-icon">👥</span>
+              <span class="kpi-icon"><app-icon name="users" [size]="20"></app-icon></span>
             </div>
             <div class="kpi-main-val">
               {{ detail()?.totalEmployees ?? 0 }} <span class="currency">nafar xodim</span>
             </div>
             <div class="kpi-sub-rows">
               <div class="sub-row">
-                <span class="sub-label">👑 Adminlar:</span>
+                <span class="sub-label">Adminlar:</span>
                 <span class="sub-val">{{ getRoleCount('ADMIN') + getRoleCount('RESTAURANT_ADMIN') }}</span>
               </div>
               <div class="sub-row">
-                <span class="sub-label">🍽️ Ofitsiantlar:</span>
+                <span class="sub-label">Ofitsiantlar:</span>
                 <span class="sub-val">{{ getRoleCount('WAITER') }}</span>
               </div>
               <div class="sub-row">
-                <span class="sub-label">👨‍🍳 Oshpazlar:</span>
+                <span class="sub-label">Oshpazlar:</span>
                 <span class="sub-val">{{ getRoleCount('KITCHEN') }}</span>
               </div>
               <div class="sub-row">
-                <span class="sub-label">💳 Kassirlar:</span>
+                <span class="sub-label">Kassirlar:</span>
                 <span class="sub-val">{{ getRoleCount('CASHIER') }}</span>
               </div>
             </div>
@@ -127,7 +128,7 @@ import { NotificationService } from '../../../core/services/notification.service
           <div class="kpi-card">
             <div class="kpi-header">
               <span class="kpi-label">Buyurtmalar Statistikasi</span>
-              <span class="kpi-icon">📋</span>
+              <span class="kpi-icon"><app-icon name="clipboard" [size]="20"></app-icon></span>
             </div>
             <div class="kpi-main-val">
               {{ detail()?.todayOrders ?? 0 }} <span class="currency">bugungi buyurtma</span>
@@ -138,11 +139,11 @@ import { NotificationService } from '../../../core/services/notification.service
                 <span class="sub-val">{{ detail()?.totalOrders ?? 0 }} ta</span>
               </div>
               <div class="sub-row">
-                <span class="sub-label">🟢 To‘langan:</span>
+                <span class="sub-label">To‘langan:</span>
                 <span class="sub-val text-success font-semibold">{{ detail()?.paidOrders ?? 0 }} ta</span>
               </div>
               <div class="sub-row">
-                <span class="sub-label">❌ Bekor qilingan:</span>
+                <span class="sub-label">Bekor qilingan:</span>
                 <span class="sub-val text-danger">{{ detail()?.canceledOrders ?? 0 }} ta</span>
               </div>
               <div class="sub-row">
@@ -193,7 +194,7 @@ import { NotificationService } from '../../../core/services/notification.service
               [class.active]="activeTab() === 'EMPLOYEES'"
               (click)="activeTab.set('EMPLOYEES')"
             >
-              👥 Xodimlar Nazorati ({{ employees().length }})
+              <app-icon name="users" [size]="16"></app-icon> Xodimlar Nazorati ({{ employees().length }})
             </button>
             <button
               type="button"
@@ -201,7 +202,7 @@ import { NotificationService } from '../../../core/services/notification.service
               [class.active]="activeTab() === 'ORDERS'"
               (click)="activeTab.set('ORDERS')"
             >
-              📋 Buyurtmalar Monitoringi (Read-Only)
+              <app-icon name="clipboard" [size]="16"></app-icon> Buyurtmalar Monitoringi (Read-Only)
             </button>
           </div>
 
@@ -231,7 +232,7 @@ import { NotificationService } from '../../../core/services/notification.service
                       <td>{{ emp.phone || '—' }}</td>
                       <td>
                         <span class="status-pill" [class.status-active]="emp.active" [class.status-inactive]="!emp.active">
-                          {{ emp.active ? '🟢 Faol' : '🔴 To‘xtatilgan' }}
+                          {{ emp.active ? 'Faol' : 'To‘xtatilgan' }}
                         </span>
                       </td>
                       <td class="text-muted text-xs">{{ emp.createdAt | date:'short' }}</td>
@@ -256,7 +257,7 @@ import { NotificationService } from '../../../core/services/notification.service
           <!-- TAB 2: Read-Only Orders Monitoring -->
           @if (activeTab() === 'ORDERS') {
             <div class="read-only-banner">
-              <span class="banner-icon">🛡️</span>
+              <span class="banner-icon"><app-icon name="shield" [size]="20"></app-icon></span>
               <span>
                 <strong>Read-Only Monitoring:</strong> Super Admin ushbu ekranda faqat buyurtmalarni kuzatadi. Buyurtma ochish, o‘zgartirish yoki to‘lov qilish huquqi faqat restoran xodimlariga tegishli.
               </span>

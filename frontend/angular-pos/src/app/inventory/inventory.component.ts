@@ -1,3 +1,5 @@
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,21 +23,21 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="inventory-page fade-in">
       <!-- HEADER -->
       <div class="page-header">
         <div class="header-left">
-          <h1 class="page-title">📦 Ombor & Zaxiralar Tizimi</h1>
-          <p class="page-subtitle">Real-time inventory management, kirim-chiqim, retseptlar va inventarizatsiya</p>
+          <h1 class="page-title"><app-icon name="package" [size]="24" class="title-icon"></app-icon> {{ 'inventory.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'inventory.subtitle' | translate }}</p>
         </div>
         <div class="header-actions">
           <button class="pos-btn pos-btn--secondary" (click)="loadAllData()">
-            <span>🔄 Yangilash</span>
+            <app-icon name="refresh" [size]="16"></app-icon> <span>{{ 'common.refresh' | translate }}</span>
           </button>
           <button class="pos-btn pos-btn--primary" (click)="openCreateItemModal()">
-            <span>➕ Yangi Mahsulot</span>
+            <app-icon name="plus" [size]="16"></app-icon> <span>Yangi Mahsulot</span>
           </button>
         </div>
       </div>
@@ -43,29 +45,29 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <!-- NAVIGATION TABS -->
       <div class="sub-nav-tabs">
         <button class="tab-btn" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
-          <span>📊 Dashboard</span>
+          <app-icon name="bar-chart" [size]="16"></app-icon> <span>{{ 'inventory.dashboard' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'items'" (click)="setTab('items')">
-          <span>📦 Mahsulotlar</span>
+          <app-icon name="package" [size]="16"></app-icon> <span>{{ 'inventory.items' | translate }}</span>
           <span class="badge badge--pill" *ngIf="items.length">{{ items.length }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'kirim'" (click)="setTab('kirim')">
-          <span>📥 Kirim (Xaridlar)</span>
+          <app-icon name="download" [size]="16"></app-icon> <span>{{ 'inventory.inbound' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'chiqim'" (click)="setTab('chiqim')">
-          <span>📤 Chiqim (Chiqindilar)</span>
+          <app-icon name="upload" [size]="16"></app-icon> <span>{{ 'inventory.outbound' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'movements'" (click)="setTab('movements')">
-          <span>📜 Harakatlar Tarixi</span>
+          <app-icon name="file-text" [size]="16"></app-icon> <span>{{ 'inventory.movements' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'audit'" (click)="setTab('audit')">
-          <span>📋 Inventarizatsiya</span>
+          <app-icon name="clipboard" [size]="16"></app-icon> <span>Inventarizatsiya</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'recipes'" (click)="setTab('recipes')">
-          <span>🍕 Retseptlar (Tannarx)</span>
+          <app-icon name="utensils" [size]="16"></app-icon> <span>Retseptlar (Tannarx)</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'warehouses'" (click)="setTab('warehouses')">
-          <span>🏢 Omborlar & Ta'minotchilar</span>
+          <app-icon name="building" [size]="16"></app-icon> <span>Omborlar & Ta'minotchilar</span>
         </button>
       </div>
 
@@ -76,7 +78,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
         <!-- KPI METRICS -->
         <div class="kpi-grid">
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--blue">📦</div>
+            <div class="kpi-icon kpi-icon--blue"><app-icon name="package" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Jami Mahsulotlar</span>
               <h3 class="kpi-value">{{ stats?.totalProducts || 0 }} xil</h3>
@@ -85,7 +87,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card" [class.warning]="(stats?.lowStockCount || 0) > 0">
-            <div class="kpi-icon kpi-icon--orange">⚠️</div>
+            <div class="kpi-icon kpi-icon--orange"><app-icon name="alert-triangle" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Kam Qolganlar</span>
               <h3 class="kpi-value text-warning">{{ stats?.lowStockCount || 0 }} xil</h3>
@@ -94,7 +96,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card" [class.danger]="(stats?.outOfStockCount || 0) > 0">
-            <div class="kpi-icon kpi-icon--red">🚫</div>
+            <div class="kpi-icon kpi-icon--red"><app-icon name="slash" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Tugagan Mahsulotlar</span>
               <h3 class="kpi-value text-danger">{{ stats?.outOfStockCount || 0 }} xil</h3>
@@ -103,7 +105,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--green">💰</div>
+            <div class="kpi-icon kpi-icon--green"><app-icon name="dollar-sign" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Ombor Umumiy Qiymati</span>
               <h3 class="kpi-value text-success">{{ (stats?.warehouseValuation || 0) | number }} so'm</h3>
@@ -112,7 +114,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--teal">📥</div>
+            <div class="kpi-icon kpi-icon--teal"><app-icon name="download" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Bugungi Kirim</span>
               <h3 class="kpi-value">{{ (stats?.todayIncomingAmount || 0) | number }} so'm</h3>
@@ -121,7 +123,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--purple">📤</div>
+            <div class="kpi-icon kpi-icon--purple"><app-icon name="upload" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Bugungi Chiqim</span>
               <h3 class="kpi-value">{{ (stats?.todayOutgoingAmount || 0) | number }} so'm</h3>
@@ -130,7 +132,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--indigo">🍽️</div>
+            <div class="kpi-icon kpi-icon--indigo"><app-icon name="utensils" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Bugungi Retsept Sarfi</span>
               <h3 class="kpi-value">{{ (stats?.todaySalesConsumptionAmount || 0) | number }} so'm</h3>
@@ -139,7 +141,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--gray">⚖️</div>
+            <div class="kpi-icon kpi-icon--gray"><app-icon name="sliders" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Inventarizatsiya Farqi</span>
               <h3 class="kpi-value" [class.text-danger]="(stats?.recentDiscrepancyAmount || 0) < 0">
@@ -153,25 +155,25 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
         <!-- QUICK ACTIONS & LOW STOCK ALERTS -->
         <div class="dashboard-grid">
           <div class="pos-card quick-actions-panel">
-            <h3 class="panel-title">⚡ Tezkor Operatsiyalar</h3>
+            <h3 class="panel-title"><app-icon name="zap" [size]="18"></app-icon> Tezkor Operatsiyalar</h3>
             <div class="actions-buttons-grid">
               <button class="action-tile" (click)="openPurchaseModal()">
-                <span class="tile-icon">📥</span>
+                <span class="tile-icon"><app-icon name="download" [size]="22"></app-icon></span>
                 <span class="tile-title">Yangi Kirim Qilish</span>
                 <span class="tile-desc">Yetkazib beruvchidan tovar qabul qilish</span>
               </button>
               <button class="action-tile" (click)="openOutboundModal()">
-                <span class="tile-icon">📤</span>
+                <span class="tile-icon"><app-icon name="upload" [size]="22"></app-icon></span>
                 <span class="tile-title">Chiqim / Isrof</span>
                 <span class="tile-desc">Oshxonaga berish yoki chiqit qilish</span>
               </button>
               <button class="action-tile" (click)="setTab('audit')">
-                <span class="tile-icon">📋</span>
+                <span class="tile-icon"><app-icon name="clipboard" [size]="22"></app-icon></span>
                 <span class="tile-title">Inventarizatsiya</span>
                 <span class="tile-desc">Haqiqiy va tizim qoldiqlarini solishtirish</span>
               </button>
               <button class="action-tile" (click)="setTab('recipes')">
-                <span class="tile-icon">🍕</span>
+                <span class="tile-icon"><app-icon name="utensils" [size]="22"></app-icon></span>
                 <span class="tile-title">Taom Retseptlari</span>
                 <span class="tile-desc">Ingredientlar va tannarx kalkulyatsiyasi</span>
               </button>
@@ -180,7 +182,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
 
           <div class="pos-card alert-panel">
             <div class="panel-header-row">
-              <h3 class="panel-title">⚠️ Diqqat Talab Mahsulotlar</h3>
+              <h3 class="panel-title"><app-icon name="alert-triangle" [size]="18"></app-icon> Diqqat Talab Mahsulotlar</h3>
               <span class="badge badge--warning" *ngIf="lowStockItems.length">{{ lowStockItems.length }} ta</span>
             </div>
 
@@ -201,7 +203,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
             </div>
             <ng-template #allStockOk>
               <div class="empty-state-mini">
-                <span>✅ Barcha mahsulotlar yetarli miqdorda mavjud</span>
+                <app-icon name="check-circle" [size]="16"></app-icon> <span>Barcha mahsulotlar yetarli miqdorda mavjud</span>
               </div>
             </ng-template>
           </div>
@@ -214,7 +216,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div *ngIf="activeTab === 'items'" class="tab-content">
         <div class="table-toolbar">
           <div class="search-box">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>
             <input type="text" class="pos-input" placeholder="Mahsulot nomi yoki SKU bo'yicha qidirish..." [(ngModel)]="itemSearchQuery" (ngModelChange)="itemPageIndex = 0" />
           </div>
 
@@ -274,9 +276,9 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
                   <span class="badge badge--success" *ngIf="item.quantity > item.minQuantity">Yetarli</span>
                 </td>
                 <td style="text-align: right;">
-                  <button class="pos-btn pos-btn--sm pos-btn--secondary" (click)="openAdjustModal(item)" title="Qo'lda tuzatish">⚙️</button>
-                  <button class="pos-btn pos-btn--sm pos-btn--secondary" (click)="openEditItemModal(item)" title="Tahrirlash">✏️</button>
-                  <button class="pos-btn pos-btn--sm pos-btn--danger" (click)="deleteItem(item)" title="O'chirish">🗑️</button>
+                  <button class="pos-btn pos-btn--sm pos-btn--secondary" (click)="openAdjustModal(item)" title="Qo'lda tuzatish"><app-icon name="settings" [size]="14"></app-icon></button>
+                  <button class="pos-btn pos-btn--sm pos-btn--secondary" (click)="openEditItemModal(item)" title="Tahrirlash"><app-icon name="edit" [size]="14"></app-icon></button>
+                  <button class="pos-btn pos-btn--sm pos-btn--danger" (click)="deleteItem(item)" title="O'chirish"><app-icon name="trash" [size]="14"></app-icon></button>
                 </td>
               </tr>
               <tr *ngIf="filteredItems.length === 0">
@@ -303,11 +305,11 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div *ngIf="activeTab === 'kirim'" class="tab-content">
         <div class="section-actions-row">
           <div>
-            <h2 class="section-title">📥 Omborga Mahsulot Kirimi (Xaridlar)</h2>
+            <h2 class="section-title"><app-icon name="download" [size]="20"></app-icon> Omborga Mahsulot Kirimi (Xaridlar)</h2>
             <p class="section-subtitle">Yetkazib beruvchilardan kelgan tovarlarni qabul qilish va zaxiraga qo'shish</p>
           </div>
           <button class="pos-btn pos-btn--primary" (click)="openPurchaseModal()">
-            <span>➕ Yangi Kirim Hujjati</span>
+            <app-icon name="plus" [size]="16"></app-icon> <span>Yangi Kirim Hujjati</span>
           </button>
         </div>
 
@@ -364,11 +366,11 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div *ngIf="activeTab === 'chiqim'" class="tab-content">
         <div class="section-actions-row">
           <div>
-            <h2 class="section-title">📤 Ombordan Chiqim & Isrof Qilish</h2>
+            <h2 class="section-title"><app-icon name="upload" [size]="20"></app-icon> Ombordan Chiqim & Isrof Qilish</h2>
             <p class="section-subtitle">Oshxona ehtiyojlari, muddati o'tgan yoki yaroqsiz mahsulotlarni ro'yxatdan o'chirish</p>
           </div>
           <button class="pos-btn pos-btn--primary" (click)="openOutboundModal()">
-            <span>➖ Chiqim Qilish</span>
+            <app-icon name="minus" [size]="16"></app-icon> <span>Chiqim Qilish</span>
           </button>
         </div>
 
@@ -516,7 +518,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
             </div>
             <div class="audit-actions">
               <button class="pos-btn pos-btn--secondary" (click)="cancelCurrentAudit()">Bekor qilish</button>
-              <button class="pos-btn pos-btn--primary" (click)="submitAuditCount()">✅ Sanoqni Yakunlash & Tasdiqlash</button>
+              <button class="pos-btn pos-btn--primary" (click)="submitAuditCount()"><app-icon name="check-circle" [size]="16"></app-icon> Sanoqni Yakunlash & Tasdiqlash</button>
             </div>
           </div>
 
@@ -563,11 +565,11 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
         <ng-template #auditListBlock>
           <div class="section-actions-row">
             <div>
-              <h2 class="section-title">📋 Inventarizatsiya (Sanoq & Nazorat)</h2>
+              <h2 class="section-title"><app-icon name="clipboard" [size]="20"></app-icon> Inventarizatsiya (Sanoq & Nazorat)</h2>
               <p class="section-subtitle">Haqiqiy qoldiqni tizim bilan solishtirish va farqlarni ADJUSTMENT sifatida hisobga olish</p>
             </div>
             <button class="pos-btn pos-btn--primary" (click)="startNewAudit()">
-              <span>➕ Yangi Inventarizatsiya Boshlash</span>
+              <app-icon name="plus" [size]="16"></app-icon> <span>Yangi Inventarizatsiya Boshlash</span>
             </button>
           </div>
 
@@ -618,7 +620,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
         <div class="recipes-layout">
           <!-- CHAP PANEL: TAOMLLAR RO'YXATI -->
           <div class="pos-card products-list-panel">
-            <h3 class="panel-title">🍽️ Taom Tanlang</h3>
+            <h3 class="panel-title"><app-icon name="utensils" [size]="18"></app-icon> Taom Tanlang</h3>
             <div class="search-box">
               <input type="text" class="pos-input" placeholder="Taom qidirish..." [(ngModel)]="recipeSearchQuery" />
             </div>
@@ -646,7 +648,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
                 <h2 class="editor-title">{{ selectedRecipeProduct.productName }} retsepti</h2>
                 <p class="editor-sub">Taom sotilganda (Order PAID) quyidagi xomashyolar ombordan avtomatik yechiladi</p>
               </div>
-              <button class="pos-btn pos-btn--primary" (click)="saveCurrentRecipe()">💾 Retseptni Saqlash</button>
+              <button class="pos-btn pos-btn--primary" (click)="saveCurrentRecipe()"><app-icon name="save" [size]="16"></app-icon> Retseptni Saqlash</button>
             </div>
 
             <!-- INGREDIENTLAR JADVALI -->
@@ -675,7 +677,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
                   <td>{{ (ing.costPrice || 0) | number }} so'm</td>
                   <td><strong>{{ (ing.totalCost || 0) | number }} so'm</strong></td>
                   <td>
-                    <button class="pos-btn pos-btn--sm pos-btn--danger" (click)="removeRecipeIngredient(idx)">✕</button>
+                    <button class="pos-btn pos-btn--sm pos-btn--danger" (click)="removeRecipeIngredient(idx)"><app-icon name="x" [size]="14"></app-icon></button>
                   </td>
                 </tr>
               </tbody>
@@ -693,7 +695,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
 
           <ng-template #noRecipeSelected>
             <div class="pos-card empty-recipe-card">
-              <span>👈 Chapdagi ro'yxatdan taom tanlang</span>
+              <app-icon name="arrow-left" [size]="16"></app-icon> <span>Chapdagi ro'yxatdan taom tanlang</span>
             </div>
           </ng-template>
         </div>
@@ -707,12 +709,12 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           <!-- WAREHOUSES -->
           <div class="pos-card column-panel">
             <div class="panel-header-row">
-              <h3 class="panel-title">🏢 Omborlar Ro'yxati</h3>
+              <h3 class="panel-title"><app-icon name="building" [size]="18"></app-icon> Omborlar Ro'yxati</h3>
               <button class="pos-btn pos-btn--sm pos-btn--primary" (click)="openCreateWarehouseModal()">+ Yangi Ombor</button>
             </div>
             <div class="warehouses-grid">
               <div class="warehouse-box" *ngFor="let w of warehouses">
-                <div class="wh-icon">🏢</div>
+                <div class="wh-icon"><app-icon name="building" [size]="28"></app-icon></div>
                 <div class="wh-details">
                   <h4>{{ w.name }}</h4>
                   <p>{{ w.description || 'Asosiy saqlash joyi' }}</p>
@@ -725,7 +727,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           <!-- SUPPLIERS -->
           <div class="pos-card column-panel">
             <div class="panel-header-row">
-              <h3 class="panel-title">🤝 Yetkazib Beruvchilar</h3>
+              <h3 class="panel-title"><app-icon name="users" [size]="18"></app-icon> Yetkazib Beruvchilar</h3>
               <button class="pos-btn pos-btn--sm pos-btn--primary" (click)="openCreateSupplierModal()">+ Yangi Ta'minotchi</button>
             </div>
             <table class="pos-table">
@@ -759,8 +761,8 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div class="modal-backdrop" *ngIf="showItemModal">
         <div class="pos-modal">
           <div class="modal-header">
-            <h3>{{ editingItemId ? '✏️ Mahsulotni Tahrirlash' : '➕ Yangi Ombor Mahsuloti' }}</h3>
-            <button class="close-btn" (click)="showItemModal = false">✕</button>
+            <h3><app-icon [name]="editingItemId ? 'edit' : 'plus'" [size]="20"></app-icon> {{ editingItemId ? 'Mahsulotni Tahrirlash' : 'Yangi Ombor Mahsuloti' }}</h3>
+            <button class="close-btn" (click)="showItemModal = false"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
           <div class="modal-body">
             <div class="form-grid">
@@ -820,8 +822,8 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div class="modal-backdrop" *ngIf="showPurchaseModal">
         <div class="pos-modal modal-lg">
           <div class="modal-header">
-            <h3>📥 Yangi Tovar Kirimi</h3>
-            <button class="close-btn" (click)="showPurchaseModal = false">✕</button>
+            <h3><app-icon name="download" [size]="20"></app-icon> Yangi Tovar Kirimi</h3>
+            <button class="close-btn" (click)="showPurchaseModal = false"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
           <div class="modal-body">
             <div class="form-grid mb-4">
@@ -875,7 +877,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
                     <strong>{{ (row.quantity * row.unitCost) | number }} so'm</strong>
                   </td>
                   <td>
-                    <button class="pos-btn pos-btn--sm pos-btn--danger" (click)="removePurchaseRow(i)">✕</button>
+                    <button class="pos-btn pos-btn--sm pos-btn--danger" (click)="removePurchaseRow(i)"><app-icon name="x" [size]="14"></app-icon></button>
                   </td>
                 </tr>
               </tbody>
@@ -888,7 +890,7 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
           </div>
           <div class="modal-footer">
             <button class="pos-btn pos-btn--secondary" (click)="showPurchaseModal = false">Bekor qilish</button>
-            <button class="pos-btn pos-btn--primary" (click)="submitPurchase()">✅ Kirimni Tasdiqlash</button>
+            <button class="pos-btn pos-btn--primary" (click)="submitPurchase()"><app-icon name="check" [size]="16"></app-icon> Kirimni Tasdiqlash</button>
           </div>
         </div>
       </div>
@@ -897,8 +899,8 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div class="modal-backdrop" *ngIf="showOutboundModal">
         <div class="pos-modal">
           <div class="modal-header">
-            <h3>📤 Ombordan Chiqim Qilish</h3>
-            <button class="close-btn" (click)="showOutboundModal = false">✕</button>
+            <h3><app-icon name="upload" [size]="20"></app-icon> Ombordan Chiqim Qilish</h3>
+            <button class="close-btn" (click)="showOutboundModal = false"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
           <div class="modal-body">
             <div class="form-group mb-3">
@@ -945,8 +947,8 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div class="modal-backdrop" *ngIf="showAdjustModal">
         <div class="pos-modal">
           <div class="modal-header">
-            <h3>⚙️ Zaxirani Qo'lda Tuzatish: {{ targetAdjustItem?.name }}</h3>
-            <button class="close-btn" (click)="showAdjustModal = false">✕</button>
+            <h3><app-icon name="settings" [size]="20"></app-icon> Zaxirani Qo'lda Tuzatish: {{ targetAdjustItem?.name }}</h3>
+            <button class="close-btn" (click)="showAdjustModal = false"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
           <div class="modal-body">
             <p class="text-muted mb-3">Hozirgi tizim qoldig'i: <strong>{{ targetAdjustItem?.quantity }} {{ targetAdjustItem?.unit }}</strong></p>
@@ -970,8 +972,8 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div class="modal-backdrop" *ngIf="showWarehouseModal">
         <div class="pos-modal">
           <div class="modal-header">
-            <h3>🏢 Yangi Ombor Qo'shish</h3>
-            <button class="close-btn" (click)="showWarehouseModal = false">✕</button>
+            <h3><app-icon name="building" [size]="20"></app-icon> Yangi Ombor Qo'shish</h3>
+            <button class="close-btn" (click)="showWarehouseModal = false"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
           <div class="modal-body">
             <div class="form-group mb-3">
@@ -994,8 +996,8 @@ type InventoryTab = 'dashboard' | 'items' | 'kirim' | 'chiqim' | 'movements' | '
       <div class="modal-backdrop" *ngIf="showSupplierModal">
         <div class="pos-modal">
           <div class="modal-header">
-            <h3>🤝 Yangi Yetkazib Beruvchi</h3>
-            <button class="close-btn" (click)="showSupplierModal = false">✕</button>
+            <h3><app-icon name="users" [size]="20"></app-icon> Yangi Yetkazib Beruvchi</h3>
+            <button class="close-btn" (click)="showSupplierModal = false"><app-icon name="x" [size]="18"></app-icon></button>
           </div>
           <div class="modal-body">
             <div class="form-group mb-3">

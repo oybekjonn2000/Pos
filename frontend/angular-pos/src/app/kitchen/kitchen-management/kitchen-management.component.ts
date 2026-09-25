@@ -8,17 +8,18 @@ import { PrinterService, Printer } from '../../core/services/printer.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ExcelService } from '../../core/services/excel.service';
 import { ExcelImportModalComponent } from '../../shared/components/excel-import-modal/excel-import-modal.component';
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-kitchen-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent, AppIconComponent],
   template: `
     <div class="kitchens-page fade-in">
       <!-- Page Header -->
       <div class="page-header">
         <div class="header-left">
-          <div class="header-icon-wrap">🥘</div>
+          <div class="header-icon-wrap"><app-icon name="cooking-pot" [size]="24"></app-icon></div>
           <div>
             <h1 class="page-title">Oshxonalar Boshqaruvi</h1>
             <p class="page-subtitle">Oshxonalar (stansiyalar), buyurtma yo'nalishi (routing) va xodimlar biriktiruvi</p>
@@ -27,16 +28,16 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
 
         <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" title="Bo'sh Excel shablonini yuklab olish">
-            <span>{{ downloadingTemplate ? 'Yuklanmoqda...' : '📥 Shablon' }}</span>
+            <span><app-icon name="download" [size]="14"></app-icon> {{ downloadingTemplate ? 'Yuklanmoqda...' : 'Shablon' }}</span>
           </button>
           <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" title="Oshxonalarni Excel faylga eksport qilish">
-            <span>{{ exportingExcel ? 'Eksport...' : '📤 Export' }}</span>
+            <span><app-icon name="upload" [size]="14"></app-icon> {{ exportingExcel ? 'Eksport...' : 'Export' }}</span>
           </button>
           <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" title="Excel fayldan oshxonalarni yuklash">
-            <span>📥 Import</span>
+            <span><app-icon name="download" [size]="14"></app-icon> Import</span>
           </button>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
-            <span class="btn-icon">➕</span>
+            <app-icon name="plus" [size]="14"></app-icon>
             <span>Yangi Oshxona Qo'shish</span>
           </button>
         </div>
@@ -45,28 +46,28 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
       <!-- Quick Metrics Summary -->
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-icon metric-icon--purple">🥘</div>
+          <div class="metric-icon metric-icon--purple"><app-icon name="cooking-pot" [size]="20"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Jami Oshxonalar</span>
             <span class="metric-value">{{ kitchens.length }}</span>
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon metric-icon--green">🟢</div>
+          <div class="metric-icon metric-icon--green"><app-icon name="check-circle" [size]="20" class="icon--success"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Faol (ACTIVE)</span>
             <span class="metric-value">{{ activeCount }}</span>
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon metric-icon--amber">⚪</div>
+          <div class="metric-icon metric-icon--amber"><app-icon name="pause" [size]="20"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Nofaol (INACTIVE)</span>
             <span class="metric-value">{{ inactiveCount }}</span>
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon metric-icon--blue">👨‍🍳</div>
+          <div class="metric-icon metric-icon--blue"><app-icon name="chef" [size]="20"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Biriktirilgan Xodimlar</span>
             <span class="metric-value">{{ totalAssignedStaff }}</span>
@@ -78,7 +79,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
       <div class="pos-card toolbar-card">
         <div class="toolbar-left">
           <div class="search-input-wrap">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>
             <input
               type="text"
               class="pos-input search-input"
@@ -86,7 +87,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
               [(ngModel)]="searchQuery"
               (ngModelChange)="onSearchChange()"
             />
-            <button *ngIf="searchQuery" class="clear-search-btn" (click)="searchQuery = ''; onSearchChange()">✕</button>
+            <button *ngIf="searchQuery" class="clear-search-btn" (click)="searchQuery = ''; onSearchChange()"><app-icon name="close" [size]="14"></app-icon></button>
           </div>
 
           <div class="filter-tabs">
@@ -113,7 +114,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
 
         <div class="toolbar-right">
           <button class="pos-btn pos-btn--secondary pos-btn--sm" (click)="loadData()" [disabled]="loading">
-            <span>🔄 Yangilash</span>
+            <span><app-icon name="refresh" [size]="14"></app-icon> Yangilash</span>
           </button>
         </div>
       </div>
@@ -126,12 +127,12 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
         </div>
 
         <div *ngIf="!loading && filteredKitchens.length === 0" class="state-container empty-state">
-          <div class="empty-icon">🍳</div>
+          <div class="empty-icon"><app-icon name="cooking-pot" [size]="48"></app-icon></div>
           <h3>Oshxonalar topilmadi</h3>
           <p *ngIf="searchQuery || statusFilter !== 'ALL'">Qidiruv yoki filtr mezonlariga mos keladigan oshxona topilmadi.</p>
           <p *ngIf="!searchQuery && statusFilter === 'ALL'">Tizimda hozircha oshxona mavjud emas. Yangi oshxona qo'shishingiz mumkin.</p>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()" style="margin-top: 14px;">
-            ➕ Yangi oshxona qo'shish
+            <app-icon name="plus" [size]="16"></app-icon> Yangi oshxona qo'shish
           </button>
         </div>
 
@@ -173,7 +174,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                     class="badge-btn badge-btn--staff"
                     (click)="openStaffAssignmentModal(k)"
                     title="Biriktirilgan xodimlarni ko'rish va o'zgartirish">
-                    <span class="badge-icon">👨‍🍳</span>
+                    <span class="badge-icon"><app-icon name="chef" [size]="14"></app-icon></span>
                     <span class="badge-count">{{ k.assignedEmployeesCount || 0 }} ta xodim</span>
                   </button>
                 </td>
@@ -182,7 +183,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                     class="badge-btn badge-btn--cats"
                     (click)="openCategoryViewModal(k)"
                     title="Ushbu oshxonaga biriktirilgan kategoriyalarni ko'rish">
-                    <span class="badge-icon">🏷️</span>
+                    <span class="badge-icon"><app-icon name="tag" [size]="14"></app-icon></span>
                     <span class="badge-count">{{ k.assignedCategoriesCount || 0 }} ta kategoriya</span>
                   </button>
                 </td>
@@ -206,7 +207,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                       class="action-btn action-btn--edit"
                       (click)="openEditModal(k)"
                       title="Tahrirlash">
-                      ✏️ Tahrirlash
+                      <app-icon name="edit" [size]="14"></app-icon> Tahrirlash
                     </button>
                     <button
                       class="action-btn"
@@ -214,13 +215,13 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                       [class.action-btn--activate]="!k.active"
                       (click)="toggleStatus(k)"
                       [title]="k.active ? 'Nofaol qilish' : 'Faollashtirish'">
-                      {{ k.active ? '⏸ Deaktiv' : '▶ Aktiv' }}
+                      {{ k.active ? 'Deaktiv' : 'Aktiv' }}
                     </button>
                     <button
                       class="action-btn action-btn--delete"
                       (click)="confirmDelete(k)"
                       title="O'chirish">
-                      🗑️
+                      <app-icon name="trash" [size]="14"></app-icon>
                     </button>
                   </div>
                 </td>
@@ -248,10 +249,10 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
         <div class="pos-modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
-              <span class="modal-icon">{{ isEditing ? '✏️' : '➕' }}</span>
+              <span class="modal-icon"><app-icon [name]="isEditing ? 'edit' : 'plus'" [size]="20"></app-icon></span>
               <h2>{{ isEditing ? 'Oshxonani Tahrirlash' : 'Yangi Oshxona Qo‘shish' }}</h2>
             </div>
-            <button class="close-modal-btn" (click)="closeFormModal()">✕</button>
+            <button class="close-modal-btn" (click)="closeFormModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -339,7 +340,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
               <select class="pos-input" [(ngModel)]="formData.printerId">
                 <option [ngValue]="null">Printer tanlanmagan (ixtiyoriy)</option>
                 <option *ngFor="let p of printers" [value]="p.id">
-                  🖨️ {{ p.name }} ({{ p.connectionType }})
+                  <app-icon name="printer" [size]="14"></app-icon> {{ p.name }} ({{ p.connectionType }})
                 </option>
               </select>
             </div>
@@ -375,10 +376,10 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                   <div class="cat-assign-info">
                     <span class="cat-assign-name">{{ cat.name }}</span>
                     <span *ngIf="cat.kitchenName && cat.kitchenId !== editingId" class="cat-kitchen-hint conflict-hint">
-                      ⚠️ Hozir: {{ cat.kitchenName }}
+                      <app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Hozir: {{ cat.kitchenName }}
                     </span>
                     <span *ngIf="cat.kitchenId === editingId || (!cat.kitchenId && isEditing)" class="cat-kitchen-hint current-hint">
-                      ✓ Bu oshxonada
+                      <app-icon name="check" [size]="14" class="icon--success"></app-icon> Bu oshxonada
                     </span>
                     <span *ngIf="!cat.kitchenId && !isEditing" class="cat-kitchen-hint free-hint">
                       Biriktirilmagan
@@ -436,7 +437,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
         <div class="pos-modal pos-modal--wide" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
-              <span class="modal-icon">👨‍🍳</span>
+              <span class="modal-icon"><app-icon name="chef" [size]="20"></app-icon></span>
               <div>
                 <h2>Oshxona Xodimlari (Oshpazlar)</h2>
                 <p class="modal-subtitle">
@@ -445,14 +446,14 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                 </p>
               </div>
             </div>
-            <button class="close-modal-btn" (click)="closeStaffModal()">✕</button>
+            <button class="close-modal-btn" (click)="closeStaffModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
             <!-- Top Controls Row -->
             <div class="staff-toolbar-row">
               <div class="staff-summary-badge">
-                <span>👨‍🍳 Biriktirilgan oshpazlar:</span>
+                <span><app-icon name="chef" [size]="14"></app-icon> Biriktirilgan oshpazlar:</span>
                 <strong>{{ assignedCooks.length }} ta</strong>
               </div>
 
@@ -460,7 +461,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                 class="pos-btn pos-btn--primary pos-btn--sm"
                 *ngIf="!showAssignCookSection"
                 (click)="openAssignCookSection()">
-                <span>➕ Oshpaz Biriktirish</span>
+                <span><app-icon name="plus" [size]="14"></app-icon> Oshpaz Biriktirish</span>
               </button>
             </div>
 
@@ -469,13 +470,13 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
               <div class="assign-box-header">
                 <div>
                   <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--text-primary);">
-                    ➕ Yangi Oshpaz Biriktirish
+                    <app-icon name="plus" [size]="14"></app-icon> Yangi Oshpaz Biriktirish
                   </h4>
                   <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-muted);">
                     Faqat oshpazlik roliga ega va bo'sh (oshxonaga biriktirilmagan) xodimlar
                   </p>
                 </div>
-                <button class="close-assign-btn" (click)="closeAssignCookSection()">✕</button>
+                <button class="close-assign-btn" (click)="closeAssignCookSection()"><app-icon name="close" [size]="14"></app-icon></button>
               </div>
 
               <div *ngIf="loadingAvailableCooks" class="state-container" style="padding: 16px;">
@@ -484,14 +485,14 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
               </div>
 
               <div *ngIf="!loadingAvailableCooks && availableCooks.length === 0" class="empty-cooks-notice">
-                <span>ℹ️ Hozirda tizimda bo'sh oshpaz mavjud emas. Barcha oshpazlar allaqachon oshxonalarga biriktirilgan yoki yangi oshpaz ro'yxatga olinmagan.</span>
+                <span><app-icon name="info" [size]="14"></app-icon> Hozirda tizimda bo'sh oshpaz mavjud emas. Barcha oshpazlar allaqachon oshxonalarga biriktirilgan yoki yangi oshpaz ro'yxatga olinmagan.</span>
               </div>
 
               <div *ngIf="!loadingAvailableCooks && availableCooks.length > 0" class="cook-selector-row">
                 <select [(ngModel)]="selectedNewCookId" class="pos-input flex-1">
                   <option [ngValue]="null" disabled>Oshpazni tanlang...</option>
                   <option *ngFor="let cook of availableCooks" [value]="cook.id">
-                    👨‍🍳 {{ cook.fullName || (cook.firstName + ' ' + (cook.lastName || '')) }} ({{ cook.role || 'Oshpaz' }}) — @{{ cook.username || cook.phone || 'PIN' }}
+                    <app-icon name="chef" [size]="14"></app-icon> {{ cook.fullName || (cook.firstName + ' ' + (cook.lastName || '')) }} ({{ cook.role || 'Oshpaz' }}) — @{{ cook.username || cook.phone || 'PIN' }}
                   </option>
                 </select>
 
@@ -517,9 +518,9 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
 
             <!-- EMPTY STATE -->
             <div *ngIf="!loadingStaffList && assignedCooks.length === 0" class="state-container empty-state" style="padding: 32px 20px;">
-              <div class="empty-icon">👨‍🍳</div>
+              <div class="empty-icon"><app-icon name="chef" [size]="48"></app-icon></div>
               <h3>Ushbu oshxonaga oshpaz biriktirilmagan</h3>
-              <p>Ushbu oshxonada buyurtmalar tayyorlanishi uchun yuqoridagi <strong>"➕ Oshpaz Biriktirish"</strong> tugmasi orqali oshpaz biriktiring.</p>
+              <p>Ushbu oshxonada buyurtmalar tayyorlanishi uchun yuqoridagi <strong>"Oshpaz Biriktirish"</strong> tugmasi orqali oshpaz biriktiring.</p>
             </div>
 
             <!-- ASSIGNED COOKS LIST -->
@@ -546,14 +547,14 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
                     class="pos-btn pos-btn--secondary pos-btn--sm"
                     (click)="openTransferModal(cook)"
                     title="Boshqa oshxonaga o'tkazish">
-                    <span>🔄 Boshqa oshxonaga o'tkazish</span>
+                    <span><app-icon name="refresh" [size]="14"></app-icon> Boshqa oshxonaga o'tkazish</span>
                   </button>
                   <button
                     class="pos-btn pos-btn--danger pos-btn--sm"
                     (click)="confirmDetachCook(cook)"
                     [disabled]="detachingEmployeeId === cook.id"
                     title="Oshxonadan ajratish (tizimdan o'chirilmaydi)">
-                    <span>{{ detachingEmployeeId === cook.id ? 'Ajratilmoqda...' : '❌ Ajratish' }}</span>
+                    <span *ngIf="detachingEmployeeId === cook.id">Ajratilmoqda...</span><span *ngIf="detachingEmployeeId !== cook.id"><app-icon name="x" [size]="14"></app-icon> Ajratish</span>
                   </button>
                 </div>
               </div>
@@ -573,13 +574,13 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
         <div class="pos-modal pos-modal--sm" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
-              <span class="modal-icon">🔄</span>
+              <span class="modal-icon"><app-icon name="refresh" [size]="20"></app-icon></span>
               <div>
                 <h2>Oshpazni Ko'chirish</h2>
                 <p class="modal-subtitle">Boshqa oshxonaga o'tkazish</p>
               </div>
             </div>
-            <button class="close-modal-btn" (click)="closeTransferModal()">✕</button>
+            <button class="close-modal-btn" (click)="closeTransferModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
@@ -595,13 +596,13 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
               <select [(ngModel)]="targetTransferKitchenId" class="pos-input" required>
                 <option [ngValue]="null" disabled>Oshxonani tanlang...</option>
                 <option *ngFor="let k of otherActiveKitchens" [value]="k.id">
-                  🥘 {{ k.name }} ({{ k.code }})
+                  {{ k.name }} ({{ k.code }})
                 </option>
               </select>
             </div>
 
             <div *ngIf="otherActiveKitchens.length === 0" class="validation-banner" style="font-size: 12px; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 4px;">
-              ⚠️ O'tkazish uchun boshqa faol oshxona topilmadi. Avval boshqa oshxona yarating yoki faollashtiring.
+              <app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> O'tkazish uchun boshqa faol oshxona topilmadi. Avval boshqa oshxona yarating yoki faollashtiring.
             </div>
           </div>
 
@@ -613,7 +614,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
               class="pos-btn pos-btn--primary"
               (click)="executeTransfer()"
               [disabled]="!targetTransferKitchenId || transferring || otherActiveKitchens.length === 0">
-              <span>{{ transferring ? 'Ko‘chirilmoqda...' : '🔄 Ko‘chirishni Tasdiqlash' }}</span>
+              <span *ngIf="transferring">Ko‘chirilmoqda...</span><span *ngIf="!transferring"><app-icon name="refresh" [size]="14"></app-icon> Ko‘chirishni Tasdiqlash</span>
             </button>
           </div>
         </div>
@@ -624,13 +625,13 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
         <div class="pos-modal" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-header-title">
-              <span class="modal-icon">🏷️</span>
+              <span class="modal-icon"><app-icon name="tag" [size]="20"></app-icon></span>
               <div>
                 <h2>Biriktirilgan Kategoriyalar</h2>
                 <p class="modal-subtitle">Oshxona: <strong>{{ selectedKitchenForCats?.name }}</strong></p>
               </div>
             </div>
-            <button class="close-modal-btn" (click)="closeCategoriesModal()">✕</button>
+            <button class="close-modal-btn" (click)="closeCategoriesModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -640,7 +641,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
             </div>
 
             <div *ngIf="!loadingCatsList && assignedCategories.length === 0" class="state-container empty-state">
-              <div class="empty-icon">📁</div>
+              <div class="empty-icon"><app-icon name="folder" [size]="48"></app-icon></div>
               <p>Hozircha ushbu oshxonaga biriktirilgan kategoriya yo'q.</p>
               <p class="modal-hint">Kategoriyalar bo'limidan ushbu oshxonani tanlashingiz mumkin.</p>
             </div>
@@ -667,10 +668,10 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
         <div class="pos-modal" (click)="$event.stopPropagation()">
           <div class="modal-header modal-header--danger">
             <div class="modal-header-title">
-              <span class="modal-icon">⚠️</span>
+              <span class="modal-icon"><app-icon name="alert-triangle" [size]="20" class="icon--warning"></app-icon></span>
               <h2>Oshxonani O'chirish</h2>
             </div>
-            <button class="close-modal-btn" (click)="closeDeleteModal()">✕</button>
+            <button class="close-modal-btn" (click)="closeDeleteModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -680,7 +681,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
 
             <!-- Employee blocking alert -->
             <div class="delete-info-box" *ngIf="(targetKitchenForDelete?.assignedEmployeesCount || 0) > 0" style="border-left: 3px solid #ef4444; background: rgba(239, 68, 68, 0.08);">
-              <div class="info-icon">👨‍🍳</div>
+              <div class="info-icon"><app-icon name="chef" [size]="18"></app-icon></div>
               <div class="info-content">
                 <strong style="color: #ef4444;">Xodimlar biriktirilgan (O'chirish taqiqlanadi):</strong>
                 <p>
@@ -692,7 +693,7 @@ import { ExcelImportModalComponent } from '../../shared/components/excel-import-
 
             <!-- Linked category/orders info box -->
             <div class="delete-info-box" *ngIf="hasLinkedData(targetKitchenForDelete) && (targetKitchenForDelete?.assignedEmployeesCount || 0) === 0">
-              <div class="info-icon">🛡️</div>
+              <div class="info-icon"><app-icon name="shield" [size]="18"></app-icon></div>
               <div class="info-content">
                 <strong>Xavfsiz O'chirish (Safe Delete Himoyasi):</strong>
                 <p>

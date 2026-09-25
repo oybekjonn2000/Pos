@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../icon/icon.component';
 import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,20 +10,20 @@ import { NotificationService } from '../../../core/services/notification.service
 @Component({
   selector: 'app-excel-import-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="modal-overlay" *ngIf="visible" (click)="onBackdropClick()">
       <div class="modal-card excel-modal" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="modal-header">
           <div class="header-title-wrap">
-            <span class="header-icon">{{ getIcon() }}</span>
+            <span class="header-icon"><app-icon [name]="getIcon()" [size]="20"></app-icon></span>
             <div>
               <h2 class="modal-title">{{ getTitle() }}</h2>
               <p class="modal-subtitle">{{ getSubtitle() }}</p>
             </div>
           </div>
-          <button class="close-btn" (click)="close()" [disabled]="loading || importing">✕</button>
+          <button class="close-btn" (click)="close()" [disabled]="loading || importing"><app-icon name="x" [size]="18"></app-icon></button>
         </div>
 
         <!-- Body -->
@@ -43,22 +44,22 @@ import { NotificationService } from '../../../core/services/notification.service
                 style="display: none" 
                 (change)="onFileSelected($event)" 
               />
-              <div class="drop-icon">📊</div>
+              <div class="drop-icon"><app-icon name="bar-chart" [size]="32"></app-icon></div>
               <h3 class="drop-title">Excel faylni bu yerga tashlang yoki tanlang</h3>
               <p class="drop-hint">Faqat <strong>.xlsx</strong> yoki <strong>.xls</strong> formatidagi fayllar qabul qilinadi (maks. 10 MB)</p>
               <button type="button" class="pos-btn pos-btn--secondary select-btn">
-                📂 Faylni tanlash
+                <app-icon name="folder" [size]="16"></app-icon> Faylni tanlash
               </button>
             </div>
 
             <!-- Template Download Hint -->
             <div class="template-box">
               <div class="template-info">
-                <strong>💡 To'g'ri formatdagi shablon kerakmi?</strong>
+                <strong><app-icon name="info" [size]="16"></app-icon> To'g'ri formatdagi shablon kerakmi?</strong>
                 <p>Ushbu bo'lim uchun tayyor Excel shablonini yuklab oling va ma'lumotlarni to'ldiring.</p>
               </div>
               <button type="button" class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate">
-                <span>{{ downloadingTemplate ? 'Yuklanmoqda...' : '📥 Shablonni Yuklab Olish' }}</span>
+                <span *ngIf="downloadingTemplate">Yuklanmoqda...</span><span *ngIf="!downloadingTemplate"><app-icon name="download" [size]="16"></app-icon> Shablonni Yuklab Olish</span>
               </button>
             </div>
           </div>
@@ -75,14 +76,14 @@ import { NotificationService } from '../../../core/services/notification.service
             <!-- File info bar -->
             <div class="file-info-bar">
               <div class="file-meta">
-                <span class="file-icon">📄</span>
+                <span class="file-icon"><app-icon name="file-text" [size]="16"></app-icon></span>
                 <div>
                   <strong class="file-name">{{ selectedFile?.name }}</strong>
                   <span class="file-size">{{ formatFileSize(selectedFile?.size || 0) }}</span>
                 </div>
               </div>
               <button type="button" class="pos-btn pos-btn--secondary btn-sm" (click)="resetFile()" [disabled]="importing">
-                🔄 Boshqa fayl tanlash
+                <app-icon name="refresh" [size]="14"></app-icon> Boshqa fayl tanlash
               </button>
             </div>
 
@@ -94,17 +95,17 @@ import { NotificationService } from '../../../core/services/notification.service
               </div>
               <div class="stat-badge stat-valid">
                 <span class="stat-num">{{ preview.validRows }}</span>
-                <span class="stat-lbl">✅ Yaroqli (OK)</span>
+                <span class="stat-lbl"><app-icon name="check-circle" [size]="14"></app-icon> Yaroqli (OK)</span>
               </div>
               <div class="stat-badge stat-error" [class.has-error]="preview.errorRows > 0">
                 <span class="stat-num">{{ preview.errorRows }}</span>
-                <span class="stat-lbl">⚠️ Xatoli (ERROR)</span>
+                <span class="stat-lbl"><app-icon name="alert-triangle" [size]="14"></app-icon> Xatoli (ERROR)</span>
               </div>
             </div>
 
             <!-- Warning notice if errors exist -->
             <div *ngIf="preview.errorRows > 0" class="alert-box alert-warning">
-              <span>⚠️ <strong>{{ preview.errorRows }} ta</strong> qatorda xatolik aniqlandi. Xatoli qatorlar o'tkazib yuboriladi yoki tuzatib qayta yuklashingiz mumkin.</span>
+              <span><app-icon name="alert-triangle" [size]="14"></app-icon> <strong>{{ preview.errorRows }} ta</strong> qatorda xatolik aniqlandi. Xatoli qatorlar o'tkazib yuboriladi yoki tuzatib qayta yuklashingiz mumkin.</span>
             </div>
 
             <!-- Table of preview items -->
@@ -125,7 +126,7 @@ import { NotificationService } from '../../../core/services/notification.service
                     <td class="cell-num">{{ item.rowNumber }}</td>
                     <td>
                       <span class="status-pill" [class.pill-ok]="item.valid" [class.pill-err]="!item.valid">
-                        {{ item.valid ? '✅ OK' : '❌ XATO' }}
+                        {{ item.valid ? 'OK' : 'XATO' }}
                       </span>
                     </td>
                     <td>
@@ -162,7 +163,7 @@ import { NotificationService } from '../../../core/services/notification.service
           <!-- STEP 5: Import Result Screen -->
           <div *ngIf="result" class="result-container">
             <div class="result-header" [class.result-success]="result.success">
-              <span class="result-icon">{{ result.success ? '🎉' : '⚠️' }}</span>
+              <span class="result-icon"><app-icon [name]="result.success ? 'check-circle' : 'alert-triangle'" [size]="32"></app-icon></span>
               <h3 class="result-title">{{ result.message }}</h3>
             </div>
 
@@ -212,7 +213,7 @@ import { NotificationService } from '../../../core/services/notification.service
             class="pos-btn pos-btn--primary" 
             (click)="executeImport()" 
             [disabled]="importing || preview.validRows === 0">
-            <span *ngIf="!importing">🚀 {{ preview.validRows }} ta qatorni import qilish</span>
+            <span *ngIf="!importing"><app-icon name="upload" [size]="16"></app-icon> {{ preview.validRows }} ta qatorni import qilish</span>
             <span *ngIf="importing">Yuklanmoqda...</span>
           </button>
         </div>
@@ -648,6 +649,117 @@ import { NotificationService } from '../../../core/services/notification.service
       from { opacity: 0; }
       to { opacity: 1; }
     }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 767px) {
+      .modal-card.excel-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 92vh !important;
+      }
+
+      .modal-header {
+        padding: 14px 16px;
+      }
+
+      .modal-body.excel-body {
+        padding: 14px;
+      }
+
+      .drop-zone {
+        padding: 24px 14px;
+
+        .drop-icon {
+          font-size: 36px;
+        }
+
+        .drop-title {
+          font-size: 15px;
+        }
+
+        .drop-hint {
+          font-size: 11.5px;
+        }
+      }
+
+      .template-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+
+        .pos-btn {
+          width: 100%;
+          justify-content: center;
+          min-height: 42px;
+        }
+      }
+
+      .file-info-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+
+        .pos-btn {
+          width: 100%;
+          justify-content: center;
+          min-height: 40px;
+        }
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+
+        .stat-badge {
+          padding: 8px 6px;
+        }
+
+        .stat-num {
+          font-size: 16px;
+        }
+
+        .stat-lbl {
+          font-size: 10.5px;
+        }
+      }
+
+      .result-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .result-errors-list {
+        max-height: 220px;
+
+        .error-item {
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          border-radius: 6px;
+          padding: 8px 10px;
+          margin-bottom: 6px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+      }
+
+      .modal-footer {
+        flex-direction: column;
+        width: 100%;
+        padding: 12px 16px;
+        gap: 8px;
+
+        .pos-btn {
+          width: 100%;
+          min-height: 44px;
+          justify-content: center;
+        }
+      }
+    }
   `]
 })
 export class ExcelImportModalComponent implements OnInit {
@@ -675,9 +787,9 @@ export class ExcelImportModalComponent implements OnInit {
 
   getIcon(): string {
     switch (this.type) {
-      case 'kitchens': return '🥘';
-      case 'categories': return '🏷️';
-      case 'products': return '🍔';
+      case 'kitchens': return 'utensils';
+      case 'categories': return 'tag';
+      case 'products': return 'package';
     }
   }
 

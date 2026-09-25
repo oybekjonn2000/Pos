@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,14 +8,14 @@ import { NotificationService } from '../../core/services/notification.service';
 @Component({
   selector: 'app-platform-employees',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="platform-container">
       <!-- Header Banner -->
       <div class="platform-header">
         <div class="platform-header__info">
           <div class="platform-badge">
-            <span class="badge-icon">👥</span> Xodimlar Monitoringi (Tarmoq Bo‘ylab)
+            <span class="badge-icon"><app-icon name="users" [size]="14"></app-icon></span> Xodimlar Monitoringi (Tarmoq Bo‘ylab)
           </div>
           <h1 class="platform-title">Markazlashgan Xodimlar Nazorati</h1>
           <p class="platform-subtitle">
@@ -23,7 +24,7 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
         <div class="platform-header__actions">
           <button type="button" class="btn btn-secondary" (click)="loadEmployees()" [disabled]="isLoading()">
-            <span class="btn-icon">🔄</span> Yangilash
+            <span class="btn-icon"><app-icon name="refresh" [size]="14"></app-icon></span> Yangilash
           </button>
         </div>
       </div>
@@ -91,7 +92,7 @@ import { NotificationService } from '../../core/services/notification.service';
             <label class="filter-label">Holati</label>
             <select class="pos-input" [(ngModel)]="selectedStatus" (change)="loadEmployees()">
               <option value="">Barchasi</option>
-              <option value="true">🟢 Faol</option>
+              <option value="true">Faol</option>
               <option value="false">⏸️ To‘xtatilgan</option>
             </select>
           </div>
@@ -114,7 +115,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         } @else if (filteredEmployees().length === 0) {
           <div class="empty-box">
-            <div class="empty-icon">👥</div>
+            <div class="empty-icon"><app-icon name="users" [size]="48"></app-icon></div>
             <h4>Xodimlar topilmadi</h4>
             <p>Tanlangan mezonlar bo‘yicha hech qanday xodim ma’lumoti mavjud emas.</p>
           </div>
@@ -180,7 +181,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         [class.status-active]="emp.active"
                         [class.status-suspended]="!emp.active"
                       >
-                        {{ emp.active ? '🟢 Faol' : '⏸️ To‘xtatilgan' }}
+                        {{ emp.active ? 'Faol' : 'To‘xtatilgan' }}
                       </span>
                     </td>
                     <td class="text-muted text-xs">
@@ -744,10 +745,10 @@ export class PlatformEmployeesComponent implements OnInit {
 
   getRoleLabel(roleStr: string): string {
     const r = (roleStr || '').toUpperCase();
-    if (r.includes('ADMIN')) return '👑 Admin';
-    if (r.includes('WAITER')) return '🍽️ Ofitsiant';
-    if (r.includes('KITCHEN')) return '👨‍🍳 Oshxona';
-    if (r.includes('CASHIER')) return '💵 Kassir';
+    if (r.includes('ADMIN')) return 'Admin';
+    if (r.includes('WAITER')) return 'Ofitsiant';
+    if (r.includes('KITCHEN')) return 'Oshxona';
+    if (r.includes('CASHIER')) return 'Kassir';
     return roleStr || 'Xodim';
   }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,6 +7,9 @@ import { KitchenService, KitchenStation, KitchenOrderBatch, KitchenOrderBatchIte
 import { WebsocketService } from '../core/services/websocket.service';
 import { NotificationService } from '../core/services/notification.service';
 import { FeatureService } from '../core/services/feature.service';
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
+import { TranslationService } from '../core/services/translation.service';
 
 export interface KitchenTableItemSubDetail {
   id: string;
@@ -55,7 +58,7 @@ export interface KitchenTableCard {
 @Component({
   selector: 'app-kitchen',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule, RouterLink],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, RouterLink, AppIconComponent, TranslatePipe],
   template: `
     <ng-container *ngIf="featureService.canAccessKds(); else proRequiredView">
       <div class="kds-container fade-in">
@@ -63,7 +66,7 @@ export interface KitchenTableCard {
       <div class="kds-header">
         <div class="kds-title-area">
           <div class="title-with-badge">
-            <h1 class="kds-title">👨‍🍳 Oshxona Ekrani (KDS)</h1>
+            <h1 class="kds-title"><app-icon name="chef" [size]="24"></app-icon> {{ 'kitchen.title' | translate }}</h1>
             <span class="pulse-indicator" *ngIf="countActiveCards() > 0">
               <span class="pulse-dot"></span>
               {{ countActiveCards() }} ta faol stol / joy
@@ -92,31 +95,31 @@ export interface KitchenTableCard {
               class="filter-tab"
               [class.active]="currentFilter === 'ALL'"
               (click)="setFilter('ALL')">
-              Faol ({{ countActiveCards() }})
+              {{ 'common.active' | translate }} ({{ countActiveCards() }})
             </button>
             <button
               class="filter-tab"
               [class.active]="currentFilter === 'NEW'"
               (click)="setFilter('NEW')">
-              Yangi ({{ countCardsByStatus('NEW') }})
+              {{ 'status.NEW' | translate }} ({{ countCardsByStatus('NEW') }})
             </button>
             <button
               class="filter-tab"
               [class.active]="currentFilter === 'ACCEPTED'"
               (click)="setFilter('ACCEPTED')">
-              Qabul qilingan ({{ countCardsByStatus('ACCEPTED') }})
+              {{ 'status.ACCEPTED' | translate }} ({{ countCardsByStatus('ACCEPTED') }})
             </button>
             <button
               class="filter-tab"
               [class.active]="currentFilter === 'READY'"
               (click)="setFilter('READY')">
-              Tayyor ({{ countCardsByStatus('READY') }})
+              {{ 'status.READY' | translate }} ({{ countCardsByStatus('READY') }})
             </button>
             <button
               class="filter-tab filter-tab--served"
               [class.active]="currentFilter === 'SERVED'"
               (click)="setFilter('SERVED')">
-              Tarqatilgan ({{ countCardsByStatus('SERVED') }})
+              {{ 'status.SERVED' | translate }} ({{ countCardsByStatus('SERVED') }})
             </button>
           </div>
         </div>
@@ -124,15 +127,15 @@ export interface KitchenTableCard {
 
       <!-- KITCHEN STATIONS SELECTOR BAR -->
       <div class="stations-bar">
-        <span class="stations-label">Oshxona Stansiyasi:</span>
+        <span class="stations-label">{{ 'kitchen.kitchenStation' | translate }}:</span>
         <div class="stations-strip">
           <button
             *ngIf="kitchens.length > 1"
             class="station-tab"
             [class.active]="selectedKitchen === null"
             (click)="selectKitchen(null)">
-            <span class="station-icon">🍽️</span>
-            <span class="station-name">Barchasi</span>
+            <span class="station-icon"><app-icon name="restaurant" [size]="16"></app-icon></span>
+            <span class="station-name">{{ 'common.all' | translate }}</span>
             <span class="station-code">BARCHA BIRIKTIRILGANLAR</span>
           </button>
           <button
@@ -150,7 +153,7 @@ export interface KitchenTableCard {
       <!-- TIME & DATE FILTER BAR -->
       <div class="time-filter-bar">
         <div class="time-filter-left">
-          <span class="time-filter-label">🕒 Vaqt / Sana:</span>
+          <span class="time-filter-label"><app-icon name="clock" [size]="14"></app-icon> Vaqt / Sana:</span>
           <div class="time-presets-strip">
             <button
               class="time-tab"
@@ -186,7 +189,7 @@ export interface KitchenTableCard {
               class="time-tab time-tab--custom"
               [class.active]="timePreset === 'CUSTOM'"
               (click)="setTimePreset('CUSTOM')">
-              📅 Boshqa sana
+              <app-icon name="clock" [size]="14"></app-icon> Boshqa sana
             </button>
           </div>
 
@@ -243,7 +246,7 @@ export interface KitchenTableCard {
       <!-- REAL-TIME CANCELLATION NOTIFICATION BANNER -->
       <div class="kds-cancel-alert-banner" *ngIf="cancellationAlert">
         <div class="alert-content">
-          <span class="alert-icon-anim">⚠️</span>
+          <span class="alert-icon-anim"><app-icon name="alert-triangle" [size]="18" class="icon--warning"></app-icon></span>
           <div class="alert-text">
             <div class="alert-headline">
               <strong>DIQQAT: BUYURTMA O'ZGARTIRILDI / BEKOR QILINDI!</strong>
@@ -258,7 +261,7 @@ export interface KitchenTableCard {
             </div>
           </div>
         </div>
-        <button class="alert-dismiss-btn" (click)="cancellationAlert = null">✕</button>
+        <button class="alert-dismiss-btn" (click)="cancellationAlert = null"><app-icon name="close" [size]="16"></app-icon></button>
       </div>
 
       <!-- Station Banner -->
@@ -275,16 +278,16 @@ export interface KitchenTableCard {
       <!-- Loading State -->
       <div *ngIf="loading && batches.length === 0" class="kds-loading">
         <div class="spinner"></div>
-        <p>Buyurtmalar yuklanmoqda...</p>
+        <p>{{ 'common.loading' | translate }}</p>
       </div>
 
       <!-- Empty State -->
       <div *ngIf="!loading && filteredCards.length === 0" class="kds-empty">
-        <div class="empty-icon">{{ currentFilter === 'SERVED' ? '✅' : getKitchenIcon(selectedKitchen?.code) }}</div>
+        <div class="empty-icon"><app-icon [name]="currentFilter === 'SERVED' ? 'check-circle' : getKitchenIcon(selectedKitchen?.code)" [size]="48"></app-icon></div>
         <h2>{{ currentFilter === 'SERVED' ? ('Tarqatilgan buyurtmalar (' + getTimePresetLabel() + ') mavjud emas') : ((selectedKitchen?.name || 'Oshxona') + ' uchun buyurtmalar yo‘q (' + getTimePresetLabel() + ')') }}</h2>
         <p>{{ currentFilter === 'SERVED' ? 'Ushbu vaqt oralig‘ida tarqatilgan buyurtmalar tarixi mavjud emas.' : 'Belgilangan vaqt oralig‘ida faol buyurtmalar mavjud emas.' }}</p>
         <button *ngIf="timePreset !== 'ALL'" class="btn-show-all-dates" (click)="setTimePreset('ALL')">
-          🌐 Barcha davr buyurtmalarini ko‘rsatish
+          <app-icon name="globe" [size]="14"></app-icon> Barcha davr buyurtmalarini ko‘rsatish
         </button>
       </div>
 
@@ -307,26 +310,26 @@ export interface KitchenTableCard {
               </span>
             </div>
             <div class="timer-badge" [class.urgent]="isUrgent(card)" [class.served-time-badge]="card.overallStatus === 'SERVED'">
-              {{ card.overallStatus === 'SERVED' ? '🕒 ' + formatTime(card.servedAt || card.latestSentAt) : '⏱️ ' + getElapsedTime(card) }}
+              <app-icon name="clock" [size]="14"></app-icon> {{ card.overallStatus === 'SERVED' ? formatTime(card.servedAt || card.latestSentAt) : getElapsedTime(card) }}
             </div>
           </div>
 
           <!-- Addon Alert Banner inside Card if new item arrived for existing table -->
           <div class="addon-banner" *ngIf="card.hasNewItems && card.batches.length > 1">
-            🔔 YANGI BUYURTMA QO‘SHILDI
+            <app-icon name="bell" [size]="14"></app-icon> YANGI BUYURTMA QO‘SHILDI
           </div>
 
           <div class="waiter-meta">
-            <span>👤 Ofitsiant: <strong>{{ card.waiterName || 'Xodim' }}</strong></span>
-            <span *ngIf="card.kitchenName" class="kitchen-name-pill">🏷️ {{ card.kitchenName }}</span>
+            <span><app-icon name="user" [size]="12"></app-icon> Ofitsiant: <strong>{{ card.waiterName || 'Xodim' }}</strong></span>
+            <span *ngIf="card.kitchenName" class="kitchen-name-pill"><app-icon name="tag" [size]="12"></app-icon> {{ card.kitchenName }}</span>
             <span *ngIf="card.latestSentAt">
-              🕒 {{ formatTime(card.latestSentAt) }}
+              <app-icon name="clock" [size]="12"></app-icon> {{ formatTime(card.latestSentAt) }}
             </span>
           </div>
 
           <!-- Notes -->
           <div *ngIf="card.notes" class="kds-order-note">
-            💬 {{ card.notes }}
+            <app-icon name="file-text" [size]="12"></app-icon> {{ card.notes }}
           </div>
 
           <!-- Items List: Grouped by Product with historical/addon details preserved -->
@@ -350,7 +353,7 @@ export interface KitchenTableCard {
                   [class]="'chip--' + (prod.hasDistinctStatuses ? 'mixed' : (prod.status || 'new').toLowerCase())"
                   [title]="'Statusni o‘zgartirish uchun bosing'"
                   (click)="advanceProduct(card, prod)">
-                  {{ prod.hasDistinctStatuses ? '⚡ Qisman yangi' : getStatusText(prod.status) }}
+                  {{ prod.hasDistinctStatuses ? 'Qisman yangi' : getStatusText(prod.status) }}
                 </span>
               </div>
 
@@ -363,10 +366,10 @@ export interface KitchenTableCard {
                   <span class="sub-qty">{{ sub.quantity }}x</span>
                   <span class="sub-tag" [class]="'tag-' + (sub.status || 'new').toLowerCase()">
                     <ng-container [ngSwitch]="sub.status">
-                      <span *ngSwitchCase="'NEW'">🔔 Yangi (Partiya #{{ sub.batchNumber }})</span>
-                      <span *ngSwitchCase="'ACCEPTED'">✓ Qabul qilingan</span>
-                      <span *ngSwitchCase="'READY'">✅ Tayyor</span>
-                      <span *ngSwitchCase="'SERVED'">🍽️ Tarqatildi</span>
+                      <span *ngSwitchCase="'NEW'"><app-icon name="bell" [size]="12"></app-icon> Yangi (Partiya #{{ sub.batchNumber }})</span>
+                      <span *ngSwitchCase="'ACCEPTED'"><app-icon name="check" [size]="12"></app-icon> Qabul qilingan</span>
+                      <span *ngSwitchCase="'READY'"><app-icon name="check-circle" [size]="12"></app-icon> Tayyor</span>
+                      <span *ngSwitchCase="'SERVED'"><app-icon name="restaurant" [size]="12"></app-icon> Tarqatildi</span>
                       <span *ngSwitchDefault>{{ getStatusText(sub.status) }}</span>
                     </ng-container>
                   </span>
@@ -375,7 +378,7 @@ export interface KitchenTableCard {
               </div>
 
               <div *ngIf="prod.notes && !prod.hasDistinctStatuses" class="product-item-notes">
-                ⚠️ {{ prod.notes }}
+                <app-icon name="alert-triangle" [size]="12" class="icon--warning"></app-icon> {{ prod.notes }}
               </div>
             </div>
           </div>
@@ -387,7 +390,7 @@ export interface KitchenTableCard {
               *ngIf="card.activeAction === 'ACCEPT'"
               class="kds-main-action-btn btn-accept"
               (click)="acceptTable(card)">
-              📥 QABUL QILISH
+              <app-icon name="download" [size]="14"></app-icon> {{ 'kitchen.acceptBatch' | translate }}
             </button>
 
             <!-- State 2: Accepted orders awaiting preparation completion -->
@@ -396,7 +399,7 @@ export interface KitchenTableCard {
               *ngIf="card.activeAction === 'READY'"
               class="kds-main-action-btn btn-ready"
               (click)="markTableReady(card)">
-              ✅ TAYYOR
+              <app-icon name="check-circle" [size]="14"></app-icon> {{ 'kitchen.markReady' | translate }}
             </button>
 
             <!-- State 3: Ready orders ready to be distributed to waiter/customer -->
@@ -404,19 +407,19 @@ export interface KitchenTableCard {
               *ngIf="card.activeAction === 'SERVE'"
               class="kds-main-action-btn btn-serve"
               (click)="markTableServed(card)">
-              🍽️ TARQATILDI
+              <app-icon name="restaurant" [size]="14"></app-icon> {{ 'kitchen.markServed' | translate }}
             </button>
 
             <!-- State 4: Completed / Served -->
             <ng-container *ngIf="card.overallStatus === 'SERVED'">
               <div class="served-status-text">
-                ✅ Tarqatildi: {{ formatTime(card.servedAt || card.latestSentAt) }}
+                <app-icon name="check-circle" [size]="14"></app-icon> Tarqatildi: {{ formatTime(card.servedAt || card.latestSentAt) }}
               </div>
               <button
                 class="pos-btn pos-btn--secondary pos-btn--sm btn-revert"
                 (click)="revertTableReady(card)"
                 title="Tayyor holatiga qaytarish">
-                ↩️ Qaytarish
+                <app-icon name="undo" [size]="14"></app-icon> {{ 'common.back' | translate }}
               </button>
             </ng-container>
           </div>
@@ -440,8 +443,8 @@ export interface KitchenTableCard {
     <ng-template #proRequiredView>
       <div class="kds-upgrade-wrapper fade-in">
         <div class="kds-upgrade-card">
-          <div class="upgrade-crown-badge">⭐ PRO TARIF TALAB QILINADI</div>
-          <div class="upgrade-icon">👨‍🍳</div>
+          <div class="upgrade-crown-badge"><app-icon name="crown" [size]="14"></app-icon> PRO TARIF TALAB QILINADI</div>
+          <div class="upgrade-icon"><app-icon name="chef" [size]="48"></app-icon></div>
           <h1 class="upgrade-title">Oshxona Ekrani (Kitchen Display System — KDS)</h1>
           <p class="upgrade-desc">
             Ushbu professional modul faqat <strong>PRO</strong> tarifida mavjud. Real-vaqt rejimida oshpazlar navbati, pishirish monitoringi va mobil ofitsiant ilovasi imkoniyatlaridan to'liq foydalaning.
@@ -449,28 +452,28 @@ export interface KitchenTableCard {
 
           <div class="upgrade-perks-grid">
             <div class="perk-card">
-              <span class="perk-icon">⚡</span>
+              <span class="perk-icon"><app-icon name="zap" [size]="16"></app-icon></span>
               <div>
                 <strong>Tezkor Yangilanish</strong>
                 <p>Ofitsiant buyurtma olishi bilan oshxona ekranida soniyalarda paydo bo'ladi.</p>
               </div>
             </div>
             <div class="perk-card">
-              <span class="perk-icon">🎯</span>
+              <span class="perk-icon"><app-icon name="check-circle" [size]="16"></app-icon></span>
               <div>
                 <strong>Rangli Bosqichlar</strong>
                 <p>Yangi (Yashil) → Pishirilmoqda (Sariq) → Tayyor (Ko'k) holatlari.</p>
               </div>
             </div>
             <div class="perk-card">
-              <span class="perk-icon">⏱️</span>
+              <span class="perk-icon"><app-icon name="clock" [size]="16"></app-icon></span>
               <div>
                 <strong>Vaqt Monitoringi</strong>
                 <p>Kechikayotgan taomlarni vizual ogohlantirish bilan darhol aniqlash.</p>
               </div>
             </div>
             <div class="perk-card">
-              <span class="perk-icon">📱</span>
+              <span class="perk-icon"><app-icon name="smartphone" [size]="16"></app-icon></span>
               <div>
                 <strong>Mobil Ofitsiant (APK)</strong>
                 <p>PRO tarifida ofitsiantlar uchun Android mobil ilova ham birga faollashadi.</p>
@@ -483,15 +486,15 @@ export interface KitchenTableCard {
               <span class="bubble-val">249 000</span>
               <span class="bubble-curr">so'm / oy</span>
             </div>
-            <span class="unlimited-tag">♾️ Resurslar soni bo'yicha hech qanday cheklov yo'q</span>
+            <span class="unlimited-tag">Resurslar soni bo'yicha hech qanday cheklov yo'q</span>
           </div>
 
           <div class="upgrade-action-btns">
             <button type="button" class="btn-refresh-status" (click)="checkProStatus()" [disabled]="featureService.loading()">
-              {{ featureService.loading() ? '🔄 Tekshirilmoqda...' : '🔄 Obunani qayta tekshirish' }}
+              {{ featureService.loading() ? 'Tekshirilmoqda...' : 'Obunani qayta tekshirish' }}
             </button>
             <a routerLink="/restaurant/billing" class="btn-upgrade-now">
-              ⚡ Pro Tarifga O'tish
+              Pro Tarifga O'tish
             </a>
             <a routerLink="/dashboard" class="btn-back-dash">
               ← Boshqaruv Paneliga Qaytish
@@ -1908,9 +1911,46 @@ export interface KitchenTableCard {
         }
       }
     }
+
+    /* POS Monitor / Wall Display / Kitchen Touch Screen (>= 1536px) */
+    @media (min-width: 1536px) {
+      .kds-grid {
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 20px;
+      }
+
+      .kds-card {
+        border-radius: 16px;
+
+        .table-badge {
+          font-size: 19px;
+          padding: 6px 14px;
+        }
+
+        .product-main-row {
+          .product-qty {
+            font-size: 20px;
+            min-width: 36px;
+          }
+
+          .product-name {
+            font-size: 16px;
+            font-weight: 700;
+          }
+        }
+
+        .kds-card-footer {
+          .kds-main-action-btn {
+            min-height: 56px;
+            font-size: 18px;
+          }
+        }
+      }
+    }
   `]
 })
 export class KitchenComponent implements OnInit, OnDestroy {
+  public i18n = inject(TranslationService);
   kitchens: KitchenStation[] = [];
   selectedKitchen: KitchenStation | null = null;
   batches: KitchenOrderBatch[] = [];
@@ -2711,28 +2751,24 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   getKitchenIcon(code?: string): string {
     switch (code?.toUpperCase()) {
-      case 'PLOV': return '🍚';
-      case 'SOMSA': return '🥟';
-      case 'PIZZA': return '🍕';
-      case 'BAR': return '🍹';
-      case 'MAIN': return '🍲';
-      default: return '👨‍🍳';
+      case 'PLOV': return 'cooking-pot';
+      case 'SOMSA': return 'products';
+      case 'PIZZA': return 'products';
+      case 'BAR': return 'products';
+      case 'MAIN': return 'chef';
+      default: return 'chef';
     }
   }
 
   getStatusText(status?: string): string {
-    switch (status?.toUpperCase()) {
-      case 'NEW': return '🟡 YANGI';
-      case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';
-      case 'ACCEPTED': return '🟣 QABUL QILINDI';
-      case 'PREPARING':
-      case 'COOKING': return '🟣 QABUL QILINDI';
-      case 'READY': return '🟢 TAYYOR';
-      case 'DELIVERED':
-      case 'SERVED': return '✅ TARQATILDI';
-      case 'CANCELLED': return '🔴 BEKOR QILINDI';
-      default: return status || 'YANGI';
-    }
+    const key = (status || '').toUpperCase();
+    if (key === 'NEW') return this.i18n.t('status.NEW');
+    if (key === 'SENT_TO_KITCHEN') return this.i18n.t('orders.inKitchen');
+    if (key === 'ACCEPTED' || key === 'COOKING' || key === 'PREPARING') return this.i18n.t('status.ACCEPTED');
+    if (key === 'READY') return this.i18n.t('status.READY');
+    if (key === 'SERVED' || key === 'DELIVERED') return this.i18n.t('status.SERVED');
+    if (key === 'CANCELLED') return this.i18n.t('status.CANCELLED');
+    return this.i18n.t('status.' + key) || status || this.i18n.t('status.NEW');
   }
 
   formatTime(isoDate?: string): string {

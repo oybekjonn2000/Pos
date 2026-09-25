@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,23 +9,26 @@ import { TableService, RestaurantTable } from '../../core/services/table.service
 import { AuthService } from '../../core/services/auth.service';
 import { PrinterService } from '../../core/services/printer.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-orders-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatPaginatorModule],
+  imports: [CommonModule, FormsModule, RouterModule, MatPaginatorModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="orders-page fade-in">
       <!-- Top Bar -->
       <div class="page-header">
         <div class="header-left">
-          <h1 class="page-title">📋 Buyurtmalar & Kassa</h1>
-          <p class="page-subtitle">Barcha buyurtmalar monitoringi, to'lovlarni qabul qilish va chek chiqarish</p>
+          <h1 class="page-title"><app-icon name="orders" [size]="24"></app-icon> {{ 'orders.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'orders.subtitle' | translate }}</p>
         </div>
 
         <div class="header-actions">
           <div class="search-box">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>
             <input
               type="text"
               placeholder="Qidiruv (Stol, #raqam, ofitsiant)..."
@@ -36,12 +39,12 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
 
           <button class="pos-btn pos-btn--secondary" (click)="loadOrders()" [disabled]="loading">
-            <span [class.spinning]="loading">🔄</span>
-            <span>Yangilash</span>
+            <app-icon name="refresh" [size]="16" [class.spinning]="loading"></app-icon>
+            <span>{{ 'common.refresh' | translate }}</span>
           </button>
 
           <a routerLink="/tables" class="pos-btn pos-btn--primary">
-            <span>➕ Joylar va Stollar</span>
+            <span><app-icon name="plus" [size]="16"></app-icon> {{ 'nav.tables' | translate }}</span>
           </a>
         </div>
       </div>
@@ -59,38 +62,38 @@ import { NotificationService } from '../../core/services/notification.service';
             class="tab-btn tab-btn--closed"
             [class.active]="activeTab === 'CLOSED'"
             (click)="setTab('CLOSED')">
-            🔒 Yopilgan / To'lov Kutilmoqda ({{ closedOrdersCount }})
+            <app-icon name="lock" [size]="14"></app-icon> {{ 'orders.closedOrders' | translate }} ({{ closedOrdersCount }})
           </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'ACTIVE'"
             (click)="setTab('ACTIVE')">
-            Ochiq ({{ openOrdersCount }})
+            {{ 'orders.openOrders' | translate }} ({{ openOrdersCount }})
           </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'KITCHEN'"
             (click)="setTab('KITCHEN')">
-            Oshxonada ({{ kitchenOrdersCount }})
+            {{ 'orders.inKitchen' | translate }} ({{ kitchenOrdersCount }})
           </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'READY'"
             (click)="setTab('READY')">
-            Tayyor ({{ readyOrdersCount }})
+            {{ 'orders.readyOrders' | translate }} ({{ readyOrdersCount }})
           </button>
           <button
             class="tab-btn"
             [class.active]="activeTab === 'PAID'"
             (click)="setTab('PAID')">
-            📁 Buyurtma Tarixi ({{ paidOrdersCount }})
+            <app-icon name="scroll" [size]="14"></app-icon> {{ 'orders.orderHistory' | translate }} ({{ paidOrdersCount }})
           </button>
         </div>
 
         <div class="revenue-badges-group">
           <!-- Active orders sum if on active tab -->
           <div class="revenue-pill active-pill" *ngIf="activeTab !== 'PAID' && activeOrdersTotalSum > 0">
-            <span>Faol buyurtmalar:</span>
+            <span>{{ 'dashboard.activeOrders' | translate }}:</span>
             <strong>{{ activeOrdersTotalSum | number:'1.0-0' }} so'm</strong>
           </div>
 
@@ -102,7 +105,7 @@ import { NotificationService } from '../../core/services/notification.service';
 
           <!-- Today's Revenue -->
           <div class="revenue-pill" *ngIf="todayTotalRevenue > 0">
-            <span>Bugungi tushum:</span>
+            <span>{{ 'dashboard.todayRevenue' | translate }}:</span>
             <strong>{{ todayTotalRevenue | number:'1.0-0' }} so'm</strong>
           </div>
         </div>
@@ -111,7 +114,7 @@ import { NotificationService } from '../../core/services/notification.service';
       <!-- History Filter Bar (Only shown on PAID / Tarix tab) -->
       <div *ngIf="activeTab === 'PAID'" class="history-filter-bar">
         <div class="filter-group">
-          <span class="filter-label">📅 Sana:</span>
+          <span class="filter-label"><app-icon name="clock" [size]="14"></app-icon> Sana:</span>
           <div class="pill-group">
             <button class="pill-btn" [class.active]="dateFilter === 'ALL'" (click)="dateFilter = 'ALL'; pageIndex = 0">Barchasi</button>
             <button class="pill-btn" [class.active]="dateFilter === 'TODAY'" (click)="dateFilter = 'TODAY'; pageIndex = 0">Bugun</button>
@@ -122,17 +125,17 @@ import { NotificationService } from '../../core/services/notification.service';
         </div>
 
         <div class="filter-group">
-          <span class="filter-label">💳 To'lov turi:</span>
+          <span class="filter-label"><app-icon name="credit-card" [size]="14"></app-icon> To'lov turi:</span>
           <div class="pill-group">
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'ALL'" (click)="paymentMethodFilter = 'ALL'; pageIndex = 0">Barchasi</button>
-            <button class="pill-btn" [class.active]="paymentMethodFilter === 'CASH'" (click)="paymentMethodFilter = 'CASH'; pageIndex = 0">💵 Naqd</button>
-            <button class="pill-btn" [class.active]="paymentMethodFilter === 'CARD'" (click)="paymentMethodFilter = 'CARD'; pageIndex = 0">💳 Karta</button>
-            <button class="pill-btn" [class.active]="paymentMethodFilter === 'DEBT'" (click)="paymentMethodFilter = 'DEBT'; pageIndex = 0">📝 Qarz</button>
+            <button class="pill-btn" [class.active]="paymentMethodFilter === 'CASH'" (click)="paymentMethodFilter = 'CASH'; pageIndex = 0"><app-icon name="cash" [size]="14"></app-icon> Naqd</button>
+            <button class="pill-btn" [class.active]="paymentMethodFilter === 'CARD'" (click)="paymentMethodFilter = 'CARD'; pageIndex = 0"><app-icon name="credit-card" [size]="14"></app-icon> Karta</button>
+            <button class="pill-btn" [class.active]="paymentMethodFilter === 'DEBT'" (click)="paymentMethodFilter = 'DEBT'; pageIndex = 0"><app-icon name="file-text" [size]="14"></app-icon> Qarz</button>
           </div>
         </div>
 
         <div class="filter-group" *ngIf="tablesList.length > 0">
-          <span class="filter-label">🪑 Stol:</span>
+          <span class="filter-label"><app-icon name="tables" [size]="14"></app-icon> Stol:</span>
           <select [(ngModel)]="selectedTableFilter" (ngModelChange)="pageIndex = 0" class="pos-input pos-select-sm">
             <option value="ALL">Barcha stollar</option>
             <option *ngFor="let t of tablesList" [value]="t.id">{{ t.name }} (#{{ t.tableNumber }})</option>
@@ -144,12 +147,12 @@ import { NotificationService } from '../../core/services/notification.service';
       <div class="pos-card orders-table-card">
         <div *ngIf="loading && (activeTab === 'PAID' ? historyOrders.length === 0 : orders.length === 0)" class="loading-state">
           <div class="spinner"></div>
-          <p>Buyurtmalar yuklanmoqda...</p>
+          <p>{{ 'common.loading' | translate }}</p>
         </div>
 
         <div *ngIf="!loading && filteredOrders.length === 0" class="empty-state">
-          <div class="empty-icon">📂</div>
-          <h3>Buyurtmalar topilmadi</h3>
+          <div class="empty-icon"><app-icon name="orders" [size]="48"></app-icon></div>
+          <h3>{{ 'common.noRecords' | translate }}</h3>
           <p>Belgilangan filtr bo'yicha hech qanday buyurtma mavjud emas.</p>
         </div>
 
@@ -185,11 +188,13 @@ import { NotificationService } from '../../core/services/notification.service';
                 <tr *ngFor="let order of pagedOrders" class="order-row">
                   <td class="order-num-col">
                     <strong>#{{ order.orderNumber }}</strong>
+                    <span class="time-mobile-sub">{{ formatTime(order.closedAt || order.openedAt || order.createdAt) }}</span>
                   </td>
                   <td>
+                    <span class="mobile-label">Joy / Stol:</span>
                     <div style="display: flex; flex-direction: column; gap: 3px;">
                       <span class="table-tag">
-                        📍 {{ order.zoneName ? (order.zoneName + ' — ' + (order.tableName || order.tableNumber || 'Stol')) : (order.tableName || order.tableNumber || 'Joy') }}
+                        <app-icon name="map-pin" [size]="14"></app-icon> {{ order.zoneName ? (order.zoneName + ' — ' + (order.tableName || order.tableNumber || 'Stol')) : (order.tableName || order.tableNumber || 'Joy') }}
                       </span>
                       <span *ngIf="getPlacePercentage(order) > 0" class="zone-badge-sm">
                         Foiz: {{ getPlacePercentage(order) }}%
@@ -197,26 +202,32 @@ import { NotificationService } from '../../core/services/notification.service';
                     </div>
                   </td>
                   <td>
+                    <span class="mobile-label">Ofitsiant:</span>
                     <span class="waiter-name">{{ order.waiterName || '—' }}</span>
                   </td>
                   <td>
+                    <span class="mobile-label">Mahsulotlar:</span>
                     <span class="items-count-badge">{{ order.items ? order.items.length : 0 }} xil taom</span>
                   </td>
                   <td>
+                    <span class="mobile-label">Jami summa:</span>
                     <strong class="total-amount">{{ (order.total || order.subtotal || 0) | number:'1.0-0' }} so'm</strong>
                   </td>
                   <td>
+                    <span class="mobile-label">Holat:</span>
                     <span class="status-pill" [ngClass]="getStatusClass(order.status)">
                       {{ getStatusLabel(order.status) }}
                     </span>
                   </td>
                   <td>
+                    <span class="mobile-label">To‘lov:</span>
                     <span class="payment-status-pill" [ngClass]="getPaymentStatusClass(order)">
                       {{ getPaymentStatusLabel(order) }}
                     </span>
                   </td>
                   <td class="time-col">
-                    {{ formatTime(order.closedAt || order.openedAt || order.createdAt) }}
+                    <span class="mobile-label">Vaqti:</span>
+                    <span>{{ formatTime(order.closedAt || order.openedAt || order.createdAt) }}</span>
                   </td>
                   <td class="actions-col">
                     <div class="action-buttons">
@@ -225,7 +236,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         class="pos-btn pos-btn--secondary pos-btn--sm"
                         title="Tafsilotlar"
                         (click)="openDetailModal(order)">
-                        👁️ Ko'rish
+                        <app-icon name="eye" [size]="14"></app-icon> Ko'rish
                       </button>
 
                       <!-- Payment Button (Cashier): YONADI faqat hisob yopilganda (CLOSED), bo'lmasa READONLY -->
@@ -236,7 +247,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         [disabled]="order.status !== 'CLOSED'"
                         [title]="order.status === 'CLOSED' ? 'To‘lovni qabul qilish' : 'Hisob hali yopilmagan! Avval hisobni yoping'"
                         (click)="onPaymentButtonClick(order)">
-                        💳 To'lov qilish
+                        <app-icon name="credit-card" [size]="14"></app-icon> To'lov qilish
                       </button>
 
                       <!-- Receipt Button -->
@@ -244,7 +255,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         class="pos-btn pos-btn--secondary pos-btn--sm"
                         title="Chek chiqarish"
                         (click)="openReceiptModal(order)">
-                        🧾 Chek
+                        <app-icon name="receipt" [size]="14"></app-icon> Chek
                       </button>
 
                       <!-- Cancel / Void (Only for open orders) -->
@@ -253,7 +264,7 @@ import { NotificationService } from '../../core/services/notification.service';
                         class="pos-btn pos-btn--danger pos-btn--sm"
                         title="Bekor qilish"
                         (click)="openCancelOrderModal(order, $event)">
-                        ❌
+                        <app-icon name="close" [size]="14"></app-icon>
                       </button>
                     </div>
                   </td>
@@ -265,11 +276,13 @@ import { NotificationService } from '../../core/services/notification.service';
                 <tr *ngFor="let order of pagedOrders" class="order-row order-row--history">
                   <td class="order-num-col">
                     <strong class="history-order-num">#{{ order.orderNumber }}</strong>
+                    <span class="time-mobile-sub">{{ formatTime(order.closedAt || order.paidAt || order.createdAt) }}</span>
                   </td>
                   <td>
+                    <span class="mobile-label">Joy / Stol:</span>
                     <div style="display: flex; flex-direction: column; gap: 3px;">
                       <span class="table-tag">
-                        📍 {{ order.zoneName ? (order.zoneName + ' — ' + (order.tableName || order.tableNumber || 'Stol')) : (order.tableName || order.tableNumber || 'Joy') }}
+                        <app-icon name="map-pin" [size]="14"></app-icon> {{ order.zoneName ? (order.zoneName + ' — ' + (order.tableName || order.tableNumber || 'Stol')) : (order.tableName || order.tableNumber || 'Joy') }}
                       </span>
                       <span *ngIf="getPlacePercentage(order) > 0" class="zone-badge-sm">
                         Foiz: {{ getPlacePercentage(order) }}%
@@ -277,22 +290,26 @@ import { NotificationService } from '../../core/services/notification.service';
                     </div>
                   </td>
                   <td class="time-col">
+                    <span class="mobile-label">Yopilgan:</span>
                     <div style="font-weight: 600; color: var(--text-primary);">
                       {{ formatDateTime(order.closedAt || order.paidAt || order.createdAt) }}
                     </div>
                   </td>
                   <td>
+                    <span class="mobile-label">Mahsulotlar:</span>
                     <span class="items-count-badge">{{ order.items ? order.items.length : 0 }} xil taom</span>
                   </td>
                   <td>
+                    <span class="mobile-label">Jami summa:</span>
                     <strong class="total-amount" style="color: #10b981;">
                       {{ (order.total || order.subtotal || 0) | number:'1.0-0' }} so'm
                     </strong>
                   </td>
                   <td>
+                    <span class="mobile-label">To‘lov turi:</span>
                     <div class="payment-col">
                       <span class="payment-method-badge" [class.badge-card]="order.paymentMethod === 'CARD'" [class.badge-debt]="order.paymentMethod === 'DEBT'" [class.badge-cash]="order.paymentMethod !== 'CARD' && order.paymentMethod !== 'DEBT'">
-                        {{ order.paymentMethod === 'CARD' ? '💳 Karta' : (order.paymentMethod === 'DEBT' ? '📝 Qarz' : '💵 Naqd') }}
+                        {{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz' : 'Naqd') }}
                       </span>
                       <span class="paid-sub-amount" *ngIf="order.paidAmount">
                         {{ order.paidAmount | number:'1.0-0' }} so'm
@@ -300,14 +317,16 @@ import { NotificationService } from '../../core/services/notification.service';
                     </div>
                   </td>
                   <td>
+                    <span class="mobile-label">Xodimlar:</span>
                     <div class="staff-info">
                       <div class="staff-line"><span>Ofitsiant:</span> <strong>{{ order.waiterName || '—' }}</strong></div>
                       <div class="staff-line"><span>Kassir:</span> <strong>{{ order.cashierName || '—' }}</strong></div>
                     </div>
                   </td>
                   <td>
+                    <span class="mobile-label">Holat:</span>
                     <span class="status-pill pill--paid">
-                      💳 TO‘LANGAN
+                      TO‘LANGAN
                     </span>
                   </td>
                   <td class="actions-col">
@@ -316,13 +335,13 @@ import { NotificationService } from '../../core/services/notification.service';
                         class="pos-btn pos-btn--secondary pos-btn--sm"
                         title="Tafsilotlar (Faqat ko'rish)"
                         (click)="openDetailModal(order)">
-                        👁️ Ko'rish
+                        <app-icon name="eye" [size]="14"></app-icon> Ko'rish
                       </button>
                       <button
                         class="pos-btn pos-btn--primary pos-btn--sm"
                         title="Chek chiqarish"
                         (click)="openReceiptModal(order)">
-                        🧾 Chek
+                        <app-icon name="receipt" [size]="14"></app-icon> Chek
                       </button>
                     </div>
                   </td>
@@ -363,8 +382,8 @@ import { NotificationService } from '../../core/services/notification.service';
                   <div class="tfoot-paid-box">
                     <span class="tfoot-paid-val">{{ historyOrdersPaidSum | number:'1.0-0' }} so'm</span>
                     <div class="tfoot-breakdown">
-                      <span *ngIf="historyOrdersCashSum > 0" class="breakdown-cash">💵 {{ historyOrdersCashSum | number:'1.0-0' }}</span>
-                      <span *ngIf="historyOrdersCardSum > 0" class="breakdown-card">💳 {{ historyOrdersCardSum | number:'1.0-0' }}</span>
+                      <span *ngIf="historyOrdersCashSum > 0" class="breakdown-cash"><app-icon name="cash" [size]="12"></app-icon> {{ historyOrdersCashSum | number:'1.0-0' }}</span>
+                      <span *ngIf="historyOrdersCardSum > 0" class="breakdown-card"><app-icon name="credit-card" [size]="12"></app-icon> {{ historyOrdersCardSum | number:'1.0-0' }}</span>
                     </div>
                   </div>
                 </td>
@@ -380,22 +399,22 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="orders-summary-bar" *ngIf="filteredOrders.length > 0">
           <div class="summary-left">
             <div class="summary-stat-chip">
-              <span class="chip-label">{{ activeTab === 'PAID' ? '📁 Yopilgan buyurtmalar:' : '📋 Faol buyurtmalar:' }}</span>
+              <span class="chip-label">{{ activeTab === 'PAID' ? 'Yopilgan buyurtmalar:' : 'Faol buyurtmalar:' }}</span>
               <strong class="chip-value">{{ filteredOrders.length }} ta</strong>
             </div>
 
             <div class="summary-stat-chip" *ngIf="activeTab !== 'PAID'">
-              <span class="chip-label">🍽️ Taomlar soni:</span>
+              <span class="chip-label"><app-icon name="products" [size]="14"></app-icon> Taomlar soni:</span>
               <strong class="chip-value">{{ activeOrdersTotalItemsCount }} xil</strong>
             </div>
 
             <div class="summary-stat-chip" *ngIf="activeTab === 'PAID' && historyOrdersCashSum > 0">
-              <span class="chip-label">💵 Naqd:</span>
+              <span class="chip-label"><app-icon name="cash" [size]="14"></app-icon> Naqd:</span>
               <strong class="chip-value cash-text">{{ historyOrdersCashSum | number:'1.0-0' }} so'm</strong>
             </div>
 
             <div class="summary-stat-chip" *ngIf="activeTab === 'PAID' && historyOrdersCardSum > 0">
-              <span class="chip-label">💳 Karta:</span>
+              <span class="chip-label"><app-icon name="credit-card" [size]="14"></app-icon> Karta:</span>
               <strong class="chip-value card-text">{{ historyOrdersCardSum | number:'1.0-0' }} so'm</strong>
             </div>
           </div>
@@ -437,7 +456,7 @@ import { NotificationService } from '../../core/services/notification.service';
               <h2 class="modal-title">Buyurtma #{{ selectedOrder.orderNumber }}</h2>
               <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
                 <span class="table-tag">
-                  📍 {{ selectedOrder.zoneName ? (selectedOrder.zoneName + ' — ' + (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol')) : (selectedOrder.tableName || selectedOrder.tableNumber || 'Joy') }}
+                  <app-icon name="map-pin" [size]="14"></app-icon> {{ selectedOrder.zoneName ? (selectedOrder.zoneName + ' — ' + (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol')) : (selectedOrder.tableName || selectedOrder.tableNumber || 'Joy') }}
                 </span>
                 <span class="status-pill" [ngClass]="getStatusClass(selectedOrder.status)">
                   {{ getStatusLabel(selectedOrder.status) }}
@@ -446,11 +465,11 @@ import { NotificationService } from '../../core/services/notification.service';
                   {{ getPaymentStatusLabel(selectedOrder) }}
                 </span>
                 <span *ngIf="selectedOrder.status === 'PAID'" class="history-tag">
-                  📁 TARIXIY BUYURTMA (FAQAT KO‘RISH)
+                  <app-icon name="scroll" [size]="16"></app-icon> TARIXIY BUYURTMA (FAQAT KO‘RISH)
                 </span>
               </div>
             </div>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -464,12 +483,12 @@ import { NotificationService } from '../../core/services/notification.service';
               <div *ngIf="selectedOrder.closedAt"><span>Yopilgan vaqti:</span> <strong>{{ formatDateTime(selectedOrder.closedAt) }}</strong></div>
               <div *ngIf="selectedOrder.paidAt"><span>To‘lov vaqti:</span> <strong>{{ formatDateTime(selectedOrder.paidAt) }}</strong></div>
               <div *ngIf="selectedOrder.cashierName"><span>Kassir:</span> <strong>{{ selectedOrder.cashierName }}</strong></div>
-              <div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong>{{ selectedOrder.paymentMethod === 'CARD' ? '💳 Karta' : '💵 Naqd' }}</strong></div>
+              <div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong>{{ selectedOrder.paymentMethod === 'CARD' ? 'Karta' : 'Naqd' }}</strong></div>
               <div *ngIf="selectedOrder.paidAmount"><span>To‘langan summa:</span> <strong style="color: #10b981;">{{ selectedOrder.paidAmount | number:'1.0-0' }} so'm</strong></div>
             </div>
 
             <div *ngIf="selectedOrder.notes" class="order-notes-box">
-              💬 Izoh: {{ selectedOrder.notes }}
+              <app-icon name="file-text" [size]="14"></app-icon> Izoh: {{ selectedOrder.notes }}
             </div>
 
             <h3 style="margin: 16px 0 8px; font-size: 15px; color: var(--text-secondary);">Taomlar ro'yxati:</h3>
@@ -495,7 +514,7 @@ import { NotificationService } from '../../core/services/notification.service';
                     </div>
                     <div *ngIf="item.notes" style="font-size: 11px; color: #fbbf24;">{{ item.notes }}</div>
                     <div *ngIf="item.voided" class="void-audit-details" style="font-size: 11px; color: #f87171; margin-top: 3px;">
-                      ⚠️ Sabab: <em>{{ item.voidReason || 'Mijoz rad etdi' }}</em>
+                      <app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Sabab: <em>{{ item.voidReason || 'Mijoz rad etdi' }}</em>
                       <span *ngIf="item.voidedByName"> • Bekor qilgan: {{ item.voidedByName }}</span>
                       <span *ngIf="item.voidedAt"> • {{ formatTime(item.voidedAt) }}</span>
                     </div>
@@ -519,7 +538,7 @@ import { NotificationService } from '../../core/services/notification.service';
                       style="min-height: 28px; padding: 4px 8px; font-size: 11px;"
                       title="Mahsulotni bekor qilish"
                       (click)="openCancelItemModal(selectedOrder, item, $event)">
-                      🚫 Bekor qilish
+                      <app-icon name="ban" [size]="14"></app-icon> Bekor qilish
                     </button>
                     <span *ngIf="item.voided" style="color: #ef4444; font-size: 11px; font-weight: 600;">Bekor qilingan</span>
                   </td>
@@ -562,13 +581,13 @@ import { NotificationService } from '../../core/services/notification.service';
                 *ngIf="selectedOrder.status !== 'CLOSED' && selectedOrder.status !== 'PAID' && selectedOrder.status !== 'CANCELLED'"
                 class="pos-btn pos-btn--danger"
                 (click)="openCancelOrderModal(selectedOrder, $event)">
-                🚫 Butun buyurtmani bekor qilish
+                <app-icon name="ban" [size]="14"></app-icon> Butun buyurtmani bekor qilish
               </button>
               <span *ngIf="selectedOrder.status === 'PAID'" style="color: var(--text-muted); font-size: 13px;">
-                🔒 Tarixdagi yopilgan buyurtma faqat ko‘rish uchun. Stolga yoki oshxonaga qaytarilmaydi.
+                <app-icon name="lock" [size]="14"></app-icon> Tarixdagi yopilgan buyurtma faqat ko‘rish uchun. Stolga yoki oshxonaga qaytarilmaydi.
               </span>
               <span *ngIf="selectedOrder.status === 'CLOSED' && selectedOrder.paymentStatus !== 'PAID'" style="color: #38bdf8; font-size: 13px; font-weight: 600;">
-                🔒 Hisob yopilgan. Kassadan to'lov qabul qilinishi kutilmoqda.
+                <app-icon name="lock" [size]="14"></app-icon> Hisob yopilgan. Kassadan to'lov qabul qilinishi kutilmoqda.
               </span>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -576,7 +595,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 *ngIf="selectedOrder.status === 'PAID' || selectedOrder.status === 'CLOSED'"
                 class="pos-btn pos-btn--primary"
                 (click)="showDetailModal = false; openReceiptModal(selectedOrder)">
-                🧾 Chekni ko'rish / Chop etish
+                <app-icon name="receipt" [size]="14"></app-icon> Chekni ko'rish / Chop etish
               </button>
               <button class="pos-btn pos-btn--secondary" (click)="closeModals()">Yopish</button>
               <!-- Hisobni yopish (agar hali yopilmagan bo'lsa) -->
@@ -585,7 +604,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 class="pos-btn pos-btn--warning pos-btn--lg"
                 title="Hisobni yopish (Hisob chekini chiqaradi va to'lov tugmasini faollashtiradi)"
                 (click)="closeOrderFromModal(selectedOrder)">
-                🔒 Hisobni yopish
+                <app-icon name="lock" [size]="14"></app-icon> Hisobni yopish
               </button>
               <!-- Payment Button: YONADI faqat hisob yopilganda (CLOSED), bo'lmasa READONLY -->
               <button
@@ -595,7 +614,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 [disabled]="selectedOrder.status !== 'CLOSED'"
                 [title]="selectedOrder.status === 'CLOSED' ? 'To‘lovni qabul qilish' : 'Hisob hali yopilmagan! Avval hisobni yopish lozim'"
                 (click)="onDetailModalPaymentClick(selectedOrder)">
-                💳 TO‘LOV QILISH
+                <app-icon name="credit-card" [size]="14"></app-icon> TO‘LOV QILISH
               </button>
             </div>
           </div>
@@ -609,10 +628,10 @@ import { NotificationService } from '../../core/services/notification.service';
         <div class="modal-card modal-card--payment" (click)="$event.stopPropagation()">
           <div class="modal-header">
             <div>
-              <h2 class="modal-title">💳 To'lovni qabul qilish</h2>
+              <h2 class="modal-title"><app-icon name="credit-card" [size]="20"></app-icon> To'lovni qabul qilish</h2>
               <p class="page-subtitle">Buyurtma #{{ selectedOrder.orderNumber }} — {{ selectedOrder.tableName || 'Stol' }}</p>
             </div>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body">
@@ -629,7 +648,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 class="method-btn"
                 [class.selected]="payMethod === 'CASH'"
                 (click)="setPaymentMethod('CASH')">
-                <span class="icon">💵</span>
+                <span class="icon"><app-icon name="cash" [size]="20"></app-icon></span>
                 <span>Naqd Pul</span>
               </button>
               <button
@@ -637,7 +656,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 class="method-btn"
                 [class.selected]="payMethod === 'CARD'"
                 (click)="setPaymentMethod('CARD')">
-                <span class="icon">💳</span>
+                <span class="icon"><app-icon name="credit-card" [size]="20"></app-icon></span>
                 <span>Bank Kartasi (Humo/Uzcard)</span>
               </button>
               <button
@@ -645,7 +664,7 @@ import { NotificationService } from '../../core/services/notification.service';
                 class="method-btn"
                 [class.selected]="payMethod === 'DEBT'"
                 (click)="setPaymentMethod('DEBT')">
-                <span class="icon">📝</span>
+                <span class="icon"><app-icon name="file-text" [size]="20"></app-icon></span>
                 <span>Qarz (Nasiya)</span>
               </button>
             </div>
@@ -678,12 +697,12 @@ import { NotificationService } from '../../core/services/notification.service';
                 <span class="change-val">{{ (changeAmount >= 0 ? changeAmount : 0) | number:'1.0-0' }} so'm</span>
               </div>
               <div *ngIf="changeAmount < 0" class="error-text">
-                ⚠️ Berilgan summa yetarli emas (kamida {{ (selectedOrder.total || selectedOrder.subtotal) | number:'1.0-0' }} so'm bo'lishi shart)
+                <app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Berilgan summa yetarli emas (kamida {{ (selectedOrder.total || selectedOrder.subtotal) | number:'1.0-0' }} so'm bo'lishi shart)
               </div>
             </div>
 
             <div *ngIf="payMethod === 'CARD'" class="card-info-box">
-              <div class="card-icon">💳</div>
+              <div class="card-icon"><app-icon name="credit-card" [size]="32"></app-icon></div>
               <p>POS Terminal orqali to'lovni tasdiqlang:</p>
               <h3>{{ (selectedOrder.total || selectedOrder.subtotal) | number:'1.0-0' }} so'm</h3>
             </div>
@@ -691,7 +710,7 @@ import { NotificationService } from '../../core/services/notification.service';
             <!-- Debt Input Section -->
             <div *ngIf="payMethod === 'DEBT'" class="debt-section">
               <div class="debt-alert-banner">
-                <span class="alert-icon">⚠️</span>
+                <span class="alert-icon"><app-icon name="alert-triangle" [size]="16" class="icon--warning"></app-icon></span>
                 <div class="alert-text">
                   <strong>Qarzga rasmiylashtirish:</strong> Buyurtma yopilib, stol darhol yangi mijozlar uchun bo‘shatiladi.
                   Ushbu summa kassa apparatidagi naqd/karta tushumiga <u>qo‘shilmaydi</u>.
@@ -760,7 +779,7 @@ import { NotificationService } from '../../core/services/notification.service';
               (click)="submitPayment()"
               [disabled]="processingPayment || (payMethod === 'CASH' && changeAmount < 0) || (payMethod === 'DEBT' && (!debtCustomerName?.trim() || !debtCustomerPhone?.trim()))">
               <span *ngIf="processingPayment" class="spinner-sm"></span>
-              <span>{{ processingPayment ? 'To‘lov amalga oshirilmoqda...' : (payMethod === 'DEBT' ? '📝 Qarzni rasmiylashtirish' : '✅ To‘lovni tasdiqlash') }}</span>
+              <span>{{ processingPayment ? 'To‘lov amalga oshirilmoqda...' : (payMethod === 'DEBT' ? 'Qarzni rasmiylashtirish' : 'To‘lovni tasdiqlash') }}</span>
             </button>
           </div>
         </div>
@@ -772,8 +791,8 @@ import { NotificationService } from '../../core/services/notification.service';
       <div class="modal-overlay" *ngIf="selectedOrder && showReceiptModal">
         <div class="modal-card modal-card--receipt" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">🧾 Chek Chop Etish</h2>
-            <button class="close-btn" (click)="closeModals()">✕</button>
+            <h2 class="modal-title"><app-icon name="receipt" [size]="14"></app-icon> Chek Chop Etish</h2>
+            <button class="close-btn" (click)="closeModals()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body receipt-wrapper">
@@ -851,7 +870,7 @@ import { NotificationService } from '../../core/services/notification.service';
           <div class="modal-footer">
             <button class="pos-btn pos-btn--secondary" (click)="closeModals()">Yopish</button>
             <button class="pos-btn pos-btn--primary" (click)="printReceipt()">
-              🖨️ Chop etish (Print)
+              <app-icon name="printer" [size]="16"></app-icon> Chop etish (Print)
             </button>
           </div>
         </div>
@@ -865,19 +884,19 @@ import { NotificationService } from '../../core/services/notification.service';
           <div class="modal-header modal-header--danger">
             <div>
               <h2 class="modal-title" style="color: #ef4444;">
-                🚫 {{ isFullOrderCancel ? "Buyurtmani to'liq bekor qilish" : "Mahsulotni bekor qilish" }}
+                <app-icon name="ban" [size]="18"></app-icon> {{ isFullOrderCancel ? "Buyurtmani to'liq bekor qilish" : "Mahsulotni bekor qilish" }}
               </h2>
               <p class="page-subtitle">
                 Buyurtma #{{ selectedOrder.orderNumber }} — {{ selectedOrder.tableName || 'Stol' }}
               </p>
             </div>
-            <button class="close-btn" (click)="closeCancelModal()">✕</button>
+            <button class="close-btn" (click)="closeCancelModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body">
             <!-- Warning Notice -->
             <div class="cancel-warning-banner">
-              ⚠️ <strong>DIQQAT:</strong> Bekor qilish ma'lumoti tegishli oshxona paneliga REAL VAQTDA (0 refresh) yetkaziladi va bekor qilish cheki shakllantiriladi.
+              <app-icon name="alert-triangle" [size]="16" class="icon--warning"></app-icon> <strong>DIQQAT:</strong> Bekor qilish ma'lumoti tegishli oshxona paneliga REAL VAQTDA (0 refresh) yetkaziladi va bekor qilish cheki shakllantiriladi.
             </div>
 
             <!-- Single Item Details -->
@@ -910,7 +929,7 @@ import { NotificationService } from '../../core/services/notification.service';
                   <button type="button" class="stepper-btn" (click)="incCancelQty()" [disabled]="cancelQuantity >= cancellingItem.quantity">+</button>
                 </div>
                 <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;" *ngIf="cancelQuantity < cancellingItem.quantity">
-                  ℹ️ Qisman bekor qilish: <strong>{{ cancellingItem.quantity - cancelQuantity }} ta</strong> buyurtmada qoladi, <strong>{{ cancelQuantity }} ta</strong> bekor qilinadi.
+                  <app-icon name="info" [size]="14"></app-icon> Qisman bekor qilish: <strong>{{ cancellingItem.quantity - cancelQuantity }} ta</strong> buyurtmada qoladi, <strong>{{ cancelQuantity }} ta</strong> bekor qilinadi.
                 </div>
               </div>
             </div>
@@ -953,7 +972,7 @@ import { NotificationService } from '../../core/services/notification.service';
               (click)="submitCancellation()"
               [disabled]="processingCancel">
               <span *ngIf="processingCancel" class="spinner-sm"></span>
-              <span>⚠️ {{ isFullOrderCancel ? "HA, BUTUN BUYURTMANI BEKOR QILISH" : "BEKOR QILISHNI TASDIQLASH" }}</span>
+              <span><app-icon name="alert-triangle" [size]="16" class="icon--warning"></app-icon> {{ isFullOrderCancel ? "HA, BUTUN BUYURTMANI BEKOR QILISH" : "BEKOR QILISHNI TASDIQLASH" }}</span>
             </button>
           </div>
         </div>
@@ -965,8 +984,8 @@ import { NotificationService } from '../../core/services/notification.service';
       <div class="modal-overlay" *ngIf="showCancelReceiptModal && activeCancelReceipt">
         <div class="modal-card modal-card--receipt" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">🧾 Bekor qilish cheki</h2>
-            <button class="close-btn" (click)="showCancelReceiptModal = false">✕</button>
+            <h2 class="modal-title"><app-icon name="receipt" [size]="20"></app-icon> Bekor qilish cheki</h2>
+            <button class="close-btn" (click)="showCancelReceiptModal = false"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body" style="background: #f3f4f6; padding: 20px; border-radius: 8px;">
@@ -1042,7 +1061,7 @@ import { NotificationService } from '../../core/services/notification.service';
               Yopish
             </button>
             <button class="pos-btn pos-btn--primary pos-btn--lg" (click)="printReceipt()">
-              🖨️ Chekni chiqarish (Print)
+              <app-icon name="printer" [size]="16"></app-icon> Chekni chiqarish (Print)
             </button>
           </div>
         </div>
@@ -2396,12 +2415,31 @@ import { NotificationService } from '../../core/services/notification.service';
       }
     }
 
+    .mobile-label {
+      display: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .time-mobile-sub {
+      display: none;
+    }
+
     /* ============================================================
      * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
      * ============================================================ */
     @media (max-width: 767px) {
       .orders-page {
         gap: 10px;
+      }
+
+      .mobile-label {
+        display: inline-block;
+      }
+
+      .time-mobile-sub {
+        display: block;
       }
 
       .page-header {
@@ -2493,15 +2531,103 @@ import { NotificationService } from '../../core/services/notification.service';
 
       .table-responsive {
         width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        overflow: visible;
+        background: transparent;
+        border: none;
       }
 
       .pos-table {
-        th, td {
-          padding: 8px 10px;
-          font-size: 12px;
-          white-space: nowrap;
+        display: block;
+        width: 100%;
+
+        thead {
+          display: none;
+        }
+
+        tbody {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          padding: 2px 0;
+        }
+
+        tr.order-row {
+          display: flex;
+          flex-direction: column;
+          background: var(--bg-card);
+          border: 1.5px solid var(--border);
+          border-radius: var(--radius-md, 12px);
+          padding: 14px;
+          gap: 7px;
+          box-shadow: var(--shadow-sm);
+        }
+
+        td {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 0;
+          border-bottom: 1px solid var(--border-light, rgba(255, 255, 255, 0.06));
+          font-size: 13px;
+          white-space: normal;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &.order-num-col {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 4px;
+            font-size: 16px;
+          }
+
+          &.actions-col {
+            border-bottom: none;
+            border-top: 1px dashed var(--border);
+            padding-top: 10px;
+            margin-top: 4px;
+            width: 100%;
+
+            .action-buttons {
+              width: 100%;
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 8px;
+
+              .pos-btn {
+                width: 100%;
+                justify-content: center;
+                min-height: 42px;
+                font-size: 13px;
+              }
+            }
+          }
+        }
+
+        tfoot {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          margin-top: 10px;
+          width: 100%;
+
+          tr {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+          }
+
+          td {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border: none;
+          }
         }
       }
 
@@ -2516,6 +2642,7 @@ import { NotificationService } from '../../core/services/notification.service';
   `]
 })
 export class OrdersListComponent implements OnInit {
+  public i18n = inject(TranslationService);
   orders: Order[] = [];
   historyOrders: Order[] = [];
   tablesList: RestaurantTable[] = [];
@@ -2869,19 +2996,16 @@ export class OrdersListComponent implements OnInit {
   }
 
   getStatusLabel(status: string): string {
-    switch (status?.toUpperCase()) {
-      case 'CLOSED': return '🔒 YOPILGAN';
-      case 'OPEN': return '🟡 OCHIQ';
-      case 'DRAFT': return '⚪ QORALAMA';
-      case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';
-      case 'PREPARING':
-      case 'COOKING': return '🟠 TAYYORLANMOQDA';
-      case 'READY': return '🟢 TAYYOR';
-      case 'PAID': return '💳 TO‘LANGAN';
-      case 'COMPLETED': return '✅ YAKUNLANGAN';
-      case 'CANCELLED': return '🔴 BEKOR QILINDI';
-      default: return status || '—';
-    }
+    const key = (status || '').toUpperCase();
+    if (key === 'CLOSED') return this.i18n.t('orders.closedOrders');
+    if (key === 'OPEN') return this.i18n.t('status.OPEN');
+    if (key === 'DRAFT') return this.i18n.t('status.NEW');
+    if (key === 'SENT_TO_KITCHEN') return this.i18n.t('orders.inKitchen');
+    if (key === 'PREPARING' || key === 'COOKING') return this.i18n.t('status.COOKING');
+    if (key === 'READY') return this.i18n.t('status.READY');
+    if (key === 'PAID' || key === 'COMPLETED') return this.i18n.t('status.PAID');
+    if (key === 'CANCELLED') return this.i18n.t('status.CANCELLED');
+    return this.i18n.t('status.' + key) || status || '—';
   }
 
   getItemKitchenStatusClass(item: any): string {
@@ -2901,18 +3025,18 @@ export class OrdersListComponent implements OnInit {
   }
 
   getItemKitchenStatusLabel(item: any): string {
-    if (item.voided || item.kitchenStatus === 'CANCELLED') return '🔴 BEKOR QILINDI';
+    if (item.voided || item.kitchenStatus === 'CANCELLED') return this.i18n.t('status.CANCELLED');
     const st = (item.kitchenStatus || 'NEW').toUpperCase();
     switch (st) {
-      case 'NEW': return '🟡 YANGI';
-      case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';
-      case 'ACCEPTED': return '🟣 QABUL QILINDI';
+      case 'NEW': return this.i18n.t('status.NEW');
+      case 'SENT_TO_KITCHEN': return this.i18n.t('orders.inKitchen');
+      case 'ACCEPTED': return this.i18n.t('status.ACCEPTED');
       case 'PREPARING':
-      case 'COOKING': return '🟠 TAYYORLANMOQDA';
-      case 'READY': return '🟢 TAYYOR';
+      case 'COOKING': return this.i18n.t('status.COOKING');
+      case 'READY': return this.i18n.t('status.READY');
       case 'DELIVERED':
-      case 'SERVED': return '✅ TARQATILDI';
-      default: return `🟡 ${st}`;
+      case 'SERVED': return this.i18n.t('status.SERVED');
+      default: return this.i18n.t('status.' + st) || st;
     }
   }
 
@@ -3249,9 +3373,9 @@ export class OrdersListComponent implements OnInit {
 
   getPaymentStatusLabel(order: any): string {
     if (order?.paymentStatus === 'PAID' || order?.status === 'PAID') {
-      return '🟢 TO‘LANGAN';
+      return 'TO‘LANGAN';
     }
-    return '🟠 TO‘LANMAGAN';
+    return 'TO‘LANMAGAN';
   }
 
   getPaymentStatusClass(order: any): string {

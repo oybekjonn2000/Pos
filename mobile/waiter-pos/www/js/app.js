@@ -40,6 +40,8 @@ class WaiterPosApp {
     this.cancelQty = 1;
     this.cancelReason = 'Mijoz rad etdi';
 
+    
+    this.lang = localStorage.getItem('pos_language') || 'uz';
     this.init();
   }
 
@@ -52,7 +54,111 @@ class WaiterPosApp {
     }
   }
 
+  
+  t(key) {
+    const dict = {
+      uz: {
+        connectTitle: "POS serverga ulanish",
+        connectSubtitle: "Ofitsiant ilovasini markaziy POS kompyuteriga ulash uchun uning Wi-Fi IP manzilini kiriting",
+        serverIp: "Server IP manzili *",
+        port: "Port *",
+        connectBtn: "Serverga Ulanish",
+        selectWaiter: "Ofitsiantni tanlang",
+        selectWaiterSub: "Tizimda ishlash uchun o‘z ismingizni bosing",
+        enterPin: "PIN kodni kiriting",
+        tables: "Stollar",
+        allZones: "Barchasi",
+        orders: "Buyurtmalar",
+        newOrder: "Yangi buyurtma",
+        sendToKitchen: "Oshxonaga yuborish",
+        cart: "Savatcha",
+        total: "Jami",
+        close: "Yopish",
+        cancel: "Bekor qilish",
+        available: "Bo'sh",
+        occupied: "Band",
+        dishes: "taom",
+        readyDish: "Oshxonada taom tayyor!",
+        loading: "Yuklanmoqda...",
+        success: "Muvaffaqiyatli",
+        error: "Xatolik"
+      },
+      ru: {
+        connectTitle: "Подключение к POS серверу",
+        connectSubtitle: "Введите IP-адрес Wi-Fi для подключения мобильного официанта к основному POS",
+        serverIp: "IP-адрес сервера *",
+        port: "Порт *",
+        connectBtn: "Подключиться к серверу",
+        selectWaiter: "Выберите официанта",
+        selectWaiterSub: "Нажмите на свое имя для начала работы",
+        enterPin: "Введите ПИН-код",
+        tables: "Столы",
+        allZones: "Все",
+        orders: "Заказы",
+        newOrder: "Новый заказ",
+        sendToKitchen: "Отправить на кухню",
+        cart: "Корзина",
+        total: "Итого",
+        close: "Закрыть",
+        cancel: "Отмена",
+        available: "Свободен",
+        occupied: "Занят",
+        dishes: "блюд",
+        readyDish: "Блюдо готово на кухне!",
+        loading: "Загрузка...",
+        success: "Успешно",
+        error: "Ошибка"
+      },
+      en: {
+        connectTitle: "Connect to POS Server",
+        connectSubtitle: "Enter Wi-Fi IP address to connect mobile waiter to main POS computer",
+        serverIp: "Server IP Address *",
+        port: "Port *",
+        connectBtn: "Connect to Server",
+        selectWaiter: "Select Waiter",
+        selectWaiterSub: "Tap your name to start working",
+        enterPin: "Enter PIN code",
+        tables: "Tables",
+        allZones: "All",
+        orders: "Orders",
+        newOrder: "New Order",
+        sendToKitchen: "Send to Kitchen",
+        cart: "Cart",
+        total: "Total",
+        close: "Close",
+        cancel: "Cancel",
+        available: "Available",
+        occupied: "Occupied",
+        dishes: "dishes",
+        readyDish: "Dish ready in kitchen!",
+        loading: "Loading...",
+        success: "Success",
+        error: "Error"
+      }
+    };
+    const cur = dict[this.lang] || dict.uz;
+    return cur[key] || dict.uz[key] || key;
+  }
+
+  changeLanguage(newLang) {
+    this.lang = newLang;
+    localStorage.setItem('pos_language', newLang);
+    this.applyTranslations();
+  }
+
+  applyTranslations() {
+    document.documentElement.lang = this.lang;
+    const select = document.getElementById('mobileLangSelect');
+    if (select) select.value = this.lang;
+
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.getAttribute('data-i18n');
+      if (k) el.textContent = this.t(k);
+    });
+  }
+
   init() {
+    this.applyTranslations();
     // Populate connect inputs with saved values if any
     const ipInput = document.getElementById('inputServerIp');
     const portInput = document.getElementById('inputServerPort');
@@ -110,8 +216,8 @@ class WaiterPosApp {
     const toast = document.createElement('div');
     toast.className = `toast toast--${type}`;
     let icon = 'ℹ️';
-    if (type === 'success') icon = '✅';
-    if (type === 'error') icon = '❌';
+    if (type === 'success') icon = this.svgIcon('check-circle', 18);
+    if (type === 'error') icon = this.svgIcon('x-circle', 18);
 
     toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
     container.appendChild(toast);
@@ -179,7 +285,7 @@ class WaiterPosApp {
       errBanner.style.display = 'flex';
     } finally {
       btn.disabled = false;
-      btnText.textContent = 'Ulanish ➔';
+      btnText.innerHTML = 'Ulanish ' + this.svgIcon('arrow-right', 14);
     }
   }
 
@@ -301,7 +407,7 @@ class WaiterPosApp {
     if (this.waiters.length === 0) {
       listEl.innerHTML = `
         <div class="empty-state" style="grid-column: 1/-1;">
-          <div style="font-size: 36px; margin-bottom: 8px;">👥</div>
+          <div style="font-size: 36px; margin-bottom: 8px;">${this.svgIcon('users', 44)}</div>
           <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">Ofitsiantlar topilmadi</div>
           <div style="font-size: 12px;">Admin panelida Ofitsiant (WAITER) xodimlari qo‘shilganligini tekshiring.</div>
         </div>
@@ -587,7 +693,7 @@ class WaiterPosApp {
 
     let html = `
       <button class="zone-chip ${this.selectedZoneId === null ? 'active' : ''}" onclick="app.selectZone(null)">
-        <span>🌐</span> Barchasi (${this.tables.length})
+        <span>${this.svgIcon('globe', 14)}</span> Barchasi (${this.tables.length})
       </button>
     `;
 
@@ -595,7 +701,7 @@ class WaiterPosApp {
       const count = this.tables.filter(t => t.zoneId === z.id).length;
       html += `
         <button class="zone-chip ${this.selectedZoneId === z.id ? 'active' : ''}" onclick="app.selectZone('${z.id}')">
-          <span>📍</span> ${z.name} (${count})
+          <span>${this.svgIcon('map-pin', 14)}</span> ${z.name} (${count})
         </button>
       `;
     });
@@ -845,7 +951,7 @@ class WaiterPosApp {
         if (isVoided) {
           statusBadge = '<span class="item-status-pill status--cancelled">Bekor qilingan</span>';
         } else if (ks === 'READY') {
-          statusBadge = '<span class="item-status-pill status--ready">Tayyor! 🔔</span>';
+          statusBadge = '<span class="item-status-pill status--ready">Tayyor! ' + this.svgIcon('bell', 13) + '</span>';
         } else if (ks === 'COOKING' || ks === 'PREPARING') {
           statusBadge = '<span class="item-status-pill status--cooking">Pishirilmoqda</span>';
         } else if (ks === 'SENT_TO_KITCHEN' || ks === 'ACCEPTED') {
@@ -863,7 +969,7 @@ class WaiterPosApp {
         row.innerHTML = `
           <div style="flex: 1; min-width: 0;">
             <div class="cart-item-name" style="${isVoided ? 'text-decoration: line-through;' : ''}">
-              🍽️ ${it.productName || it.name}
+              ${this.svgIcon('utensils', 14)} ${it.productName || it.name}
             </div>
             <div class="cart-item-price">
               ${qty} x ${this.formatMoney(unitPrice)} UZS = <strong>${this.formatMoney(itemTotal)} UZS</strong>
@@ -873,10 +979,10 @@ class WaiterPosApp {
           <div class="cart-item-actions">
             ${!isVoided ? `
               <button type="button" class="btn-item-cancel" onclick="app.openCancelItemModal('${it.id}')" title="Bekor qilish">
-                ❌ Bekor
+                ${this.svgIcon('x', 13)} Bekor
               </button>
               <button type="button" class="btn-item-add" onclick="app.quickAddMore('${it.productId || it.id}')" title="Yana 1 ta qo‘shish">
-                ➕
+                
               </button>
             ` : ''}
           </div>
@@ -894,7 +1000,7 @@ class WaiterPosApp {
         row.className = 'cart-item';
         row.innerHTML = `
           <div style="flex: 1; min-width: 0;">
-            <div class="cart-item-name">➕ ${item.name} <span style="font-size: 11px; color: #10b981; font-weight: 700;">(Yangi)</span></div>
+            <div class="cart-item-name">${this.svgIcon('plus', 13)} ${item.name} <span style="font-size: 11px; color: #10b981; font-weight: 700;">(Yangi)</span></div>
             <div class="cart-item-price">${item.quantity} x ${this.formatMoney(item.price)} UZS = <strong>${this.formatMoney(itemTotal)} UZS</strong></div>
           </div>
           <div class="cart-qty-ctrl">
@@ -994,7 +1100,7 @@ class WaiterPosApp {
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>Oshxonaga Yuborish ➔</span>';
+        submitBtn.innerHTML = '<span>Oshxonaga Yuborish ' + this.svgIcon('arrow-right', 14) + '</span>';
       }
     }
   }
@@ -1284,11 +1390,11 @@ class WaiterPosApp {
       card.innerHTML = `
         <div style="flex: 1; min-width: 0;">
           <span class="ready-dish-table-badge">Stol #${item.tableNumber || item.tableName}</span>
-          <div class="ready-dish-name">🍽️ ${item.productName} × ${item.quantity}</div>
+          <div class="ready-dish-name">${this.svgIcon('utensils', 14)} ${item.productName} × ${item.quantity}</div>
           <div class="ready-dish-sub">${item.kitchenName || 'Oshxona'} ${timeStr ? '• ' + timeStr : ''}</div>
         </div>
         <button type="button" class="btn-mark-served" onclick="app.markItemServed('${item.orderId}', '${item.itemId}')">
-          Yetkazildi ✅
+          Yetkazildi ${this.svgIcon('check', 14)}
         </button>
       `;
       listEl.appendChild(card);

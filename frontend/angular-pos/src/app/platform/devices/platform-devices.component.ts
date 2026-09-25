@@ -1,3 +1,4 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,13 +29,13 @@ export interface PlatformDeviceItem {
 @Component({
   selector: 'app-platform-devices',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppIconComponent],
   template: `
     <div class="platform-devices-page fade-in">
       <!-- Header -->
       <div class="page-header">
         <div class="header-left">
-          <div class="header-icon-wrap">💻</div>
+          <div class="header-icon-wrap"><app-icon name="monitor" [size]="24"></app-icon></div>
           <div>
             <h1 class="page-title">Qurilmalar Boshqaruvi (Desktop Terminals)</h1>
             <p class="page-subtitle">Restoranlarga biriktirilgan desktop .exe terminallari, ularning holati va xavfsizlik nazorati</p>
@@ -42,7 +43,7 @@ export interface PlatformDeviceItem {
         </div>
         <div class="header-actions">
           <button class="pos-btn pos-btn--secondary" (click)="loadDevices()" [disabled]="loading()">
-            <span>🔄 Yangilash</span>
+            <app-icon name="refresh" [size]="16"></app-icon> <span>Yangilash</span>
           </button>
         </div>
       </div>
@@ -50,28 +51,28 @@ export interface PlatformDeviceItem {
       <!-- Quick Metrics Summary -->
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-icon metric-icon--purple">💻</div>
+          <div class="metric-icon metric-icon--purple"><app-icon name="monitor" [size]="22"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Jami Terminallar</span>
             <span class="metric-value">{{ devices().length }}</span>
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon metric-icon--green">🟢</div>
+          <div class="metric-icon metric-icon--green"><app-icon name="check-circle" [size]="22"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Online (Hozir faol)</span>
             <span class="metric-value">{{ onlineCount() }}</span>
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon metric-icon--blue">✓</div>
+          <div class="metric-icon metric-icon--blue"><app-icon name="shield" [size]="22"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Biriktirilgan (ACTIVE)</span>
             <span class="metric-value">{{ activeCount() }}</span>
           </div>
         </div>
         <div class="metric-card">
-          <div class="metric-icon metric-icon--amber">🔒</div>
+          <div class="metric-icon metric-icon--amber"><app-icon name="lock" [size]="22"></app-icon></div>
           <div class="metric-content">
             <span class="metric-label">Bloklangan (BLOCKED)</span>
             <span class="metric-value">{{ blockedCount() }}</span>
@@ -83,14 +84,14 @@ export interface PlatformDeviceItem {
       <div class="pos-card toolbar-card">
         <div class="toolbar-left">
           <div class="search-input-wrap">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>
             <input
               type="text"
               class="pos-input search-input"
               placeholder="Restoran nomi, terminal yoki Installation ID bo‘yicha qidirish..."
               [(ngModel)]="searchQuery"
             />
-            <button *ngIf="searchQuery" class="clear-search-btn" (click)="searchQuery = ''">✕</button>
+            <button *ngIf="searchQuery" class="clear-search-btn" (click)="searchQuery = ''"><app-icon name="x" [size]="14"></app-icon></button>
           </div>
 
           <div class="filter-tabs">
@@ -130,7 +131,7 @@ export interface PlatformDeviceItem {
         </div>
 
         <div *ngIf="!loading() && filteredDevices().length === 0" class="state-container empty-state">
-          <div class="empty-icon">💻</div>
+          <div class="empty-icon"><app-icon name="monitor" [size]="48"></app-icon></div>
           <h3>Terminallar topilmadi</h3>
           <p *ngIf="searchQuery || statusFilter !== 'ALL'">Qidiruv filtriga mos terminal topilmadi.</p>
           <p *ngIf="!searchQuery && statusFilter === 'ALL'">Hozircha tizimda birorta desktop .exe o'rnatilmagan.</p>
@@ -205,7 +206,7 @@ export interface PlatformDeviceItem {
                       class="action-btn action-btn--block"
                       (click)="changeStatus(d, 'BLOCKED')"
                       title="Qurilmani vaqtincha bloklash">
-                      🔒 Bloklash
+                      <app-icon name="lock" [size]="14"></app-icon> Bloklash
                     </button>
 
                     <!-- If BLOCKED -> Activate -->
@@ -214,7 +215,7 @@ export interface PlatformDeviceItem {
                       class="action-btn action-btn--activate"
                       (click)="changeStatus(d, 'ACTIVE')"
                       title="Qurilmani qayta faollashtirish">
-                      ⚡ Faollashtirish
+                      <app-icon name="zap" [size]="14"></app-icon> Faollashtirish
                     </button>
 
                     <!-- Revoke -->
@@ -223,7 +224,7 @@ export interface PlatformDeviceItem {
                       class="action-btn action-btn--revoke"
                       (click)="changeStatus(d, 'REVOKED')"
                       title="Biriktiruvni butunlay bekor qilish (Revoke)">
-                      ⛔ Revoke
+                      <app-icon name="slash" [size]="14"></app-icon> Revoke
                     </button>
 
                     <!-- Unbind / Delete -->
@@ -231,7 +232,7 @@ export interface PlatformDeviceItem {
                       class="action-btn action-btn--delete"
                       (click)="confirmUnbind(d)"
                       title="Qurilmani o'chirish (Unbind)">
-                      🗑️
+                      <app-icon name="trash" [size]="14"></app-icon>
                     </button>
                   </div>
                 </td>

@@ -1,3 +1,6 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { LanguageSelectorComponent } from '../../shared/components/language-selector/language-selector.component';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -8,17 +11,20 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, AppIconComponent, TranslatePipe, LanguageSelectorComponent],
   template: `
     <div class="register-page">
       <div class="register-container">
         <!-- Brand Header -->
         <div class="register-header">
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+            <app-language-selector></app-language-selector>
+          </div>
           <div class="brand-badge" routerLink="/">
-            <span class="brand-icon">🍽️</span>
+            <span class="brand-icon"><app-icon name="utensils" [size]="28"></app-icon></span>
             <span class="brand-title">Restaurant<strong>POS</strong> <span class="saas-tag">SaaS</span></span>
           </div>
-          <h1 class="page-title">Restoran ochish va Ro'yxatdan o'tish</h1>
+          <h1 class="page-title">{{ 'auth.register' | translate }}</h1>
           <p class="page-subtitle">
             Super-admin bilan bog'lanish shart emas! O'zingiz ro'yxatdan o'ting va <strong>14 kun bepul</strong> tizimdan to'liq foydalaning.
           </p>
@@ -26,7 +32,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
 
         @if (errorMessage()) {
           <div class="alert alert-error">
-            <span class="alert-icon">⚠️</span>
+            <span class="alert-icon"><app-icon name="alert-triangle" [size]="16"></app-icon></span>
             <span>{{ errorMessage() }}</span>
           </div>
         }
@@ -41,7 +47,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
 
             <div class="form-grid">
               <div class="form-group full-width">
-                <label for="restaurantName">Restoran nomi *</label>
+                <label for="restaurantName">{{ 'auth.restaurantName' | translate }} *</label>
                 <input id="restaurantName" type="text" formControlName="restaurantName" placeholder="Masalan: Rayhon Milliy Taomlar" class="form-control" />
                 @if (form.get('restaurantName')?.touched && form.get('restaurantName')?.invalid) {
                   <span class="field-error">Restoran nomini kiriting</span>
@@ -157,7 +163,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
               <span class="badge-title">Tarif Rejasini Tanlash</span>
             </div>
             <p class="plan-subhint">
-              🎉 Qaysi tarifni tanlashingizdan qat'iy nazar, dastlabki <strong>14 kun bepul</strong> to'liq imkoniyat beriladi!
+              <app-icon name="sparkles" [size]="16"></app-icon> Qaysi tarifni tanlashingizdan qat'iy nazar, dastlabki <strong>14 kun bepul</strong> to'liq imkoniyat beriladi!
             </p>
 
             <div class="plan-selector-grid">
@@ -186,7 +192,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                       }
                     </div>
                     <div class="plan-limits-hint">
-                      ♾️ Cheksiz xodimlar, stollar, mahsulotlar
+                      <app-icon name="check" [size]="14"></app-icon> Cheksiz xodimlar, stollar, mahsulotlar
                     </div>
                   </div>
                 </div>
@@ -201,7 +207,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                 <span class="spinner-sm"></span>
                 <span>Restoran yaratilmoqda...</span>
               } @else {
-                <span>🚀 Restoranni yaratish va POS'dan foydalanish</span>
+                <span><app-icon name="zap" [size]="16"></app-icon> Restoranni yaratish va POS'dan foydalanish</span>
               }
             </button>
 

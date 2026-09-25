@@ -7,32 +7,34 @@ import { KitchenService, KitchenStation } from '../core/services/kitchen.service
 import { NotificationService } from '../core/services/notification.service';
 import { ExcelService } from '../core/services/excel.service';
 import { ExcelImportModalComponent } from '../shared/components/excel-import-modal/excel-import-modal.component';
+import { AppIconComponent } from '../shared/components/icon/icon.component';
+import { TranslatePipe } from '../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent, AppIconComponent, TranslatePipe],
   template: `
     <div class="categories-page fade-in">
       <!-- Header -->
       <div class="page-header">
         <div>
-          <h1 class="page-title">🏷️ Bo'limlar & Kategoriyalar</h1>
-          <p class="page-subtitle">Ierarxiya: <strong>Oshxona ➔ Kategoriya ➔ Mahsulot</strong>. Har bir kategoriya qat'iy bitta oshxonaga tegishli.</p>
+          <h1 class="page-title"><app-icon name="tag" [size]="24"></app-icon> {{ 'categories.title' | translate }}</h1>
+          <p class="page-subtitle">Ierarxiya: <strong>Oshxona → Kategoriya → Mahsulot</strong>. Har bir kategoriya qat'iy bitta oshxonaga tegishli.</p>
         </div>
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" title="Bo'sh Excel shablonini yuklab olish">
-            <span>{{ downloadingTemplate ? 'Yuklanmoqda...' : '📥 Shablon' }}</span>
+            <span><app-icon name="download" [size]="14"></app-icon> {{ downloadingTemplate ? 'Yuklanmoqda...' : 'Shablon' }}</span>
           </button>
           <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" title="Kategoriyalarni Excel faylga eksport qilish">
-            <span>{{ exportingExcel ? 'Eksport...' : '📤 Export' }}</span>
+            <span><app-icon name="upload" [size]="14"></app-icon> {{ exportingExcel ? 'Eksport...' : 'Export' }}</span>
           </button>
           <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" title="Excel fayldan kategoriyalarni yuklash">
-            <span>📥 Import</span>
+            <span><app-icon name="download" [size]="14"></app-icon> Import</span>
           </button>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
-            <span>➕ Yangi Kategoriya Qo'shish</span>
+            <span><app-icon name="plus" [size]="14"></app-icon> {{ 'categories.addCategory' | translate }}</span>
           </button>
         </div>
       </div>
@@ -42,7 +44,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
         <div class="search-box" style="flex: 1; max-width: 320px;">
           <input
             type="text"
-            placeholder="Kategoriyani qidirish..."
+            [placeholder]="'common.search' | translate"
             [(ngModel)]="searchQuery"
             (ngModelChange)="pageIndex = 0"
             class="pos-input"
@@ -57,7 +59,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
             [class.active]="viewMode === 'list'" 
             (click)="viewMode = 'list'"
             title="Ro'yxat ko'rinishi">
-            📋 Ro'yxat
+            <app-icon name="orders" [size]="14"></app-icon> Ro'yxat
           </button>
           <button 
             type="button" 
@@ -76,7 +78,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
           class="kitchen-tab-btn"
           [class.active]="selectedKitchenFilter === null"
           (click)="selectedKitchenFilter = null; pageIndex = 0">
-          <span>🍽️ Barcha Oshxonalar</span>
+          <span><app-icon name="restaurant" [size]="16"></app-icon> Barcha Oshxonalar</span>
           <span class="count-badge">{{ categories.length }}</span>
         </button>
         <button
@@ -97,7 +99,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
         </div>
 
         <div *ngIf="!loading && filteredCategories.length === 0" class="empty-state">
-          <div class="empty-icon">📁</div>
+          <div class="empty-icon"><app-icon name="folder" [size]="48"></app-icon></div>
           <h3>Kategoriyalar mavjud emas</h3>
           <p>Ushbu filtr bo'yicha kategoriya topilmadi.</p>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()" style="margin-top: 12px;">
@@ -137,7 +139,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
                 </td>
                 <td>
                   <span class="product-count-tag">
-                    📦 {{ cat.productCount || 0 }} ta mahsulot
+                    <app-icon name="products" [size]="14"></app-icon> {{ cat.productCount || 0 }} ta mahsulot
                   </span>
                 </td>
                 <td>
@@ -148,10 +150,10 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
                 <td style="text-align: right;">
                   <div class="table-actions">
                     <button class="pos-btn pos-btn--secondary pos-btn--sm" title="Tahrirlash" (click)="openEditModal(cat)">
-                      ✏️ Tahrirlash
+                      <app-icon name="edit" [size]="14"></app-icon> Tahrirlash
                     </button>
                     <button class="pos-btn pos-btn--danger pos-btn--sm" title="O'chirish" (click)="deleteCategory(cat)">
-                      🗑️ O'chirish
+                      <app-icon name="trash" [size]="14"></app-icon> O'chirish
                     </button>
                   </div>
                 </td>
@@ -176,7 +178,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
             </div>
 
             <div class="card-meta">
-              <span class="meta-item">📦 {{ cat.productCount || 0 }} ta mahsulot</span>
+              <span class="meta-item"><app-icon name="products" [size]="14"></app-icon> {{ cat.productCount || 0 }} ta mahsulot</span>
               <span class="status-indicator" [class.active]="cat.active !== false">
                 {{ cat.active !== false ? '● Faol' : '○ Nofaol' }}
               </span>
@@ -184,10 +186,10 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
 
             <div class="card-actions">
               <button class="pos-btn pos-btn--secondary pos-btn--sm" (click)="openEditModal(cat)">
-                ✏️ Tahrirlash
+                <app-icon name="edit" [size]="14"></app-icon> Tahrirlash
               </button>
               <button class="pos-btn pos-btn--danger pos-btn--sm" (click)="deleteCategory(cat)">
-                🗑️ O'chirish
+                <app-icon name="trash" [size]="14"></app-icon> O'chirish
               </button>
             </div>
           </div>
@@ -210,8 +212,8 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
       <div class="modal-overlay" *ngIf="showModal">
         <div class="modal-card" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h2 class="modal-title">{{ isEditing ? '✏️ Kategoriyani tahrirlash' : '➕ Yangi Kategoriya' }}</h2>
-            <button class="close-btn" (click)="closeModal()">✕</button>
+            <h2 class="modal-title"><app-icon [name]="isEditing ? 'edit' : 'plus'" [size]="20"></app-icon> {{ isEditing ? 'Kategoriyani tahrirlash' : 'Yangi Kategoriya' }}</h2>
+            <button class="close-btn" (click)="closeModal()"><app-icon name="close" [size]="16"></app-icon></button>
           </div>
 
           <div class="modal-body form-body">
@@ -232,7 +234,7 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
                 </option>
               </select>
               <span class="error-hint" *ngIf="kitchenError">
-                ⚠️ Oshxona tanlanishi kerak!
+                <app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Oshxona tanlanishi kerak!
               </span>
             </div>
 
@@ -778,6 +780,117 @@ import { ExcelImportModalComponent } from '../shared/components/excel-import-mod
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 767px) {
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        > div:last-child {
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 8px !important;
+          width: 100%;
+
+          .pos-btn {
+            width: 100%;
+            min-height: 44px;
+            justify-content: center;
+            font-size: 12.5px;
+            padding: 8px 10px;
+          }
+        }
+      }
+
+      .filter-strip {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px !important;
+
+        .search-box {
+          max-width: 100% !important;
+          width: 100%;
+        }
+
+        .view-toggle-group {
+          width: 100%;
+          display: flex;
+
+          .view-toggle-btn {
+            flex: 1;
+            justify-content: center;
+            min-height: 38px;
+          }
+        }
+      }
+
+      .kitchen-filter-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        width: 100%;
+
+        &::-webkit-scrollbar {
+          height: 3px;
+        }
+
+        .kitchen-tab-btn {
+          white-space: nowrap;
+          flex-shrink: 0;
+          min-height: 40px;
+          font-size: 12.5px;
+        }
+      }
+
+      .categories-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+
+      .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .pos-table {
+        th, td {
+          padding: 8px 10px;
+          white-space: nowrap;
+          font-size: 12px;
+        }
+      }
+
+      .modal-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 92vh !important;
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        gap: 8px;
+
+        .pos-btn {
+          width: 100%;
+          min-height: 44px;
+          justify-content: center;
+        }
+      }
+    }
+
+    @media (max-width: 359px) {
+      .page-header > div:last-child {
+        grid-template-columns: 1fr !important;
+      }
+    }
   `]
 })
 export class CategoriesComponent implements OnInit {
@@ -936,14 +1049,14 @@ export class CategoriesComponent implements OnInit {
   }
 
   getKitchenEmoji(code?: string): string {
-    if (!code) return '👨‍🍳';
+    if (!code) return 'chef';
     switch (code.toUpperCase()) {
-      case 'PALOV': case 'PALOVCHI': return '🥘';
-      case 'SOMSA': case 'SOMSAPAZ': return '🥟';
-      case 'BAR': return '🍹';
-      case 'PIZZA': case 'PITSA': return '🍕';
-      case 'MAIN': case 'MAIN_KITCHEN': return '👨‍🍳';
-      default: return '🍳';
+      case 'PALOV': case 'PALOVCHI': return 'cooking-pot';
+      case 'SOMSA': case 'SOMSAPAZ': return 'products';
+      case 'BAR': return 'products';
+      case 'PIZZA': case 'PITSA': return 'products';
+      case 'MAIN': case 'MAIN_KITCHEN': return 'chef';
+      default: return 'chef';
     }
   }
 

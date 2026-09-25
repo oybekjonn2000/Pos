@@ -4,20 +4,31 @@ import { AuthService } from '../../core/services/auth.service';
 import { ConnectionService } from '../../core/services/connection.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { LanguageSelectorComponent } from '../../shared/components/language-selector/language-selector.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, AppIconComponent, LanguageSelectorComponent, TranslatePipe],
   template: `
     <header class="topbar">
       <div class="topbar__left">
+        @if (!auth.isWaiter()) {
+          <button type="button" class="topbar__hamburger" (click)="toggleMobileMenu.emit()" title="Menyuni ochish/yopish" aria-label="Menyu">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+          </button>
+        }
         <div class="topbar__title-group">
           <div class="topbar__title">
             {{ pageTitle }}
           </div>
           <div class="tenant-badge" [class.tenant-badge--super]="auth.isSuperAdmin()">
-            <span class="tenant-icon">{{ auth.isSuperAdmin() ? '🌐' : '🏢' }}</span>
+            <span class="tenant-icon"><app-icon [name]="auth.isSuperAdmin() ? 'globe' : 'building'" [size]="14"></app-icon></span>
             <span class="tenant-name">{{ auth.restaurantName() }}</span>
             @if (auth.restaurantCode()) {
               <span class="tenant-code">{{ auth.restaurantCode() }}</span>
@@ -47,25 +58,28 @@ import { ThemeService } from '../../core/services/theme.service';
           }
         </div>
 
+        <!-- Language Selector -->
+        <app-language-selector></app-language-selector>
+
         <!-- Theme Switcher (Light / Dark) -->
         <div class="theme-switcher"
              [title]="theme.isDark() ? 'Kunduzgi rejimga o‘tish (Light)' : 'Tungi rejimga o‘tish (Dark)'"
              (click)="theme.toggleTheme()">
           <button type="button" class="theme-btn" [class.active]="!theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('light')" title="Light Theme">
-            <span class="theme-icon">☀</span>
+            <span class="theme-icon"><app-icon name="sun" [size]="15"></app-icon></span>
             <span class="theme-label">Light</span>
           </button>
           <button type="button" class="theme-btn" [class.active]="theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('dark')" title="Dark Theme">
-            <span class="theme-icon">🌙</span>
+            <span class="theme-icon"><app-icon name="moon" [size]="15"></app-icon></span>
             <span class="theme-label">Dark</span>
           </button>
         </div>
 
         <!-- User menu -->
-        <div class="topbar__user" (click)="logout()" title="Tizimdan chiqish">
+        <div class="topbar__user" (click)="logout()" [title]="'auth.logout' | translate">
           <span class="user-fullname">{{ auth.user()?.fullName }}</span>
-          <span class="user-logout-hint" style="color: var(--text-muted)">⟵ Chiqish</span>
-          <span class="user-logout-icon">🚪</span>
+          <span class="user-logout-hint" style="color: var(--text-muted)">⟵ {{ 'auth.logout' | translate }}</span>
+          <span class="user-logout-icon"><app-icon name="logout" [size]="16"></app-icon></span>
         </div>
       </div>
     </header>
@@ -245,17 +259,61 @@ import { ThemeService } from '../../core/services/theme.service';
       }
     }
 
-    /* Mobile overrides */
+    .topbar__hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      cursor: pointer;
+      padding: 0;
+      flex-shrink: 0;
+
+      .hamburger-bar {
+        width: 18px;
+        height: 2px;
+        background: var(--text-primary);
+        border-radius: 2px;
+        transition: all 0.2s ease;
+      }
+
+      &:active {
+        background: var(--bg-hover);
+        transform: scale(0.96);
+      }
+    }
+
+    /* Tablet (768px - 1023px) */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .topbar {
+        left: 68px !important;
+        padding: 0 14px;
+      }
+      .topbar__hamburger {
+        display: flex;
+      }
+    }
+
+    /* Mobile overrides (< 768px) */
     @media (max-width: 767px) {
       .topbar {
         left: 0 !important;
         padding: 0 10px;
         gap: 8px;
-        height: 50px;
+        height: 52px;
+
+        &__hamburger {
+          display: flex;
+        }
 
         &__title {
-          font-size: 14px;
-          max-width: 140px;
+          font-size: 13.5px;
+          max-width: 130px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -267,6 +325,14 @@ import { ThemeService } from '../../core/services/theme.service';
 
         &__time {
           display: none;
+        }
+
+        .tenant-badge {
+          padding: 2px 6px;
+          font-size: 11px;
+          .tenant-name {
+            max-width: 100px;
+          }
         }
 
         .connection-indicator {
@@ -297,11 +363,11 @@ import { ThemeService } from '../../core/services/theme.service';
           min-height: 36px;
 
           .user-fullname {
-            max-width: 70px;
+            max-width: 65px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            font-size: 12px;
+            font-size: 11.5px;
           }
 
           .user-logout-hint {
@@ -318,6 +384,7 @@ import { ThemeService } from '../../core/services/theme.service';
 })
 export class TopbarComponent {
   @Output() openLanSettings = new EventEmitter<void>();
+  @Output() toggleMobileMenu = new EventEmitter<void>();
 
   pageTitle = 'Restaurant POS';
   currentTime = new Date();
@@ -325,7 +392,7 @@ export class TopbarComponent {
   lan = inject(LanStatusService);
   theme = inject(ThemeService);
 
-  constructor(
+  constructor(public i18n: TranslationService, 
     public auth: AuthService,
     public connection: ConnectionService
   ) {
@@ -336,7 +403,7 @@ export class TopbarComponent {
     if (this.lan.connectionState() === 'ONLINE') {
       return 'LAN Online';
     } else if (this.lan.connectionState() === 'RECONNECTING') {
-      return 'Qayta ulanmoqda...';
+      return this.i18n.t('common.loading');
     } else {
       return 'LAN Offline';
     }

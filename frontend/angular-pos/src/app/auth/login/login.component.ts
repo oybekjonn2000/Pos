@@ -1,3 +1,6 @@
+import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
+import { LanguageSelectorComponent } from '../../shared/components/language-selector/language-selector.component';
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
@@ -23,7 +26,7 @@ interface QuickAccount {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, LanServerConfigModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, LanServerConfigModalComponent, AppIconComponent, TranslatePipe, LanguageSelectorComponent],
   template: `
     <div class="login-page">
       <!-- Top Navigation Bar (Back to Home & Theme Switcher - Web SaaS Only) -->
@@ -31,18 +34,21 @@ interface QuickAccount {
         <div class="login-top-nav">
           <a routerLink="/" class="back-home-btn" title="Bosh sahifaga qaytish">
             <span class="back-arrow">←</span>
-            <span class="back-text">Bosh sahifa</span>
+            <span class="back-text">{{ 'common.back' | translate }}</span>
           </a>
 
-          <div class="theme-switcher"
-               [title]="theme.isDark() ? 'Kunduzgi rejimga o‘tish (Light)' : 'Tungi rejimga o‘tish (Dark)'"
-               (click)="theme.toggleTheme()">
-            <button type="button" class="theme-btn" [class.active]="!theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('light')" title="Light Theme">
-              <span>☀</span> Light
-            </button>
-            <button type="button" class="theme-btn" [class.active]="theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('dark')" title="Dark Theme">
-              <span>🌙</span> Dark
-            </button>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <app-language-selector></app-language-selector>
+            <div class="theme-switcher"
+                 [title]="theme.isDark() ? 'Kunduzgi rejimga o‘tish (Light)' : 'Tungi rejimga o‘tish (Dark)'"
+                 (click)="theme.toggleTheme()">
+              <button type="button" class="theme-btn" [class.active]="!theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('light')" title="Light Theme">
+                <app-icon name="sun" [size]="14"></app-icon> Light
+              </button>
+              <button type="button" class="theme-btn" [class.active]="theme.isDark()" (click)="$event.stopPropagation(); theme.setTheme('dark')" title="Dark Theme">
+                <app-icon name="moon" [size]="14"></app-icon> Dark
+              </button>
+            </div>
           </div>
         </div>
       }
@@ -61,7 +67,7 @@ interface QuickAccount {
           <!-- Terminal & Restaurant Brand Header -->
           <div class="terminal-brand-header">
             <div class="terminal-brand-left">
-              <div class="terminal-brand-logo">🍽️</div>
+              <div class="terminal-brand-logo"><app-icon name="utensils" [size]="28"></app-icon></div>
               <div class="terminal-brand-info">
                 <div class="terminal-rest-name">{{ deviceService.boundRestaurant()?.name }}</div>
                 <div class="terminal-rest-code">KOD: {{ deviceService.boundRestaurant()?.code }}</div>
@@ -69,32 +75,33 @@ interface QuickAccount {
             </div>
 
             <div class="terminal-brand-right">
+              <app-language-selector></app-language-selector>
               <div class="lan-pill" (click)="showServerModal.set(true)" title="Server holati">
                 <span class="status-indicator-dot" [class.online]="lan.connectionState() === 'ONLINE'" [class.offline]="lan.connectionState() !== 'ONLINE'"></span>
                 <span class="lan-text">{{ lan.connectionState() === 'ONLINE' ? 'LAN Online' : 'Server Offline' }}</span>
-                <span class="lan-cog">⚙️</span>
+                <span class="lan-cog"><app-icon name="settings" [size]="16"></app-icon></span>
               </div>
 
               <div class="theme-switcher-mini" (click)="theme.toggleTheme()" title="Mavzuni almashtirish">
-                <span>{{ theme.isDark() ? '🌙' : '☀️' }}</span>
+                <app-icon [name]="theme.isDark() ? 'moon' : 'sun'" [size]="16"></app-icon>
               </div>
 
               <button type="button" class="btn-terminal-unbind" (click)="onUnbindTerminal()" title="Restorandan ajratish va boshqa hisobga ulash">
-                <span>🔌</span> Ajratish
+                <app-icon name="link" [size]="14"></app-icon> Ajratish
               </button>
             </div>
           </div>
 
           <!-- Section Title & Subtitle -->
           <div class="staff-heading-wrap">
-            <h1 class="staff-title">👨‍🍳 {{ lan.isClientMode() ? 'Ofitsiant yoki Oshpazni tanlang' : 'Xodimni tanlang' }}</h1>
+            <h1 class="staff-title"><app-icon name="chef" [size]="22"></app-icon> {{ lan.isClientMode() ? 'Ofitsiant yoki Oshpazni tanlang' : 'Xodimni tanlang' }}</h1>
             <p class="staff-subtitle">{{ lan.isClientMode() ? 'Terminalda ishlash uchun o‘z hisobingizni tanlang va PIN-kodni kiriting' : 'POS terminalida ishlashni boshlash uchun o‘z hisobingizni bosing' }}</p>
           </div>
 
           <!-- Search and Filter Bar -->
           <div class="staff-toolbar">
             <div class="staff-search-box">
-              <span class="staff-search-icon">🔍</span>
+              <span class="staff-search-icon"><app-icon name="search" [size]="16"></app-icon></span>
               <input
                 type="text"
                 class="pos-input staff-search-input"
@@ -103,7 +110,7 @@ interface QuickAccount {
                 (ngModelChange)="employeeSearchQuery.set($event)"
               />
               @if (employeeSearchQuery()) {
-                <button class="clear-search-btn" (click)="employeeSearchQuery.set('')">✕</button>
+                <button class="clear-search-btn" (click)="employeeSearchQuery.set('')"><app-icon name="x" [size]="14"></app-icon></button>
               }
             </div>
 
@@ -112,19 +119,19 @@ interface QuickAccount {
                 {{ lan.isClientMode() ? 'Barchasi (Ofitsiant & Oshpaz)' : 'Barchasi' }} ({{ clientAllowedEmployees().length }})
               </button>
               <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'WAITER'" (click)="employeeRoleFilter.set('WAITER')">
-                🤵 Ofitsiantlar
+                <app-icon name="users" [size]="14"></app-icon> Ofitsiantlar
               </button>
               @if (!lan.isClientMode()) {
                 <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'CASHIER'" (click)="employeeRoleFilter.set('CASHIER')">
-                  💵 Kassirlar
+                  <app-icon name="credit-card" [size]="14"></app-icon> Kassirlar
                 </button>
               }
               <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'KITCHEN'" (click)="employeeRoleFilter.set('KITCHEN')">
-                👨‍🍳 Oshpazlar
+                <app-icon name="chef" [size]="14"></app-icon> Oshpazlar
               </button>
               @if (!lan.isClientMode()) {
                 <button class="role-filter-tab" [class.active]="employeeRoleFilter() === 'ADMIN'" (click)="employeeRoleFilter.set('ADMIN')">
-                  👑 Adminlar
+                  <app-icon name="shield" [size]="14"></app-icon> Adminlar
                 </button>
               }
             </div>
@@ -148,19 +155,19 @@ interface QuickAccount {
                   @if (emp.username) {
                     <span class="staff-card-username">&#64;{{ emp.username }}</span>
                   } @else {
-                    <span class="staff-card-pin-only">🔢 PIN orqali</span>
+                    <span class="staff-card-pin-only"><app-icon name="hash" [size]="12"></app-icon> PIN orqali</span>
                   }
                 </div>
 
                 <div class="staff-card-action">
-                  <span class="tap-hint">Tanlash ➔</span>
+                  <span class="tap-hint">Tanlash <app-icon name="arrow-right" [size]="12"></app-icon></span>
                 </div>
               </div>
             }
 
             @if (filteredEmployees().length === 0) {
               <div class="staff-empty-state">
-                <div class="empty-icon">👥</div>
+                <div class="empty-icon"><app-icon name="users" [size]="48"></app-icon></div>
                 <h3>Xodimlar topilmadi</h3>
                 <p>Qidiruv mezonlariga mos xodim topilmadi.</p>
               </div>
@@ -174,7 +181,7 @@ interface QuickAccount {
         @if (showEmployeePasswordModal() && deviceService.selectedEmployee(); as selectedEmp) {
           <div class="pos-modal-backdrop">
             <div class="employee-pin-modal" (click)="$event.stopPropagation()">
-              <button class="pin-modal-close" (click)="closeEmployeePasswordModal()">✕</button>
+              <button class="pin-modal-close" (click)="closeEmployeePasswordModal()"><app-icon name="x" [size]="18"></app-icon></button>
 
               <div class="pin-modal-header">
                 <div class="modal-emp-avatar {{ getRoleAvatarClass(selectedEmp.role) }}">
@@ -195,14 +202,14 @@ interface QuickAccount {
                     class="admin-auth-tab"
                     [class.active]="adminAuthMode() === 'PIN'"
                     (click)="adminAuthMode.set('PIN')">
-                    🔢 PIN orqali
+                    <app-icon name="hash" [size]="14"></app-icon> PIN orqali
                   </button>
                   <button
                     type="button"
                     class="admin-auth-tab"
                     [class.active]="adminAuthMode() === 'PASSWORD'"
                     (click)="adminAuthMode.set('PASSWORD')">
-                    🔑 Login va Parol
+                    <app-icon name="key" [size]="14"></app-icon> Login va Parol
                   </button>
                 </div>
               }
@@ -210,7 +217,7 @@ interface QuickAccount {
               <!-- Error Alert -->
               @if (employeeLoginError()) {
                 <div class="pin-error-alert">
-                  <span class="pin-error-icon">⚠️</span>
+                  <span class="pin-error-icon"><app-icon name="alert-triangle" [size]="16"></app-icon></span>
                   <span>{{ employeeLoginError() }}</span>
                 </div>
               }
@@ -288,7 +295,7 @@ interface QuickAccount {
                   class="pos-btn pos-btn--primary pos-btn--lg flex-1"
                   (click)="onEmployeeLoginSubmit()"
                   [disabled]="employeeLoginLoading() || (adminAuthMode() === 'PIN' || !isEmpAdmin(selectedEmp) ? !employeePasswordInput() : !adminPasswordInput())">
-                  <span>{{ employeeLoginLoading() ? 'Kirilmoqda...' : 'Kirish ➔' }}</span>
+                  <span *ngIf="employeeLoginLoading()">Kirilmoqda...</span><span *ngIf="!employeeLoginLoading()">Kirish <app-icon name="arrow-right" [size]="14"></app-icon></span>
                 </button>
               </div>
             </div>
@@ -302,7 +309,7 @@ interface QuickAccount {
       @else if (lan.isDesktop() && !deviceService.isBound()) {
         <div class="login-container fade-in">
           <div class="login-header">
-            <div class="login-logo">🍽️</div>
+            <div class="login-logo"><app-icon name="utensils" [size]="28"></app-icon></div>
             <h1 class="login-title">Restoran hisobiga kirish</h1>
             <p class="login-subtitle">Ushbu POS terminalini restoranga biriktirish uchun asosiy administrator login va parolini kiriting</p>
           </div>
@@ -314,12 +321,12 @@ interface QuickAccount {
                 <span class="status-indicator-dot" [class.online]="lan.connectionState() === 'ONLINE'" [class.offline]="lan.connectionState() !== 'ONLINE'"></span>
                 <span class="server-text">Server: <strong>{{ lan.currentServerUrl() }}</strong></span>
               </div>
-              <button type="button" class="btn-server-cog">⚙️ IP Sozlash</button>
+              <button type="button" class="btn-server-cog"><app-icon name="settings" [size]="14"></app-icon> IP Sozlash</button>
             </div>
 
             @if (desktopActivateError()) {
               <div class="login-error">
-                <div class="login-error-text">❌ {{ desktopActivateError() }}</div>
+                <div class="login-error-text"><app-icon name="alert-triangle" [size]="14"></app-icon> {{ desktopActivateError() }}</div>
               </div>
             }
 
@@ -355,14 +362,14 @@ interface QuickAccount {
                 class="pos-btn pos-btn--primary pos-btn--lg w-full"
                 [disabled]="desktopActivateLoading() || !desktopActivateUsername() || !desktopActivatePassword()"
               >
-                <span>{{ desktopActivateLoading() ? 'Biriktirilmoqda...' : '⚡ Restoranga Biriktirish va Kirish' }}</span>
+                <span *ngIf="desktopActivateLoading()">Biriktirilmoqda...</span><span *ngIf="!desktopActivateLoading()"><app-icon name="zap" [size]="14"></app-icon> Restoranga Biriktirish va Kirish</span>
               </button>
             </form>
           </div>
 
           <div class="login-footer">
             <div class="offline-badge">
-              🔒 JOWI POS Architecture • Device Terminal Binding
+              <app-icon name="lock" [size]="12"></app-icon> JOWI POS Architecture • Device Terminal Binding
             </div>
           </div>
         </div>
@@ -375,15 +382,15 @@ interface QuickAccount {
         <div class="login-container fade-in">
           <!-- Header -->
           <div class="login-header">
-            <div class="login-logo" routerLink="/" style="cursor: pointer;" title="Bosh sahifaga o'tish">🍽️</div>
+            <div class="login-logo" routerLink="/" style="cursor: pointer;" title="Bosh sahifaga o'tish"><app-icon name="utensils" [size]="28"></app-icon></div>
             <h1 class="login-title" routerLink="/" style="cursor: pointer;" title="Bosh sahifaga o'tish">RestaurantPOS</h1>
             <p class="login-subtitle">Professional Restaurant Management SaaS</p>
           </div>
 
           <!-- Login Card -->
           <div class="login-card">
-            <h2 class="login-card__title">Welcome back</h2>
-            <p class="login-card__desc">Sign in to continue to your POS</p>
+            <h2 class="login-card__title">{{ 'auth.login' | translate }}</h2>
+            <p class="login-card__desc">{{ 'auth.loginSubtitle' | translate }}</p>
 
             <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
               <div class="form-group">
@@ -402,7 +409,7 @@ interface QuickAccount {
               </div>
 
               <div class="form-group">
-                <label class="form-label">Login, email yoki telefon</label>
+                <label class="form-label">{{ 'auth.username' | translate }}</label>
                 <input
                   type="text"
                   class="pos-input pos-input--lg"
@@ -411,13 +418,13 @@ interface QuickAccount {
                   autocomplete="username"
                 />
                 @if (loginForm.get('username')?.invalid && loginForm.get('username')?.touched) {
-                  <span class="form-error">Login kiritilishi shart</span>
+                  <span class="form-error">{{ 'validation.required' | translate }}</span>
                 }
               </div>
 
               <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <label class="form-label">Parol</label>
+                  <label class="form-label">{{ 'auth.password' | translate }}</label>
                   <button type="button" class="btn-forgot-password" (click)="onForgotPassword()">
                     Parolni unutdingizmi?
                   </button>
@@ -436,17 +443,17 @@ interface QuickAccount {
                     (click)="showPassword.set(!showPassword())"
                     [title]="showPassword() ? 'Parolni yashirish' : 'Parolni ko‘rsatish'"
                   >
-                    {{ showPassword() ? '👁️' : '👁️‍🗨️' }}
+                    <app-icon [name]="showPassword() ? 'eye' : 'eye-off'" [size]="16"></app-icon>
                   </button>
                 </div>
                 @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
-                  <span class="form-error">Parol kiritilishi shart</span>
+                  <span class="form-error">{{ 'validation.required' | translate }}</span>
                 }
               </div>
 
               @if (isBlocked()) {
                 <div class="login-error login-error--blocked">
-                  <div class="blocked-icon">🔒</div>
+                  <div class="blocked-icon"><app-icon name="lock" [size]="32"></app-icon></div>
                   <div class="blocked-content">
                     <div class="blocked-title">Restoran bloklangan</div>
                     <div class="blocked-desc">Ushbu restoran faoliyati vaqtincha to'xtatilgan. Tizim administratoriga murojaat qiling.</div>
@@ -454,7 +461,7 @@ interface QuickAccount {
                 </div>
               } @else if (errorMessage()) {
                 <div class="login-error">
-                  <div class="login-error-text">❌ {{ errorMessage() }}</div>
+                  <div class="login-error-text"><app-icon name="alert-triangle" [size]="14"></app-icon> {{ errorMessage() }}</div>
                 </div>
               }
 
@@ -474,7 +481,7 @@ interface QuickAccount {
 
             <div class="register-prompt-box">
               <span class="register-prompt-text">Hisobingiz yo‘qmi?</span>
-              <a routerLink="/register" class="register-prompt-link">Ro‘yxatdan o‘tish</a>
+              <a routerLink="/register" class="register-prompt-link">{{ 'auth.register' | translate }}</a>
             </div>
 
             <!-- Quick Role Login Section -->
@@ -492,7 +499,7 @@ interface QuickAccount {
                   (click)="quickLogin(acc)"
                   [title]="acc.name + ' (' + acc.title + ') sifatida 1-bosishda kirish'"
                 >
-                  <span class="quick-icon">{{ acc.icon }}</span>
+                  <span class="quick-icon"><app-icon [name]="acc.icon" [size]="20"></app-icon></span>
                   <div class="quick-text">
                     <div class="quick-role-row">
                       <span class="quick-role">{{ acc.title }}</span>
@@ -502,7 +509,7 @@ interface QuickAccount {
                   @if (activeQuickUser() === acc.username && loading()) {
                     <span class="quick-spinner"></span>
                   } @else {
-                    <span class="quick-badge-arrow">⚡</span>
+                    <span class="quick-badge-arrow"><app-icon name="zap" [size]="12"></app-icon></span>
                   }
                 </button>
               }
@@ -1355,6 +1362,96 @@ interface QuickAccount {
       width: 100%;
       margin-top: 6px;
     }
+
+    /* ============================================================
+     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
+     * ============================================================ */
+    @media (max-width: 767px) {
+      .login-page {
+        padding: 12px;
+      }
+
+      .login-container {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .login-card {
+        padding: 22px 16px;
+        border-radius: var(--radius-md);
+      }
+
+      .pos-input--lg {
+        min-height: 48px;
+        font-size: 15px;
+      }
+
+      .pos-btn--lg {
+        min-height: 48px;
+        font-size: 15px;
+      }
+
+      .terminal-brand-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+
+        .terminal-brand-right {
+          justify-content: space-between;
+          width: 100%;
+        }
+      }
+
+      .staff-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+
+        .staff-search-box {
+          width: 100%;
+        }
+
+        .staff-role-tabs {
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+          width: 100%;
+          padding-bottom: 4px;
+
+          .staff-role-tab {
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding: 8px 14px;
+          }
+        }
+      }
+
+      .staff-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
+      }
+
+      .employee-pin-modal {
+        max-width: 95vw;
+        padding: 20px 16px;
+        border-radius: 20px;
+      }
+
+      .touch-numpad {
+        gap: 8px;
+
+        .numpad-btn {
+          min-height: 52px;
+          font-size: 18px;
+        }
+      }
+    }
+
+    @media (max-width: 400px) {
+      .quick-login-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   `]
 })
 export class LoginComponent implements OnInit {
@@ -1431,7 +1528,7 @@ export class LoginComponent implements OnInit {
       name: 'Super Admin',
       username: 'superadmin',
       password: 'superadmin123',
-      icon: '🌐',
+      icon: 'globe',
       badgeClass: 'badge-admin',
       description: 'Platform Super Admin'
     },
@@ -1441,7 +1538,7 @@ export class LoginComponent implements OnInit {
       name: 'Oybek Rustamov',
       username: 'admin',
       password: 'admin123',
-      icon: '👑',
+      icon: 'shield',
       badgeClass: 'badge-admin',
       description: 'Demo Restaurant Admin'
     },
@@ -1451,7 +1548,7 @@ export class LoginComponent implements OnInit {
       name: 'waiter1',
       username: 'waiter1',
       password: 'admin123',
-      icon: '🍽️',
+      icon: 'utensils',
       badgeClass: 'badge-waiter',
       description: 'Ofitsiant 1 (waiter1)'
     },
@@ -1461,7 +1558,7 @@ export class LoginComponent implements OnInit {
       name: 'waiter2',
       username: 'waiter2',
       password: 'admin123',
-      icon: '🍽️',
+      icon: 'utensils',
       badgeClass: 'badge-waiter',
       description: 'Ofitsiant 2 (waiter2)'
     },
@@ -1471,7 +1568,7 @@ export class LoginComponent implements OnInit {
       name: 'pizza',
       username: 'pizza',
       password: 'admin123',
-      icon: '🍕',
+      icon: 'chef',
       badgeClass: 'badge-kitchen',
       description: 'Pitsaxona stansiyasi'
     },
@@ -1481,7 +1578,7 @@ export class LoginComponent implements OnInit {
       name: 'somsa',
       username: 'somsa',
       password: 'admin123',
-      icon: '🥟',
+      icon: 'chef',
       badgeClass: 'badge-kitchen',
       description: 'Somsapaz stansiyasi'
     }
