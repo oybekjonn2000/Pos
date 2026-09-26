@@ -89,6 +89,60 @@
   --icon-color: #243B64;
   --icon-color-rgb: 36, 59, 100;
   --icon-color-hover: #16243e;
+
+  /* Floor Map & Operational Canvas Tokens (Light Theme) */
+  --canvas-bg: #f1f5f9;
+  --canvas-world-bg: #ffffff;
+  --canvas-world-border: #cbd5e1;
+  --canvas-grid-color: rgba(0, 0, 0, 0.045);
+  --canvas-navbar-bg: #ffffff;
+  --canvas-navbar-border: #e2e8f0;
+  --canvas-nav-btn-bg: #f8fafc;
+  --canvas-nav-btn-border: #cbd5e1;
+  --canvas-nav-btn-text: #0f172a;
+  --canvas-control-bg: #f1f5f9;
+  --canvas-control-border: #e2e8f0;
+
+  --table-free-bg: #f0fdf4;
+  --table-free-border: #22c55e;
+  --table-free-text: #065f46;
+  --table-free-name: #15803d;
+  --table-free-pill-bg: #dcfce7;
+  --table-free-pill-text: #15803d;
+  --table-free-pill-border: #86efac;
+
+  --table-occupied-bg: #fef2f2;
+  --table-occupied-border: #ef4444;
+  --table-occupied-text: #991b1b;
+  --table-occupied-name: #b91c1c;
+  --table-occupied-amount: #b45309;
+  --table-occupied-items: #475569;
+  --table-occupied-waiter: #0284c7;
+  --table-occupied-pill-bg: #fee2e2;
+  --table-occupied-pill-text: #b91c1c;
+  --table-occupied-pill-border: #fca5a5;
+
+  --table-locked-bg: #f8fafc;
+  --table-locked-border: #94a3b8;
+  --table-locked-text: #1e293b;
+  --table-locked-name: #475569;
+  --table-locked-pill-bg: #e2e8f0;
+  --table-locked-pill-text: #334155;
+  --table-locked-pill-border: #cbd5e1;
+
+  --table-reserved-bg: #faf5ff;
+  --table-reserved-border: #a855f7;
+  --table-reserved-text: #6b21a8;
+  --table-reserved-name: #7e22ce;
+  --table-reserved-pill-bg: #f3e8ff;
+  --table-reserved-pill-text: #7e22ce;
+  --table-reserved-pill-border: #d8b4fe;
+
+  --table-disabled-bg: #f1f5f9;
+  --table-disabled-border: #cbd5e1;
+  --table-disabled-text: #64748b;
+  --table-disabled-pill-bg: #e2e8f0;
+  --table-disabled-pill-text: #64748b;
 }
 
 /* Dark Theme */
@@ -131,6 +185,60 @@
   --icon-color: #A9BCE6;
   --icon-color-rgb: 169, 188, 230;
   --icon-color-hover: #c4d4f7;
+
+  /* Floor Map & Operational Canvas Tokens (Dark Theme) */
+  --canvas-bg: #0a0c14;
+  --canvas-world-bg: #12141e;
+  --canvas-world-border: #23273c;
+  --canvas-grid-color: rgba(255, 255, 255, 0.035);
+  --canvas-navbar-bg: #141724;
+  --canvas-navbar-border: #23273c;
+  --canvas-nav-btn-bg: rgba(255, 255, 255, 0.06);
+  --canvas-nav-btn-border: rgba(255, 255, 255, 0.1);
+  --canvas-nav-btn-text: #e2e8f0;
+  --canvas-control-bg: rgba(0, 0, 0, 0.25);
+  --canvas-control-border: rgba(255, 255, 255, 0.08);
+
+  --table-free-bg: rgba(16, 185, 129, 0.08);
+  --table-free-border: rgba(16, 185, 129, 0.45);
+  --table-free-text: #ffffff;
+  --table-free-name: #94a3b8;
+  --table-free-pill-bg: rgba(16, 185, 129, 0.25);
+  --table-free-pill-text: #34d399;
+  --table-free-pill-border: rgba(16, 185, 129, 0.4);
+
+  --table-occupied-bg: rgba(239, 68, 68, 0.14);
+  --table-occupied-border: rgba(239, 68, 68, 0.6);
+  --table-occupied-text: #ffffff;
+  --table-occupied-name: #f87171;
+  --table-occupied-amount: #fbbf24;
+  --table-occupied-items: #e2e8f0;
+  --table-occupied-waiter: #38bdf8;
+  --table-occupied-pill-bg: rgba(239, 68, 68, 0.25);
+  --table-occupied-pill-text: #f87171;
+  --table-occupied-pill-border: rgba(239, 68, 68, 0.4);
+
+  --table-locked-bg: rgba(100, 116, 139, 0.14);
+  --table-locked-border: rgba(148, 163, 184, 0.4);
+  --table-locked-text: #ffffff;
+  --table-locked-name: #94a3b8;
+  --table-locked-pill-bg: rgba(100, 116, 139, 0.25);
+  --table-locked-pill-text: #cbd5e1;
+  --table-locked-pill-border: rgba(148, 163, 184, 0.35);
+
+  --table-reserved-bg: rgba(168, 85, 247, 0.12);
+  --table-reserved-border: rgba(168, 85, 247, 0.5);
+  --table-reserved-text: #ffffff;
+  --table-reserved-name: #c084fc;
+  --table-reserved-pill-bg: rgba(168, 85, 247, 0.25);
+  --table-reserved-pill-text: #c084fc;
+  --table-reserved-pill-border: rgba(168, 85, 247, 0.4);
+
+  --table-disabled-bg: rgba(71, 85, 105, 0.1);
+  --table-disabled-border: rgba(71, 85, 105, 0.3);
+  --table-disabled-text: #94a3b8;
+  --table-disabled-pill-bg: rgba(100, 116, 139, 0.2);
+  --table-disabled-pill-text: #94a3b8;
 }
 
 /* ============================================================

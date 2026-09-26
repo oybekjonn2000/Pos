@@ -16,4 +16,7 @@ public interface RoleRepository extends JpaRepository<Role, UUID> {
     Optional<Role> findByNameAndTenantIdAndDeletedAtIsNull(String name, UUID tenantId);
 
     Optional<Role> findByIdAndDeletedAtIsNull(UUID id);
+
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Role r WHERE r.name = 'SUPER_ADMIN' AND r.deletedAt IS NULL")
+    Optional<Role> findSuperAdminRole();
 }

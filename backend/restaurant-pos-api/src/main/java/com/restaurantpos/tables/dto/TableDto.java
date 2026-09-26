@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 public class TableDto {
@@ -23,6 +24,17 @@ public class TableDto {
         private BigDecimal percentage;
         private int sortOrder;
         private boolean active;
+        private int canvasWidth;
+        private int canvasHeight;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ZoneMapResponse {
+        private ZoneResponse place;
+        private List<TableDto.Response> tables;
     }
 
     @Data
@@ -42,6 +54,8 @@ public class TableDto {
         private int posY;
         private int width;
         private int height;
+        private int rotation;
+        private String tableType;
         private String status;
         private UUID currentOrderId;
         private String activeOrderNumber;
@@ -87,10 +101,12 @@ public class TableDto {
         private String name;
         private int capacity = 4;
         private String shape = "rectangle";
+        private String tableType = "rectangle";
         private int posX = 0;
         private int posY = 0;
         private int width = 100;
         private int height = 80;
+        private int rotation = 0;
     }
 
     @Data
@@ -101,6 +117,8 @@ public class TableDto {
         private int posY;
         private int width;
         private int height;
+        private int rotation;
+        private String tableType;
     }
 
     @Data
@@ -121,6 +139,15 @@ public class TableDto {
         private String name;
         private int capacity = 4;
         private String shape = "rectangle";
+        private String tableType;
         private Boolean active;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UpdateZoneCanvasRequest {
+        private Integer canvasWidth;
+        private Integer canvasHeight;
     }
 }

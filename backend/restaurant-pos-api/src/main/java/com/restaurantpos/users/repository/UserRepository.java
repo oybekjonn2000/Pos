@@ -64,4 +64,21 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByTenantIdAndKitchenIdAndDeletedAtIsNull(UUID tenantId, UUID kitchenId);
 
     java.util.List<User> findByTenantIdAndKitchenIdAndDeletedAtIsNull(UUID tenantId, UUID kitchenId);
+
+    boolean existsByEmailIgnoreCaseAndDeletedAtIsNull(String email);
+
+    boolean existsByEmailIgnoreCaseAndIdNotAndDeletedAtIsNull(String email, UUID id);
+
+    boolean existsByPhoneAndDeletedAtIsNull(String phone);
+
+    boolean existsByPhoneAndIdNotAndDeletedAtIsNull(String phone, UUID id);
+
+    @Query("SELECT u FROM User u WHERE (LOWER(u.username) = LOWER(:identifier) OR LOWER(u.email) = LOWER(:identifier)) AND u.tenant IS NULL AND u.deletedAt IS NULL")
+    Optional<User> findPlatformSuperAdminByIdentifier(@org.springframework.data.repository.query.Param("identifier") String identifier);
+
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = 'SUPER_ADMIN' AND u.deletedAt IS NULL ORDER BY u.createdAt DESC")
+    java.util.List<User> findAllSuperAdmins();
+
+    @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r.name = 'SUPER_ADMIN' AND u.deletedAt IS NULL")
+    long countSuperAdmins();
 }

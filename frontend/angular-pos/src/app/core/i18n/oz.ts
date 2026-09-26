@@ -75,6 +75,8 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     settings: "Созламалар",
     billing: "Обуна & Тўлов",
     superAdmin: "Супер Админ",
+    superAdmins: "Суперадминлар",
+    editProfile: "Профилни таҳрирлаш",
     platformDashboard: "Платформа Дашборд",
     restaurants: "Ресторанлар",
     subscriptions: "Обуналар",
@@ -143,7 +145,36 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     deleteTable: "Столни ўчириш",
     confirmDelete: "Ҳақиқатан ҳам ушбу столни ўчирмоқчимисиз?",
     zoneName: "Зал номи",
-    tableNumber: "Стол рақами"
+    tableNumber: "Стол рақами",
+    tableName: "Стол номи",
+    canvasLayout: "Canvas Конструктор"
+  },
+
+  canvas: {
+    floorPlan: "Зал харитаси",
+    addTable: "Стол қўшиш",
+    tableProps: "Стол хусусиятлари",
+    shape: "Шакл",
+    shapeRect: "Тўртбурчак",
+    shapeCircle: "Доира",
+    shapeBooth: "Кабина",
+    shapeBar: "Бар стойкаси",
+    shapeSofa: "Диван",
+    rotation: "Бурилиш бурчаги",
+    canvasSize: "Canvas ўлчами",
+    width: "Кенглик",
+    height: "Баландлик",
+    applySize: "Ўлчамни қўллаш",
+    fitView: "Экранга мослаш",
+    grid: "Сетка",
+    stats: "Статистика",
+    totalSeats: "Жами ўринлар",
+    unsavedChanges: "та сақлаш кутилмоқда",
+    unsaved: "Сақланмаган",
+    selected: "Танланган",
+    legend: "Белгилар",
+    shortcuts: "Тезкор тугмалар",
+    newTable: "Янги стол"
   },
 
   orders: {

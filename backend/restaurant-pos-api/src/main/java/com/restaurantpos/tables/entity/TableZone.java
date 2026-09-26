@@ -31,6 +31,12 @@ public class TableZone {
     @Column(name = "sort_order")
     private int sortOrder = 0;
 
+    @Column(name = "canvas_width")
+    private int canvasWidth = 1200;
+
+    @Column(name = "canvas_height")
+    private int canvasHeight = 800;
+
     @Column(name = "percentage", nullable = false, precision = 5, scale = 2)
     private java.math.BigDecimal percentage = java.math.BigDecimal.ZERO;
 

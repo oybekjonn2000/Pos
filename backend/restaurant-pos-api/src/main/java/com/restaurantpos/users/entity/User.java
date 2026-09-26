@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 public class User extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
+    @JoinColumn(name = "tenant_id")
     private Tenant tenant;
 
     @ManyToOne(fetch = FetchType.LAZY)

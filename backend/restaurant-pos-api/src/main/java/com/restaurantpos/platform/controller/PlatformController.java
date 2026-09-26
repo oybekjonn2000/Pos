@@ -151,4 +151,29 @@ public class PlatformController {
         PlatformDto.PlatformReportResponse report = platformService.getPlatformReports(fromDate, toDate, status);
         return ResponseEntity.ok(ApiResponse.success(report));
     }
+
+    @GetMapping("/superadmins")
+    @Operation(summary = "Get all platform super admins")
+    public ResponseEntity<ApiResponse<List<com.restaurantpos.users.dto.UserDto.Response>>> getSuperAdmins() {
+        List<com.restaurantpos.users.dto.UserDto.Response> list = platformService.getSuperAdmins();
+        return ResponseEntity.ok(ApiResponse.success(list));
+    }
+
+    @PostMapping("/superadmins")
+    @Operation(summary = "Create a new platform super admin")
+    public ResponseEntity<ApiResponse<com.restaurantpos.users.dto.UserDto.Response>> createSuperAdmin(
+            @Valid @RequestBody com.restaurantpos.users.dto.UserDto.CreateSuperAdminRequest request) {
+        com.restaurantpos.users.dto.UserDto.Response created = platformService.createSuperAdmin(request);
+        return ResponseEntity.ok(ApiResponse.success(created, "Yangi Superadmin muvaffaqiyatli yaratildi"));
+    }
+
+    @PutMapping("/superadmins/{id}/status")
+    @Operation(summary = "Toggle super admin active/inactive status")
+    public ResponseEntity<ApiResponse<com.restaurantpos.users.dto.UserDto.Response>> updateSuperAdminStatus(
+            @PathVariable UUID id,
+            @RequestBody com.restaurantpos.users.dto.UserDto.ToggleStatusRequest request,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.restaurantpos.auth.security.UserPrincipal currentUser) {
+        com.restaurantpos.users.dto.UserDto.Response updated = platformService.updateSuperAdminStatus(id, request.isActive(), currentUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(updated, "Superadmin holati yangilandi"));
+    }
 }

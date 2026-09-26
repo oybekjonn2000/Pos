@@ -92,6 +92,23 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(null, "Password reset successfully"));
     }
 
+    @GetMapping("/profile")
+    @Operation(summary = "Get current authenticated user's profile")
+    public ResponseEntity<ApiResponse<UserDto.Response>> getProfile(
+            @AuthenticationPrincipal UserPrincipal user) {
+        UserDto.Response response = userService.getUserProfile(user.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PutMapping("/profile")
+    @Operation(summary = "Update current authenticated user's profile")
+    public ResponseEntity<ApiResponse<UserDto.Response>> updateProfile(
+            @AuthenticationPrincipal UserPrincipal user,
+            @Valid @RequestBody UserDto.ProfileUpdateRequest request) {
+        UserDto.Response response = userService.updateProfile(user.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Profil ma'lumotlari muvaffaqiyatli yangilandi"));
+    }
+
     @PutMapping("/profile/change-pin")
     @Operation(summary = "Change admin/user personal PIN")
     public ResponseEntity<ApiResponse<Void>> changePersonalPin(

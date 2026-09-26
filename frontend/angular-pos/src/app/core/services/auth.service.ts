@@ -42,7 +42,11 @@ export interface TokenResponse {
 export interface UserInfo {
   id: string;
   username: string;
+  firstName?: string;
+  lastName?: string;
   fullName: string;
+  email?: string;
+  phone?: string;
   tenantId?: string;
   restaurantCode?: string;
   restaurantName?: string;
@@ -161,6 +165,18 @@ export class AuthService {
     this._user.set(null);
     this._accessToken.set(null);
     this.router.navigate(['/login']);
+  }
+
+  updateCurrentUser(updated: Partial<UserInfo>): void {
+    const current = this._user();
+    if (current) {
+      const newUser: UserInfo = { ...current, ...updated };
+      this._user.set(newUser);
+      try {
+        localStorage.setItem('user', JSON.stringify(newUser));
+        sessionStorage.setItem('user', JSON.stringify(newUser));
+      } catch {}
+    }
   }
 
   hasPermission(permission: string): boolean {

@@ -143,5 +143,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     org.springframework.data.domain.Page<Order> findByTenantIdAndDeletedAtIsNullOrderByOpenedAtDesc(UUID tenantId, org.springframework.data.domain.Pageable pageable);
 
     java.util.Optional<Order> findFirstByTenantIdAndDeletedAtIsNullOrderByOpenedAtDesc(UUID tenantId);
+
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items LEFT JOIN FETCH o.waiter WHERE o.id IN :ids AND o.deletedAt IS NULL")
+    List<Order> findAllWithItemsAndWaiterByIdIn(@Param("ids") List<UUID> ids);
 }
 

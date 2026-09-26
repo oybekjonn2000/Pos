@@ -57,10 +57,11 @@ public class UserService {
     }
 
     public static String computePinLookupHash(UUID tenantId, String rawPin) {
-        if (rawPin == null || rawPin.isBlank() || tenantId == null) return null;
+        if (rawPin == null || rawPin.isBlank()) return null;
         try {
             java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest((tenantId.toString() + ":" + rawPin.trim()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            String salt = tenantId != null ? tenantId.toString() : "PLATFORM_SUPERADMIN";
+            byte[] hash = md.digest((salt + ":" + rawPin.trim()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
@@ -77,6 +78,91 @@ public class UserService {
         if (pin == null || !pin.trim().matches("^[0-9]{1,4}$")) {
             throw PosException.badRequest("PIN kod 1 tadan 4 tagacha raqamdan iborat bo'lishi kerak.");
         }
+    }
+
+    @Transactional(readOnly = true)
+    public UserDto.Response getUserProfile(UUID userId) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> PosException.notFound("Foydalanuvchi topilmadi."));
+        return mapToResponse(user);
+    }
+
+    @Transactional
+    public UserDto.Response updateProfile(UUID userId, UserDto.ProfileUpdateRequest request) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> PosException.notFound("Foydalanuvchi topilmadi."));
+
+        if (request.getFirstName() == null || request.getFirstName().trim().isBlank()) {
+            throw PosException.badRequest("Ism kiritilishi shart.");
+        }
+        if (request.getPhone() == null || request.getPhone().trim().isBlank()) {
+            throw PosException.badRequest("Telefon raqami kiritilishi shart.");
+        }
+
+        user.setFirstName(request.getFirstName().trim());
+        user.setLastName(request.getLastName() != null ? request.getLastName().trim() : "");
+        user.setPhone(request.getPhone().trim());
+
+        // Email validation & update
+        if (request.getEmail() != null && !request.getEmail().trim().isBlank()) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (user.getEmail() == null || !newEmail.equalsIgnoreCase(user.getEmail().trim())) {
+                if (userRepository.existsByEmailIgnoreCaseAndIdNotAndDeletedAtIsNull(newEmail, userId)) {
+                    throw PosException.badRequest("Ushbu email manzili allaqachon boshqa foydalanuvchi tomonidan band qilingan.");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
+        boolean hasPasswordUpdate = request.getNewPassword() != null && !request.getNewPassword().trim().isBlank();
+        boolean hasPinUpdate = request.getNewPin() != null && !request.getNewPin().trim().isBlank();
+
+        boolean isSuperAdmin = user.getTenant() == null || (user.getRoles() != null && user.getRoles().stream().anyMatch(r -> "SUPER_ADMIN".equalsIgnoreCase(r.getName())));
+        if (isSuperAdmin) {
+            hasPinUpdate = false; // Superadmin does not need or use PIN code
+        }
+
+        // If password or PIN is being updated, verify current password if present
+        if (hasPasswordUpdate || hasPinUpdate) {
+            if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
+                if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                    throw PosException.badRequest("Parol" + (hasPinUpdate ? " yoki PIN kodni" : "") + " o'zgartirish uchun joriy parolingizni kiriting.");
+                }
+                if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+                    throw PosException.badRequest("Joriy parol noto'g'ri kiritildi.");
+                }
+            } else if (user.getPinHash() != null && !user.getPinHash().isBlank()) {
+                if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+                    throw PosException.badRequest("PIN kodni o'zgartirish uchun joriy PIN kod yoki parolni kiriting.");
+                }
+                boolean matchesPin = passwordEncoder.matches(request.getCurrentPassword(), user.getPinHash());
+                if (!matchesPin) {
+                    throw PosException.badRequest("Joriy PIN kod noto'g'ri kiritildi.");
+                }
+            }
+        }
+
+        // Apply new password
+        if (hasPasswordUpdate) {
+            String newPass = request.getNewPassword().trim();
+            if (newPass.length() < 4) {
+                throw PosException.badRequest("Yangi parol kamida 4 ta belgidan iborat bo'lishi kerak.");
+            }
+            user.setPasswordHash(passwordEncoder.encode(newPass));
+        }
+
+        // Apply new PIN
+        if (hasPinUpdate) {
+            String newPin = request.getNewPin().trim();
+            validatePinFormat(newPin);
+            user.setPinHash(passwordEncoder.encode(newPin));
+            UUID tenantId = user.getTenant() != null ? user.getTenant().getId() : null;
+            user.setPinLookupHash(computePinLookupHash(tenantId, newPin));
+        }
+
+        User saved = userRepository.save(user);
+        log.info("Profile updated for user: {} (ID: {})", saved.getFullName(), saved.getId());
+        return mapToResponse(saved);
     }
 
     @Transactional

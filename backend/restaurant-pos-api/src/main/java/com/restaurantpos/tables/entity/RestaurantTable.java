@@ -49,6 +49,12 @@ public class RestaurantTable extends BaseEntity {
     @Column(name = "height")
     private int height = 80;
 
+    @Column(name = "rotation")
+    private int rotation = 0;
+
+    @Column(name = "table_type", length = 30)
+    private String tableType = "rectangle";
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private TableStatus status = TableStatus.FREE;

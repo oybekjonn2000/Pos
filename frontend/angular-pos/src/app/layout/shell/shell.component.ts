@@ -10,12 +10,13 @@ import { ThemeService } from '../../core/services/theme.service';
 import { LanServerConfigModalComponent } from '../../shared/components/lan-server-config-modal/lan-server-config-modal.component';
 import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { LanguageSelectorComponent } from '../../shared/components/language-selector/language-selector.component';
+import { UserProfileModalComponent } from '../../shared/components/user-profile-modal/user-profile-modal.component';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, TopbarComponent, LanServerConfigModalComponent, AppIconComponent, LanguageSelectorComponent, TranslatePipe],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, SidebarComponent, TopbarComponent, LanServerConfigModalComponent, UserProfileModalComponent, AppIconComponent, LanguageSelectorComponent, TranslatePipe],
   template: `
     @if (loading.isLoading()) {
       <div class="global-loading"></div>
@@ -45,33 +46,38 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
       </div>
     }
 
-    <div class="pos-layout" [class.no-sidebar]="auth.isWaiter()">
-      @if (!auth.isWaiter()) {
-        <app-sidebar 
-          [mobileOpen]="mobileMenuOpen"
-          (closeMobile)="mobileMenuOpen = false"
-          (collapsedChange)="sidebarCollapsed = $event" 
-          (openLanSettings)="showLanModal = true" />
+    @if (isFullScreen()) {
+      <!-- FULL-SCREEN MODE: Canvas Constructor, no sidebar/topbar -->
+      <router-outlet />
+    } @else {
+      <div class="pos-layout" [class.no-sidebar]="auth.isWaiter()">
+        @if (!auth.isWaiter()) {
+          <app-sidebar 
+            [mobileOpen]="mobileMenuOpen"
+            (closeMobile)="mobileMenuOpen = false"
+            (collapsedChange)="sidebarCollapsed = $event" 
+            (openLanSettings)="showLanModal = true" />
 
-        @if (mobileMenuOpen) {
-          <div class="sidebar-mobile-backdrop" (click)="mobileMenuOpen = false"></div>
+          @if (mobileMenuOpen) {
+            <div class="sidebar-mobile-backdrop" (click)="mobileMenuOpen = false"></div>
+          }
         }
-      }
 
-      <div class="pos-content" [class.sidebar-collapsed]="sidebarCollapsed" [class.no-sidebar]="auth.isWaiter()">
-        <app-topbar 
-          [sidebarCollapsed]="sidebarCollapsed"
-          (toggleMobileMenu)="mobileMenuOpen = !mobileMenuOpen"
-          (openLanSettings)="showLanModal = true"
-          (openProfile)="showProfileModal = true" />
-        <main class="pos-page" [class.pos-page--in-pos]="isInPos()">
-          <router-outlet />
-        </main>
+        <div class="pos-content" [class.sidebar-collapsed]="sidebarCollapsed" [class.no-sidebar]="auth.isWaiter()">
+          <app-topbar 
+            [sidebarCollapsed]="sidebarCollapsed"
+            (toggleMobileMenu)="mobileMenuOpen = !mobileMenuOpen"
+            (openLanSettings)="showLanModal = true"
+            (openProfile)="showEditProfileModal = true" />
+          <main class="pos-page" [class.pos-page--in-pos]="isInPos()">
+            <router-outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    }
 
-    <!-- Mobile Bottom Navigation (Visible on screen < 768px, hidden when inside active POS order) -->
-    @if (!isInPos()) {
+    <!-- Mobile Bottom Navigation (Visible on screen < 768px, hidden when inside active POS order or canvas) -->
+    @if (!isInPos() && !isFullScreen()) {
       <nav class="mobile-bottom-nav">
         @if (auth.isSuperAdmin()) {
           <!-- Super Admin: Platform management links -->
@@ -146,6 +152,18 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           </div>
 
           <div class="sheet-body">
+            <!-- Edit Profile Row -->
+            <div class="sheet-row" (click)="showProfileModal = false; showEditProfileModal = true">
+              <div class="sheet-row-info">
+                <span class="sheet-icon"><app-icon name="user" [size]="20"></app-icon></span>
+                <div>
+                  <div class="sheet-row-title">Profilni tahrirlash</div>
+                  <div class="sheet-row-sub">Ism, telefon, email, PIN va parol</div>
+                </div>
+              </div>
+              <span class="sheet-action-arrow"><app-icon name="arrow-right" [size]="16"></app-icon></span>
+            </div>
+
             <!-- Language Row -->
             <div class="sheet-row" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border);">
               <span style="font-weight: 500; font-size: 14px;">{{ 'nav.language' | translate }}</span>
@@ -188,6 +206,11 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           </div>
         </div>
       </div>
+    }
+
+    <!-- Edit User Profile Modal (Admin & SuperAdmin) -->
+    @if (showEditProfileModal) {
+      <app-user-profile-modal (closed)="showEditProfileModal = false" />
     }
 
     <!-- LAN Server Config Modal (Desktop Installer Only) -->
@@ -494,6 +517,7 @@ export class ShellComponent {
   mobileMenuOpen = false;
   showLanModal = false;
   showProfileModal = false;
+  showEditProfileModal = false;
 
   lan = inject(LanStatusService);
   theme = inject(ThemeService);
@@ -506,6 +530,10 @@ export class ShellComponent {
 
   isInPos(): boolean {
     return this.router.url.includes('/pos');
+  }
+
+  isFullScreen(): boolean {
+    return this.router.url.includes('/tables/canvas');
   }
 
   isCook(): boolean {

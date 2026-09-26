@@ -63,6 +63,17 @@ public class TableController {
         return ResponseEntity.ok(ApiResponse.success(null, "Zona va unga tegishli stollar muvaffaqiyatli o'chirildi"));
     }
 
+    @PatchMapping("/zones/{id}/canvas")
+    @PreAuthorize("hasAuthority('MANAGE_TABLES')")
+    @Operation(summary = "Update zone canvas size for the visual floor plan constructor")
+    public ResponseEntity<ApiResponse<TableDto.ZoneResponse>> updateZoneCanvas(
+            @PathVariable UUID id,
+            @RequestBody TableDto.UpdateZoneCanvasRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        TableDto.ZoneResponse updated = tableService.updateZoneCanvas(user.getTenantId(), id, request);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Canvas o'lchami yangilandi"));
+    }
+
     @PostMapping("/zones/repair-orphans")
     @PreAuthorize("hasAuthority('MANAGE_TABLES')")
     @Operation(summary = "Repair orphan tables — soft-deletes tables whose zone is already deleted")
@@ -70,6 +81,15 @@ public class TableController {
             @AuthenticationPrincipal UserPrincipal user) {
         int count = tableService.repairOrphanTables(user.getTenantId());
         return ResponseEntity.ok(ApiResponse.success(count, count + " ta yetim stol tuzatildi"));
+    }
+
+    @GetMapping(value = {"/zones/{id}/map", "/places/{id}/map"})
+    @Operation(summary = "Get zone operational map layout and active tables")
+    public ResponseEntity<ApiResponse<TableDto.ZoneMapResponse>> getZoneMap(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        TableDto.ZoneMapResponse map = tableService.getZoneMap(user.getTenantId(), id, user);
+        return ResponseEntity.ok(ApiResponse.success(map));
     }
 
     @GetMapping

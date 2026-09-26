@@ -54,6 +54,8 @@ public class TableService {
                         .percentage(z.getPercentage() != null ? z.getPercentage() : BigDecimal.ZERO)
                         .sortOrder(z.getSortOrder())
                         .active(z.isActive())
+                        .canvasWidth(z.getCanvasWidth() > 0 ? z.getCanvasWidth() : 1200)
+                        .canvasHeight(z.getCanvasHeight() > 0 ? z.getCanvasHeight() : 800)
                         .build()
                 ).collect(Collectors.toList());
     }
@@ -85,9 +87,10 @@ public class TableService {
                 .percentage(saved.getPercentage())
                 .sortOrder(saved.getSortOrder())
                 .active(saved.isActive())
+                .canvasWidth(saved.getCanvasWidth() > 0 ? saved.getCanvasWidth() : 1200)
+                .canvasHeight(saved.getCanvasHeight() > 0 ? saved.getCanvasHeight() : 800)
                 .build();
     }
-
     @Transactional
     public TableDto.ZoneResponse updateZone(UUID tenantId, UUID zoneId, TableDto.UpdateZoneRequest request) {
         TableZone zone = zoneRepository.findByIdAndTenantIdAndDeletedAtIsNull(zoneId, tenantId)
@@ -124,6 +127,8 @@ public class TableService {
                 .percentage(saved.getPercentage())
                 .sortOrder(saved.getSortOrder())
                 .active(saved.isActive())
+                .canvasWidth(saved.getCanvasWidth() > 0 ? saved.getCanvasWidth() : 1200)
+                .canvasHeight(saved.getCanvasHeight() > 0 ? saved.getCanvasHeight() : 800)
                 .build();
     }
 
@@ -201,8 +206,8 @@ public class TableService {
     @Transactional
     public List<TableDto.Response> getTables(UUID tenantId, UUID zoneId, com.restaurantpos.auth.security.UserPrincipal currentUser) {
         List<RestaurantTable> tables = zoneId != null
-                ? tableRepository.findByTenantIdAndZoneIdAndDeletedAtIsNullOrderByTableNumberAsc(tenantId, zoneId)
-                : tableRepository.findByTenantIdAndDeletedAtIsNullOrderByTableNumberAsc(tenantId);
+                ? tableRepository.findByTenantIdAndZoneIdWithDetails(tenantId, zoneId)
+                : tableRepository.findByTenantIdWithDetails(tenantId);
 
         List<UUID> orderIds = tables.stream()
                 .map(RestaurantTable::getCurrentOrderId)
@@ -212,7 +217,7 @@ public class TableService {
 
         Map<UUID, Order> ordersMap = java.util.Collections.emptyMap();
         if (!orderIds.isEmpty()) {
-            ordersMap = orderRepository.findAllById(orderIds).stream()
+            ordersMap = orderRepository.findAllWithItemsAndWaiterByIdIn(orderIds).stream()
                     .collect(Collectors.toMap(Order::getId, o -> o));
         }
 
@@ -242,6 +247,30 @@ public class TableService {
                     return toResponse(t, order, currentUser);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public TableDto.ZoneMapResponse getZoneMap(UUID tenantId, UUID zoneId, com.restaurantpos.auth.security.UserPrincipal currentUser) {
+        TableZone zone = zoneRepository.findByIdAndTenantIdAndDeletedAtIsNull(zoneId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Zona topilmadi"));
+
+        TableDto.ZoneResponse zoneResponse = TableDto.ZoneResponse.builder()
+                .id(zone.getId())
+                .name(zone.getName())
+                .description(zone.getDescription())
+                .percentage(zone.getPercentage() != null ? zone.getPercentage() : BigDecimal.ZERO)
+                .sortOrder(zone.getSortOrder())
+                .active(zone.isActive())
+                .canvasWidth(zone.getCanvasWidth() > 0 ? zone.getCanvasWidth() : 1200)
+                .canvasHeight(zone.getCanvasHeight() > 0 ? zone.getCanvasHeight() : 800)
+                .build();
+
+        List<TableDto.Response> tables = getTables(tenantId, zoneId, currentUser);
+
+        return TableDto.ZoneMapResponse.builder()
+                .place(zoneResponse)
+                .tables(tables)
+                .build();
     }
 
     @Transactional
@@ -400,9 +429,37 @@ public class TableService {
         table.setPosY(request.getPosY());
         table.setWidth(request.getWidth());
         table.setHeight(request.getHeight());
+        table.setRotation(request.getRotation());
+        if (request.getTableType() != null && !request.getTableType().isBlank()) {
+            table.setTableType(request.getTableType());
+        }
 
         RestaurantTable saved = tableRepository.save(table);
         return toResponse(saved);
+    }
+
+    @Transactional
+    public TableDto.ZoneResponse updateZoneCanvas(UUID tenantId, UUID zoneId, TableDto.UpdateZoneCanvasRequest request) {
+        TableZone zone = zoneRepository.findByIdAndTenantIdAndDeletedAtIsNull(zoneId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Zona topilmadi"));
+        if (request.getCanvasWidth() != null && request.getCanvasWidth() >= 800) {
+            zone.setCanvasWidth(request.getCanvasWidth());
+        }
+        if (request.getCanvasHeight() != null && request.getCanvasHeight() >= 600) {
+            zone.setCanvasHeight(request.getCanvasHeight());
+        }
+        zone.setUpdatedAt(Instant.now());
+        TableZone saved = zoneRepository.save(zone);
+        return TableDto.ZoneResponse.builder()
+                .id(saved.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .percentage(saved.getPercentage())
+                .sortOrder(saved.getSortOrder())
+                .active(saved.isActive())
+                .canvasWidth(saved.getCanvasWidth())
+                .canvasHeight(saved.getCanvasHeight())
+                .build();
     }
 
     @Transactional
@@ -439,10 +496,12 @@ public class TableService {
         table.setName(request.getName() != null ? request.getName() : "Stol " + request.getTableNumber());
         table.setCapacity(request.getCapacity());
         table.setShape(request.getShape() != null ? request.getShape() : "rectangle");
+        table.setTableType(request.getTableType() != null ? request.getTableType() : "rectangle");
         table.setPosX(request.getPosX());
         table.setPosY(request.getPosY());
         table.setWidth(request.getWidth());
         table.setHeight(request.getHeight());
+        table.setRotation(request.getRotation());
         table.setStatus(RestaurantTable.TableStatus.FREE);
         table.setActive(true);
 
@@ -506,11 +565,10 @@ public class TableService {
         Boolean myTable = null;
 
         if (table.getWaiter() != null) {
+            waiterName = (table.getWaiter().getFirstName() + " " + (table.getWaiter().getLastName() != null ? table.getWaiter().getLastName() : "")).trim();
             if (isOtherWaiter) {
-                waiterName = "Boshqa ofitsiant";
                 myTable = false;
             } else {
-                waiterName = (table.getWaiter().getFirstName() + " " + (table.getWaiter().getLastName() != null ? table.getWaiter().getLastName() : "")).trim();
                 myTable = true;
             }
         } else {
@@ -549,6 +607,8 @@ public class TableService {
                 .posY(table.getPosY())
                 .width(table.getWidth())
                 .height(table.getHeight())
+                .rotation(table.getRotation())
+                .tableType(table.getTableType() != null ? table.getTableType() : "rectangle")
                 .status(table.getStatus() != null ? table.getStatus().name() : "FREE")
                 .currentOrderId(currentOrderId)
                 .activeOrderNumber(activeOrderNumber)

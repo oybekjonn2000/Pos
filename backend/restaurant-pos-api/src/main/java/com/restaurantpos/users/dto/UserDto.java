@@ -78,6 +78,56 @@ public class UserDto {
 
     @Getter
     @Setter
+    public static class ProfileUpdateRequest {
+        @NotBlank(message = "Ism kiritilishi shart")
+        private String firstName;
+
+        private String lastName;
+
+        @NotBlank(message = "Telefon raqami kiritilishi shart")
+        private String phone;
+
+        private String email;
+
+        private String currentPassword;
+
+        private String newPassword;
+
+        private String newPin;
+    }
+
+    @Getter
+    @Setter
+    public static class CreateSuperAdminRequest {
+        @NotBlank(message = "Ism kiritilishi shart")
+        private String firstName;
+
+        private String lastName;
+
+        @NotBlank(message = "Email kiritilishi shart")
+        @jakarta.validation.constraints.Email(message = "Email formati noto'g'ri")
+        private String email;
+
+        @NotBlank(message = "Telefon raqami kiritilishi shart")
+        private String phone;
+
+        private String username;
+
+        @NotBlank(message = "Parol kiritilishi shart")
+        @Size(min = 6, message = "Parol kamida 6 belgidan iborat bo'lishi kerak")
+        private String password;
+
+        private String pin;
+    }
+
+    @Getter
+    @Setter
+    public static class ToggleStatusRequest {
+        private boolean active;
+    }
+
+    @Getter
+    @Setter
     @Builder
     public static class Response {
         private UUID id;

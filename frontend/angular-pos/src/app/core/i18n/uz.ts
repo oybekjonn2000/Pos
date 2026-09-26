@@ -75,6 +75,8 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     settings: "Sozlamalar",
     billing: "Obuna & To'lov",
     superAdmin: "Super Admin",
+    superAdmins: "Superadminlar",
+    editProfile: "Profilni tahrirlash",
     platformDashboard: "Platforma Dashboard",
     restaurants: "Restoranlar",
     subscriptions: "Obunalar",
@@ -143,7 +145,36 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     deleteTable: "Stolni o'chirish",
     confirmDelete: "Haqiqatan ham ushbu stolni o'chirmoqchimisiz?",
     zoneName: "Zal nomi",
-    tableNumber: "Stol raqami"
+    tableNumber: "Stol raqami",
+    tableName: "Stol nomi",
+    canvasLayout: "Canvas Konstruktor"
+  },
+
+  canvas: {
+    floorPlan: "Zal xaritasi",
+    addTable: "Stol qo'shish",
+    tableProps: "Stol xususiyatlari",
+    shape: "Shakl",
+    shapeRect: "To'rtburchak",
+    shapeCircle: "Doira",
+    shapeBooth: "Kabina",
+    shapeBar: "Bar stoli",
+    shapeSofa: "Divan",
+    rotation: "Burilish burchagi",
+    canvasSize: "Canvas o'lchami",
+    width: "Kenglik",
+    height: "Balandlik",
+    applySize: "O'lchamni qo'llash",
+    fitView: "Ekranga moslash",
+    grid: "Setka",
+    stats: "Statistika",
+    totalSeats: "Jami o'rinlar",
+    unsavedChanges: "ta saqlash kutilmoqda",
+    unsaved: "Saqlanmagan",
+    selected: "Tanlangan",
+    legend: "Belgilar",
+    shortcuts: "Tezkor tugmalar",
+    newTable: "Yangi stol"
   },
 
   orders: {

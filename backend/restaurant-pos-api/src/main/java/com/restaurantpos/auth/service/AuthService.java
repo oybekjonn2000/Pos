@@ -47,8 +47,8 @@ public class AuthService {
             user = userRepository.findByRestaurantCodeAndUsername(restaurantCode, username)
                     .orElseThrow(() -> PosException.unauthorized("Ushbu restoran kodiga ('" + restaurantCode + "') tegishli foydalanuvchi topilmadi!"));
         } else {
-            // First check platform-level superadmin (tenant_id IS NULL)
-            var superAdminOpt = userRepository.findByUsernameAndTenantIsNullAndDeletedAtIsNull(username);
+            // First check platform-level superadmin (tenant_id IS NULL) by username or email
+            var superAdminOpt = userRepository.findPlatformSuperAdminByIdentifier(username);
             if (superAdminOpt.isPresent()) {
                 user = superAdminOpt.get();
             } else {

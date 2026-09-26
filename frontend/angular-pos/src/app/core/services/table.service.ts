@@ -13,10 +13,12 @@ export interface RestaurantTable {
   name: string;
   capacity: number;
   shape: string;
+  tableType: string;
   posX: number;
   posY: number;
   width: number;
   height: number;
+  rotation: number;
   status: 'FREE' | 'OCCUPIED' | 'RESERVED' | 'BILL_REQUESTED' | 'CLEANING';
   currentOrderId?: string;
   activeOrderNumber?: string;
@@ -35,6 +37,8 @@ export interface TableZone {
   percentage?: number;
   sortOrder: number;
   active: boolean;
+  canvasWidth: number;
+  canvasHeight: number;
 }
 
 export interface CreateTableRequest {
@@ -44,10 +48,21 @@ export interface CreateTableRequest {
   name?: string;
   capacity: number;
   shape?: string;
+  tableType?: string;
   posX?: number;
   posY?: number;
   width?: number;
   height?: number;
+  rotation?: number;
+}
+
+export interface UpdateLayoutRequest {
+  posX: number;
+  posY: number;
+  width: number;
+  height: number;
+  rotation: number;
+  tableType?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -74,12 +89,20 @@ export class TableService {
     return this.http.put<ApiResponse<TableZone>>(`${this.API}/zones/${id}`, request);
   }
 
+  updateZoneCanvas(id: string, canvasWidth: number, canvasHeight: number): Observable<ApiResponse<TableZone>> {
+    return this.http.patch<ApiResponse<TableZone>>(`${this.API}/zones/${id}/canvas`, { canvasWidth, canvasHeight });
+  }
+
   deleteZone(id: string): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${this.API}/zones/${id}`);
   }
 
   getTableById(id: string): Observable<ApiResponse<RestaurantTable>> {
     return this.http.get<ApiResponse<RestaurantTable>>(`${this.API}/${id}`);
+  }
+
+  getZoneMap(zoneId: string): Observable<ApiResponse<{ place: TableZone; tables: RestaurantTable[] }>> {
+    return this.http.get<ApiResponse<{ place: TableZone; tables: RestaurantTable[] }>>(`${this.API}/zones/${zoneId}/map`);
   }
 
   occupyTable(id: string): Observable<ApiResponse<RestaurantTable>> {
@@ -92,6 +115,10 @@ export class TableService {
 
   updateTableStatus(id: string, status: string, currentOrderId?: string): Observable<ApiResponse<RestaurantTable>> {
     return this.http.put<ApiResponse<RestaurantTable>>(`${this.API}/${id}/status`, { status, currentOrderId });
+  }
+
+  updateTableLayout(id: string, layout: UpdateLayoutRequest): Observable<ApiResponse<RestaurantTable>> {
+    return this.http.put<ApiResponse<RestaurantTable>>(`${this.API}/${id}/layout`, layout);
   }
 
   createTable(request: CreateTableRequest): Observable<ApiResponse<RestaurantTable>> {

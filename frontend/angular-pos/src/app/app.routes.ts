@@ -138,6 +138,12 @@ export const routes: Routes = [
         canActivate: [superAdminGuard],
         data: { title: 'Qurilmalar Boshqaruvi' }
       },
+      {
+        path: 'platform/superadmins',
+        loadComponent: () => import('./platform/superadmins/platform-superadmins.component').then(m => m.PlatformSuperadminsComponent),
+        canActivate: [superAdminGuard],
+        data: { title: 'Superadminlar Nazorati' }
+      },
 
       // ==========================================
       // RESTAURANT OPERATIONAL MODULES (POS)
@@ -164,6 +170,18 @@ export const routes: Routes = [
         loadComponent: () => import('./tables/tables.component').then(m => m.TablesComponent),
         canActivate: [permissionGuard],
         data: { disallowRoles: ['KITCHEN'], title: 'Stollar Xaritasi' }
+      },
+      {
+        path: 'tables/canvas',
+        loadComponent: () => import('./tables/canvas/table-canvas.component').then(m => m.TableCanvasComponent),
+        canActivate: [permissionGuard],
+        data: { permission: 'MANAGE_TABLES', disallowRoles: ['KITCHEN', 'WAITER'], title: 'Canvas Konstruktor', fullScreen: true }
+      },
+      {
+        path: 'tables/canvas/:zoneId',
+        loadComponent: () => import('./tables/canvas/table-canvas.component').then(m => m.TableCanvasComponent),
+        canActivate: [permissionGuard],
+        data: { permission: 'MANAGE_TABLES', disallowRoles: ['KITCHEN', 'WAITER'], title: 'Canvas Konstruktor', fullScreen: true }
       },
       {
         path: 'waiter',

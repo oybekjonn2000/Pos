@@ -3,6 +3,20 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from './auth.service';
+import { Employee } from './user.service';
+
+export interface CreateSuperAdminRequest {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  phone: string;
+  username?: string;
+  password: string;
+}
+
+export interface ToggleSuperAdminStatusRequest {
+  active: boolean;
+}
 
 export interface PlatformStatistics {
   totalRestaurants: number;
@@ -181,5 +195,17 @@ export class PlatformService {
     if (toDate) params = params.set('toDate', toDate);
     if (status) params = params.set('status', status);
     return this.http.get<ApiResponse<PlatformReportResponse>>(`${this.API}/reports`, { params });
+  }
+
+  getSuperAdmins(): Observable<ApiResponse<Employee[]>> {
+    return this.http.get<ApiResponse<Employee[]>>(`${this.API}/superadmins`);
+  }
+
+  createSuperAdmin(request: CreateSuperAdminRequest): Observable<ApiResponse<Employee>> {
+    return this.http.post<ApiResponse<Employee>>(`${this.API}/superadmins`, request);
+  }
+
+  updateSuperAdminStatus(id: string, active: boolean): Observable<ApiResponse<Employee>> {
+    return this.http.put<ApiResponse<Employee>>(`${this.API}/superadmins/${id}/status`, { active });
   }
 }

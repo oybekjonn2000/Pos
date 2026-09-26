@@ -34,6 +34,9 @@ public class PlatformService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final com.restaurantpos.users.repository.RoleRepository roleRepository;
+    private final com.restaurantpos.users.service.UserService userService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private static final ZoneId TASHKENT_ZONE = ZoneId.of("Asia/Tashkent");
 
@@ -394,5 +397,80 @@ public class PlatformService {
                 .restaurantCode(tenant != null ? tenant.getCode() : "PLATFORM")
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.restaurantpos.users.dto.UserDto.Response> getSuperAdmins() {
+        return userRepository.findAllSuperAdmins().stream()
+                .map(userService::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public com.restaurantpos.users.dto.UserDto.Response createSuperAdmin(com.restaurantpos.users.dto.UserDto.CreateSuperAdminRequest request) {
+        if (request.getEmail() == null || request.getEmail().trim().isBlank()) {
+            throw PosException.badRequest("Email kiritilishi shart.");
+        }
+        String email = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(email)) {
+            throw PosException.badRequest("Ushbu email bilan superadmin allaqachon ro'yxatdan o'tgan.");
+        }
+
+        if (request.getPhone() == null || request.getPhone().trim().isBlank()) {
+            throw PosException.badRequest("Telefon raqami kiritilishi shart.");
+        }
+        String phone = request.getPhone().trim();
+        if (userRepository.existsByPhoneAndDeletedAtIsNull(phone)) {
+            throw PosException.badRequest("Ushbu telefon raqami bilan superadmin allaqachon mavjud.");
+        }
+
+        String username = request.getUsername() != null && !request.getUsername().trim().isBlank()
+                ? request.getUsername().trim().toLowerCase()
+                : email.split("@")[0].toLowerCase().replaceAll("[^a-z0-9_]", "");
+
+        if (userRepository.existsByUsernameIgnoreCaseAndDeletedAtIsNull(username)) {
+            username = username + "_" + (System.currentTimeMillis() % 1000);
+        }
+
+        com.restaurantpos.users.entity.Role superAdminRole = roleRepository.findSuperAdminRole()
+                .orElseThrow(() -> PosException.badRequest("SUPER_ADMIN roli tizimda topilmadi."));
+
+        User superAdmin = new User();
+        superAdmin.setTenant(null);
+        superAdmin.setFirstName(request.getFirstName().trim());
+        superAdmin.setLastName(request.getLastName() != null ? request.getLastName().trim() : "");
+        superAdmin.setEmail(email);
+        superAdmin.setPhone(phone);
+        superAdmin.setUsername(username);
+        superAdmin.setPasswordHash(passwordEncoder.encode(request.getPassword().trim()));
+        superAdmin.setPinHash(null);
+        superAdmin.setPinLookupHash(null);
+        superAdmin.setAuthenticationType(com.restaurantpos.users.entity.AuthenticationType.PASSWORD_AND_PIN);
+        superAdmin.setActive(true);
+        superAdmin.setRoles(Set.of(superAdminRole));
+
+        User saved = userRepository.save(superAdmin);
+        log.info("New SuperAdmin created: {} ({}) with id {}", saved.getFullName(), saved.getEmail(), saved.getId());
+        return userService.mapToResponse(saved);
+    }
+
+    @Transactional
+    public com.restaurantpos.users.dto.UserDto.Response updateSuperAdminStatus(UUID id, boolean active, UUID currentUserId) {
+        if (id.equals(currentUserId) && !active) {
+            throw PosException.badRequest("O'zingizning superadmin hisobingizni nofaol qila olmaysiz.");
+        }
+
+        User user = userRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> PosException.notFound("Superadmin topilmadi."));
+
+        boolean isSuperAdmin = user.getRoles().stream().anyMatch(r -> "SUPER_ADMIN".equalsIgnoreCase(r.getName()));
+        if (!isSuperAdmin) {
+            throw PosException.badRequest("Faqat superadmin hisobining holatini o'zgartirish mumkin.");
+        }
+
+        user.setActive(active);
+        User saved = userRepository.save(user);
+        log.info("SuperAdmin status updated: {} (ID: {}) -> active: {}", saved.getFullName(), saved.getId(), active);
+        return userService.mapToResponse(saved);
     }
 }

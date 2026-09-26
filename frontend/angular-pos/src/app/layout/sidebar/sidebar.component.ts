@@ -436,7 +436,8 @@ export class SidebarComponent {
     { icon: 'coins', label: 'Savdo monitoringi', key: 'nav.salesMonitoring', route: '/platform/sales' },
     { icon: 'users', label: 'Xodimlar monitoringi', key: 'nav.employeeMonitoring', route: '/platform/employees' },
     { icon: 'laptop', label: 'Qurilmalar', key: 'nav.devices', route: '/platform/devices' },
-    { icon: 'trending-up', label: 'Platforma hisobotlari', key: 'nav.platformReports', route: '/platform/reports' }
+    { icon: 'trending-up', label: 'Platforma hisobotlari', key: 'nav.platformReports', route: '/platform/reports' },
+    { icon: 'shield', label: 'Superadminlar', key: 'nav.superAdmins', route: '/platform/superadmins' }
   ];
 
   readonly restaurantNavItems: NavItem[] = [

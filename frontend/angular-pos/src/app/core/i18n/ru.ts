@@ -75,6 +75,8 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     settings: "Настройки",
     billing: "Подписка & Оплата",
     superAdmin: "Супер Админ",
+    superAdmins: "Суперадминистраторы",
+    editProfile: "Редактировать профиль",
     platformDashboard: "Панель платформы",
     restaurants: "Рестораны",
     subscriptions: "Подписки",
@@ -143,7 +145,36 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     deleteTable: "Удалить стол",
     confirmDelete: "Вы действительно хотите удалить этот стол?",
     zoneName: "Название зала",
-    tableNumber: "Номер стола"
+    tableNumber: "Номер стола",
+    tableName: "Название стола",
+    canvasLayout: "Конструктор (Canvas)"
+  },
+
+  canvas: {
+    floorPlan: "План зала",
+    addTable: "Добавить стол",
+    tableProps: "Свойства стола",
+    shape: "Форма",
+    shapeRect: "Прямоугольник",
+    shapeCircle: "Круглый",
+    shapeBooth: "Кабина",
+    shapeBar: "Барная стойка",
+    shapeSofa: "Диван",
+    rotation: "Угол поворота",
+    canvasSize: "Размер холста",
+    width: "Ширина",
+    height: "Высота",
+    applySize: "Применить размер",
+    fitView: "По экрану",
+    grid: "Сетка",
+    stats: "Статистика",
+    totalSeats: "Всего мест",
+    unsavedChanges: "несохранённых изменений",
+    unsaved: "Несохранён",
+    selected: "Выбрано",
+    legend: "Легенда",
+    shortcuts: "Горячие клавиши",
+    newTable: "Новый стол"
   },
 
   orders: {

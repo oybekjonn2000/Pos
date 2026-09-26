@@ -75,6 +75,8 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     settings: "Settings",
     billing: "Subscription & Billing",
     superAdmin: "Super Admin",
+    superAdmins: "Super Admins",
+    editProfile: "Edit Profile",
     platformDashboard: "Platform Dashboard",
     restaurants: "Restaurants",
     subscriptions: "Subscriptions",
@@ -143,7 +145,36 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     deleteTable: "Delete Table",
     confirmDelete: "Are you sure you want to delete this table?",
     zoneName: "Zone Name",
-    tableNumber: "Table Number"
+    tableNumber: "Table Number",
+    tableName: "Table Name",
+    canvasLayout: "Canvas Layout"
+  },
+
+  canvas: {
+    floorPlan: "Floor Plan",
+    addTable: "Add Table",
+    tableProps: "Table Properties",
+    shape: "Shape",
+    shapeRect: "Rectangle",
+    shapeCircle: "Circle",
+    shapeBooth: "Booth",
+    shapeBar: "Bar Counter",
+    shapeSofa: "Sofa",
+    rotation: "Rotation Angle",
+    canvasSize: "Canvas Size",
+    width: "Width",
+    height: "Height",
+    applySize: "Apply Size",
+    fitView: "Fit to Screen",
+    grid: "Grid",
+    stats: "Statistics",
+    totalSeats: "Total Seats",
+    unsavedChanges: "unsaved changes",
+    unsaved: "Unsaved",
+    selected: "Selected",
+    legend: "Legend",
+    shortcuts: "Keyboard Shortcuts",
+    newTable: "New Table"
   },
 
   orders: {

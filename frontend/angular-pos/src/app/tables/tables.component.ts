@@ -1,7 +1,9 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import {
+  Component, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, inject
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TableService, RestaurantTable, TableZone, CreateTableRequest } from '../core/services/table.service';
 import { NotificationService } from '../core/services/notification.service';
 import { AuthService } from '../core/services/auth.service';
@@ -13,182 +15,368 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
   selector: 'app-tables',
   standalone: true,
   imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
+  styleUrls: ['./tables.component.scss'],
   template: `
     <div class="tables-page fade-in">
-      @if (!isWaiter()) {
-        <!-- Header -->
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">{{ 'tables.title' | translate }}</h1>
-            <p class="page-subtitle">{{ 'tables.subtitle' | translate }}</p>
-          </div>
-          <div class="header-actions">
-            <button class="btn btn--secondary" (click)="loadAll()">
-              <app-icon name="refresh" [size]="16"></app-icon> {{ 'common.refresh' | translate }}
-            </button>
-            @if (canManageTables()) {
-              <button class="btn btn--secondary" (click)="openAddZoneModal()">
-                <app-icon name="hall" [size]="16"></app-icon> + {{ 'tables.addZone' | translate }}
+      @if (selectedZoneId() === null) {
+        <!-- =============================================================== -->
+        <!-- 1. INITIAL SCREEN: ZALLAR / JOYLAR RO'YXATI                      -->
+        <!-- =============================================================== -->
+        <div class="zallar-screen">
+          <div class="zallar-header">
+            <div class="zallar-title-group">
+              <h1 class="page-title">{{ 'tables.title' | translate }}</h1>
+              <p class="page-subtitle">Xizmat ko‘rsatish uchun kerakli zalni tanlang</p>
+            </div>
+
+            <div class="header-actions">
+              <button class="btn btn--secondary" (click)="loadAll()" title="Yangilash">
+                <app-icon name="refresh" [size]="16"></app-icon> {{ 'common.refresh' | translate }}
               </button>
-              <button class="btn btn--primary" (click)="openAddModal()">
-                <app-icon name="plus" [size]="16"></app-icon> {{ 'tables.newTable' | translate }}
-              </button>
-            }
-          </div>
-        </div>
 
-        <!-- Stats Summary -->
-        <div class="tables-stats">
-          <div class="stat-pill stat-pill--total">
-            <span class="stat-label">{{ 'common.total' | translate }} {{ 'tables.table' | translate }}:</span>
-            <span class="stat-value">{{ tables().length }}</span>
+              @if (canManageTables()) {
+                <button class="btn btn--canvas" (click)="openCanvas()" title="Konstruktor">
+                  <app-icon name="layout" [size]="16"></app-icon> {{ 'tables.canvasLayout' | translate }}
+                </button>
+                <button class="btn btn--secondary" (click)="openAddZoneModal()" title="Yangi joy qo‘shish">
+                  <app-icon name="hall" [size]="16"></app-icon> + {{ 'tables.addZone' | translate }}
+                </button>
+                <button class="btn btn--primary" (click)="openAddModal()" title="Yangi stol qo‘shish">
+                  <app-icon name="plus" [size]="16"></app-icon> {{ 'tables.newTable' | translate }}
+                </button>
+              }
+            </div>
           </div>
-          <div class="stat-pill stat-pill--free">
-            <span class="stat-indicator"></span>
-            <span class="stat-label">{{ 'tables.statusAvailable' | translate }}:</span>
-            <span class="stat-value">{{ freeCount() }}</span>
-          </div>
-          <div class="stat-pill stat-pill--occupied">
-            <span class="stat-indicator"></span>
-            <span class="stat-label">{{ 'tables.statusOccupied' | translate }}:</span>
-            <span class="stat-value">{{ occupiedCount() }}</span>
-          </div>
-        </div>
-      }
 
-      <!-- Zone Filter Tabs & Actions -->
-      <div class="zone-filter-bar">
-        <div class="zone-tabs-wrap">
-          <div class="zone-filter-header">
-            <span class="zone-filter-icon"><app-icon name="map-pin" [size]="16"></app-icon></span>
-            <span class="zone-filter-title">{{ 'tables.zoneName' | translate }}:</span>
+          <!-- Overall Restaurant Stats Summary -->
+          <div class="restaurant-stats-bar">
+            <div class="stat-pill stat-pill--total">
+              <span class="stat-label">Jami zallar:</span>
+              <span class="stat-value">{{ zones().length }}</span>
+            </div>
+            <div class="stat-pill stat-pill--total">
+              <span class="stat-label">{{ 'common.total' | translate }} {{ 'tables.table' | translate }}:</span>
+              <span class="stat-value">{{ tables().length }}</span>
+            </div>
+            <div class="stat-pill stat-pill--free">
+              <span class="stat-indicator"></span>
+              <span class="stat-label">{{ 'tables.statusAvailable' | translate }}:</span>
+              <span class="stat-value">{{ freeCount() }}</span>
+            </div>
+            <div class="stat-pill stat-pill--occupied">
+              <span class="stat-indicator"></span>
+              <span class="stat-label">{{ 'tables.statusOccupied' | translate }}:</span>
+              <span class="stat-value">{{ occupiedCount() }}</span>
+            </div>
           </div>
-          <div class="zone-tabs">
-            <button class="zone-tab" [class.active]="selectedZoneId() === null" (click)="selectZone(null)">
-              <span class="zone-tab-icon"><app-icon name="globe" [size]="16"></app-icon></span>
-              <span class="zone-tab-name">{{ 'common.all' | translate }}</span>
-              <span class="zone-tab-count">{{ tables().length }}</span>
-            </button>
-            @for (zone of zones(); track zone.id) {
-              <button class="zone-tab" [class.active]="selectedZoneId() === zone.id" (click)="selectZone(zone.id)">
-                <span class="zone-tab-icon"><app-icon [name]="getZoneIcon(zone.name)" [size]="16"></app-icon></span>
-                <span class="zone-tab-name">{{ zone.name }}</span>
-                @if (zone.percentage && zone.percentage > 0) {
-                  <span class="zone-tab-pct">+{{ zone.percentage }}%</span>
-                } @else {
-                  <span class="zone-tab-pct zone-tab-pct--zero">0%</span>
-                }
-                <span class="zone-tab-count">{{ countByZone(zone.id) }}</span>
-              </button>
-            }
-          </div>
-        </div>
 
-        @if (canManageTables() && selectedZone()) {
-          <div class="zone-action-buttons">
-            <button class="btn-zone-action" (click)="openEditZoneModal(selectedZone()!)" title="Joyni tahrirlash">
-              <app-icon name="edit" [size]="14"></app-icon> {{ 'common.edit' | translate }}
-            </button>
-            <button class="btn-zone-action btn-zone-action--danger" (click)="deleteCurrentZone(selectedZone()!)" title="Joyni o'chirish">
-              <app-icon name="trash" [size]="14"></app-icon> {{ 'common.delete' | translate }}
-            </button>
-          </div>
-        }
-      </div>
+          <!-- Zallar Cards Grid -->
+          @if (loading()) {
+            <div class="loading-container">
+              <div class="spinner"></div>
+              <p>{{ 'common.loading' | translate }}</p>
+            </div>
+          } @else if (zones().length === 0) {
+            <div class="empty-state">
+              <div class="empty-icon"><app-icon name="hall" [size]="56"></app-icon></div>
+              <h3>Zallar mavjud emas</h3>
+              <p>Restoranda hali birorta zal yoki joy yaratilmagan.</p>
+              @if (canManageTables()) {
+                <button class="btn btn--primary mt-4" (click)="openAddZoneModal()">
+                  <app-icon name="plus" [size]="16"></app-icon> Yangi zal yaratish
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="zallar-grid">
+              @for (zone of zones(); track zone.id) {
+                <div class="zal-card" (click)="selectZone(zone.id)" role="button" tabindex="0" (keydown.enter)="selectZone(zone.id)">
+                  <div class="zal-card__header">
+                    <div class="zal-card__icon-wrap">
+                      <app-icon [name]="getZoneIcon(zone.name)" [size]="24"></app-icon>
+                    </div>
+                    @if (zone.percentage && zone.percentage > 0) {
+                      <span class="zal-card__pct-badge">+{{ zone.percentage }}% xizmat</span>
+                    }
+                  </div>
 
-      <!-- Tables Grid -->
-      @if (loading()) {
-        <div class="loading-container">
-          <div class="spinner"></div>
-          <p>{{ 'common.loading' | translate }}</p>
-        </div>
-      } @else if (filteredTables().length === 0) {
-        <div class="empty-state">
-          <div class="empty-icon"><app-icon name="tables" [size]="48"></app-icon></div>
-          <h3>{{ 'common.noRecords' | translate }}</h3>
-          <p>Ushbu zonada hozircha stollar mavjud emas.</p>
-          @if (canManageTables()) {
-            <button class="btn btn--primary mt-4" (click)="openAddModal()">
-              <app-icon name="plus" [size]="16"></app-icon> Shu zonaga stol qo'shish
-            </button>
+                  <div class="zal-card__body">
+                    <h2 class="zal-card__name">{{ zone.name }}</h2>
+                    @if (zone.description) {
+                      <p class="zal-card__desc">{{ zone.description }}</p>
+                    }
+                  </div>
+
+                  <div class="zal-card__footer">
+                    <div class="zal-card__meta">
+                      <span class="zal-meta-item">
+                        <strong>{{ countByZone(zone.id) }}</strong> ta stol
+                      </span>
+                      <span class="zal-meta-dot">•</span>
+                      <span class="zal-meta-item zal-meta-item--occupied">
+                        <span class="dot dot--danger"></span>
+                        <strong>{{ occupiedCountByZone(zone.id) }}</strong> ta band
+                      </span>
+                      <span class="zal-meta-dot">•</span>
+                      <span class="zal-meta-item zal-meta-item--free">
+                        <span class="dot dot--success"></span>
+                        <strong>{{ freeCountByZone(zone.id) }}</strong> ta bo‘sh
+                      </span>
+                    </div>
+
+                    <!-- Occupancy Bar -->
+                    <div class="zal-occupancy-bar" [title]="getOccupancyRate(zone.id) + '% band'">
+                      <div class="zal-occupancy-fill" [style.width.%]="getOccupancyRate(zone.id)"></div>
+                    </div>
+
+                    <div class="zal-card__arrow">
+                      <span>Xaritani ochish</span>
+                      <app-icon name="arrow-right" [size]="14"></app-icon>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
           }
         </div>
       } @else {
-        <div class="tables-grid">
-          @for (table of filteredTables(); track table.id) {
-            <div class="table-card" 
-                 [class.table-card--free]="table.status === 'FREE'"
-                 [class.table-card--occupied]="table.status === 'OCCUPIED' && table.myTable !== false"
-                 [class.table-card--other-waiter]="table.status === 'OCCUPIED' && table.myTable === false"
-                 (click)="onSelectTable(table)">
-              
-              <div class="table-card__header">
-                <span class="table-card__number">#{{ table.tableNumber }}</span>
-                @if (table.status === 'FREE') {
-                  <span class="table-status-badge badge--free">{{ 'tables.statusAvailable' | translate }}</span>
-                } @else if (table.myTable === false) {
-                  <span class="table-status-badge badge--other-waiter"><app-icon name="lock" [size]="12"></app-icon> BAND (Boshqa ofitsiant)</span>
-                } @else {
-                  <span class="table-status-badge badge--occupied">{{ 'tables.statusOccupied' | translate }}</span>
+        <!-- =============================================================== -->
+        <!-- 2. SELECTED ZAL: OPERATIONAL FLOOR MAP CANVAS VIEW              -->
+        <!-- =============================================================== -->
+        <div class="operational-canvas-screen">
+          <!-- Canvas Top Navigation Bar -->
+          <div class="canvas-navbar">
+            <div class="canvas-navbar__left">
+              <button class="btn-back-zallar" (click)="selectZone(null)" title="Zallar ro‘yxatiga qaytish">
+                <app-icon name="arrow-left" [size]="18"></app-icon>
+                <span>Zallar</span>
+              </button>
+
+              <div class="current-zone-badge">
+                <div class="zone-icon-chip">
+                  <app-icon [name]="getZoneIcon(selectedZone()?.name)" [size]="16"></app-icon>
+                </div>
+                <div class="zone-title-wrap">
+                  <h2 class="current-zone-name">{{ selectedZone()?.name }}</h2>
+                  <span class="zone-summary-pill">
+                    {{ countByZone(selectedZone()!.id) }} ta stol • 
+                    <span class="text-danger">{{ occupiedCountByZone(selectedZone()!.id) }} band</span> • 
+                    <span class="text-success">{{ freeCountByZone(selectedZone()!.id) }} bo‘sh</span>
+                    @if (selectedZone()?.percentage && selectedZone()!.percentage! > 0) {
+                      • <span class="text-amber">+{{ selectedZone()!.percentage }}%</span>
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Zone Switcher -->
+            <div class="canvas-navbar__center">
+              <div class="quick-zone-switcher">
+                @for (z of zones(); track z.id) {
+                  <button class="quick-zone-tab" [class.active]="z.id === selectedZoneId()" (click)="selectZone(z.id)">
+                    <app-icon [name]="getZoneIcon(z.name)" [size]="14"></app-icon>
+                    <span>{{ z.name }}</span>
+                    <span class="tab-table-count">{{ countByZone(z.id) }}</span>
+                  </button>
                 }
               </div>
+            </div>
 
-              <!-- Zone Badge -->
-              @if (table.zoneName) {
-                <div class="table-card__zone-badge">
-                  <span><app-icon [name]="getZoneIcon(table.zoneName)" [size]="12"></app-icon> {{ table.zoneName }}</span>
+            <div class="canvas-navbar__right">
+              <!-- View mode toggle: Canvas vs Grid -->
+              <div class="view-mode-toggle">
+                <button class="btn-mode" [class.active]="viewMode() === 'canvas'" (click)="viewMode.set('canvas')" title="Xarita (Canvas) ko‘rinishi">
+                  <app-icon name="layout" [size]="15"></app-icon>
+                  <span>Xarita</span>
+                </button>
+                <button class="btn-mode" [class.active]="viewMode() === 'grid'" (click)="viewMode.set('grid')" title="Ro‘yxat (Kartochkalar) ko‘rinishi">
+                  <app-icon name="grid" [size]="15"></app-icon>
+                  <span>Ro‘yxat</span>
+                </button>
+              </div>
+
+              @if (viewMode() === 'canvas') {
+                <!-- Zoom Controls -->
+                <div class="zoom-controls">
+                  <button class="zoom-btn" (click)="zoomOut()" title="Kichiklashtirish (-)">
+                    <app-icon name="zoom-out" [size]="15"></app-icon>
+                  </button>
+                  <button class="zoom-reset-btn" (click)="resetZoom()" title="Haqiqiy o‘lcham (100%)">
+                    {{ (zoom() * 100).toFixed(0) }}%
+                  </button>
+                  <button class="zoom-btn" (click)="zoomIn()" title="Kattalashtirish (+)">
+                    <app-icon name="zoom-in" [size]="15"></app-icon>
+                  </button>
+                  <button class="zoom-btn" (click)="fitToView()" title="Ekranga moslashtirish">
+                    <app-icon name="maximize" [size]="15"></app-icon>
+                  </button>
                 </div>
               }
 
-              <div class="table-card__body">
-                <div class="table-card__icon">
-                  <app-icon [name]="table.status === 'FREE' ? 'tables' : (table.myTable === false ? 'lock' : 'clock')" [size]="28"></app-icon>
-                </div>
-                <div class="table-card__name">{{ table.name }}</div>
+              @if (canManageTables()) {
+                <button class="btn-edit-layout" (click)="openConstructorForZone(selectedZone()!.id)" title="Konstruktorda stollarni joylashtirish va tahrirlash">
+                  <app-icon name="edit" [size]="14"></app-icon>
+                  <span>Konstruktor</span>
+                </button>
+              }
+            </div>
+          </div>
 
-                @if (table.status === 'FREE') {
-                  <div class="table-card__capacity">
-                    <span><app-icon name="users" [size]="14"></app-icon> {{ table.capacity }} kishilik</span>
-                  </div>
-                } @else if (table.myTable === false) {
-                  <div class="table-card__other-waiter-info">
-                    <span class="other-waiter-badge"><app-icon name="user" [size]="12"></app-icon> Boshqa ofitsiant</span>
-                    <p class="other-waiter-hint">Bu stol boshqa ofitsantga biriktirilgan</p>
-                  </div>
-                } @else {
-                  <div class="table-card__active-order">
-                    <div class="table-card__item-count">
-                      <app-icon name="products" [size]="14"></app-icon> {{ table.itemCount || 0 }} ta mahsulot
-                    </div>
-                    <div class="table-card__amount">
-                      {{ formatPrice(table.totalAmount || 0) }}
-                    </div>
-                  </div>
-                }
-              </div>
+          <!-- Operational Canvas Viewport -->
+          @if (viewMode() === 'canvas') {
+            <div class="canvas-viewport" #viewport
+                 [class.is-panning]="isPanning"
+                 (mousedown)="onCanvasMouseDown($event)"
+                 (mousemove)="onCanvasMouseMove($event)"
+                 (mouseup)="onCanvasMouseUp()"
+                 (mouseleave)="onCanvasMouseUp()">
 
-              <div class="table-card__footer">
-                @if (table.status === 'FREE') {
-                  <button class="btn-action btn-action--order">
-                    <app-icon name="plus" [size]="14"></app-icon> {{ 'tables.openOrder' | translate }}
-                  </button>
-                } @else if (table.myTable === false) {
-                  <button class="btn-action btn-action--blocked" disabled title="Bu stol boshqa ofitsantga biriktirilgan">
-                    <app-icon name="ban" [size]="14"></app-icon> Biriktirilgan
-                  </button>
-                } @else {
-                  <div class="table-card__btn-group">
-                    <button class="btn-action btn-action--view">
-                      <app-icon name="eye" [size]="14"></app-icon> {{ 'common.view' | translate }}
-                    </button>
-                    @if (!table.itemCount || table.itemCount === 0) {
-                      <button class="btn-action btn-action--release" (click)="onReleaseTable($event, table)" title="Bo'sh stolni bo'shatish">
-                        <app-icon name="unlock" [size]="14"></app-icon> Bo'shatish
+              <div class="canvas-world"
+                   [style.width.px]="(selectedZone()?.canvasWidth || 1200) * zoom()"
+                   [style.height.px]="(selectedZone()?.canvasHeight || 800) * zoom()"
+                   [style.transform]="'translate(' + panX() + 'px, ' + panY() + 'px)'">
+
+                @if (filteredTables().length === 0) {
+                  <div class="canvas-empty-state">
+                    <app-icon name="tables" [size]="48"></app-icon>
+                    <h3>Ushbu zalda stollar mavjud emas</h3>
+                    <p>Stollarni joylashtirish uchun konstruktordan foydalaning.</p>
+                    @if (canManageTables()) {
+                      <button class="btn btn--primary" (click)="openConstructorForZone(selectedZone()!.id)">
+                        <app-icon name="layout" [size]="16"></app-icon> Konstruktorni ochish
                       </button>
                     }
                   </div>
+                } @else {
+                  @for (t of filteredTables(); track t.id) {
+                    <div class="canvas-table"
+                         [class.canvas-table--free]="t.status === 'FREE'"
+                         [class.canvas-table--occupied]="t.status === 'OCCUPIED' && t.myTable !== false"
+                         [class.canvas-table--other-waiter]="t.status === 'OCCUPIED' && t.myTable === false"
+                         [class.canvas-table--reserved]="t.status === 'RESERVED'"
+                         [class.canvas-table--disabled]="!t.active"
+                         [class.canvas-table--circle]="t.tableType === 'circle'"
+                         [class.canvas-table--booth]="t.tableType === 'booth'"
+                         [class.canvas-table--bar]="t.tableType === 'bar'"
+                         [class.canvas-table--sofa]="t.tableType === 'sofa'"
+                         [style.left.px]="t.posX * zoom()"
+                         [style.top.px]="t.posY * zoom()"
+                         [style.width.px]="t.width * zoom()"
+                         [style.height.px]="t.height * zoom()"
+                         [style.transform]="'rotate(' + (t.rotation || 0) + 'deg)'"
+                         [style.border-radius]="t.tableType === 'circle' ? '50%' : (t.tableType === 'booth' ? '12px' : '8px')"
+                         (click)="onSelectTable(t, $event)"
+                         [title]="t.name + ' - ' + (t.status === 'FREE' ? 'BO‘SH' : ('BAND: ' + formatPrice(t.totalAmount || 0)))">
+
+                      <div class="table-card-inner">
+                        <!-- Top: Table number / name & badge -->
+                        <div class="table-card-top">
+                          <span class="table-num-tag">#{{ t.tableNumber }}</span>
+                          <span class="table-status-pill"
+                                [class.pill--free]="t.status === 'FREE'"
+                                [class.pill--occupied]="t.status === 'OCCUPIED' && t.myTable !== false"
+                                [class.pill--locked]="t.status === 'OCCUPIED' && t.myTable === false"
+                                [class.pill--reserved]="t.status === 'RESERVED'"
+                                [class.pill--disabled]="!t.active">
+                            @if (t.status === 'FREE') {
+                              BO‘SH
+                            } @else if (t.status === 'OCCUPIED' && t.myTable === false) {
+                              <app-icon name="lock" [size]="9"></app-icon> BAND
+                            } @else if (t.status === 'OCCUPIED') {
+                              BAND
+                            } @else if (t.status === 'RESERVED') {
+                              BAND QILINGAN
+                            } @else {
+                              FAOL EMAS
+                            }
+                          </span>
+                        </div>
+
+                        <div class="table-card-name">{{ t.name }}</div>
+
+                        <!-- Content: Amounts, Products, Waiter or Capacity -->
+                        @if (t.status === 'FREE') {
+                          <div class="table-free-content">
+                            <span class="capacity-hint"><app-icon name="users" [size]="11"></app-icon> {{ t.capacity }} kishilik</span>
+                          </div>
+                        } @else if (t.status === 'OCCUPIED' && t.myTable === false) {
+                          <div class="table-locked-content">
+                            <span class="waiter-name-tag"><app-icon name="user" [size]="10"></app-icon> Ofitsant: {{ t.waiterName || 'Ali' }}</span>
+                          </div>
+                        } @else if (t.status === 'OCCUPIED') {
+                          <div class="table-active-content">
+                            <div class="table-live-amount">{{ formatPrice(t.totalAmount || 0) }}</div>
+                            <div class="table-live-items"><app-icon name="products" [size]="10"></app-icon> {{ t.itemCount || 0 }} ta mahsulot</div>
+                            @if (t.waiterName) {
+                              <div class="table-live-waiter"><app-icon name="user" [size]="10"></app-icon> Ofitsant: {{ t.waiterName }}</div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
                 }
               </div>
+            </div>
+          } @else {
+            <!-- Fallback Grid Mode -->
+            <div class="tables-grid">
+              @for (table of filteredTables(); track table.id) {
+                <div class="table-card" 
+                     [class.table-card--free]="table.status === 'FREE'"
+                     [class.table-card--occupied]="table.status === 'OCCUPIED' && table.myTable !== false"
+                     [class.table-card--other-waiter]="table.status === 'OCCUPIED' && table.myTable === false"
+                     (click)="onSelectTable(table, $event)">
+                  <div class="table-card__header">
+                    <span class="table-card__number">#{{ table.tableNumber }}</span>
+                    @if (table.status === 'FREE') {
+                      <span class="table-status-badge badge--free">BO‘SH</span>
+                    } @else if (table.myTable === false) {
+                      <span class="table-status-badge badge--other-waiter"><app-icon name="lock" [size]="12"></app-icon> BAND ({{ table.waiterName || 'Ali' }})</span>
+                    } @else {
+                      <span class="table-status-badge badge--occupied">BAND</span>
+                    }
+                  </div>
+
+                  <div class="table-card__body">
+                    <div class="table-card__name">{{ table.name }}</div>
+                    @if (table.status === 'FREE') {
+                      <div class="table-card__capacity">
+                        <span><app-icon name="users" [size]="14"></app-icon> {{ table.capacity }} kishilik</span>
+                      </div>
+                    } @else if (table.myTable === false) {
+                      <div class="table-card__other-waiter-info">
+                        <span class="other-waiter-badge"><app-icon name="user" [size]="12"></app-icon> Ofitsant: {{ table.waiterName || 'Ali' }}</span>
+                      </div>
+                    } @else {
+                      <div class="table-card__amount">{{ formatPrice(table.totalAmount || 0) }}</div>
+                      <div class="table-card__item-count">
+                        <app-icon name="products" [size]="14"></app-icon> {{ table.itemCount || 0 }} ta mahsulot
+                        @if (table.waiterName) {
+                          <span> • Ofitsant: {{ table.waiterName }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <div class="table-card__footer">
+                    @if (table.status === 'FREE') {
+                      <button class="btn btn--primary" style="padding: 6px 12px; font-size: 12.5px;">
+                        <app-icon name="plus" [size]="13"></app-icon> Zakaz ochish
+                      </button>
+                    } @else if (table.myTable === false) {
+                      <button class="btn btn--secondary" disabled style="padding: 6px 12px; font-size: 12.5px; opacity: 0.6;">
+                        <app-icon name="lock" [size]="13"></app-icon> Biriktirilgan
+                      </button>
+                    } @else {
+                      <button class="btn btn--primary" style="padding: 6px 12px; font-size: 12.5px;">
+                        <app-icon name="eye" [size]="13"></app-icon> Buyurtmani ko‘rish
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
             </div>
           }
         </div>
@@ -206,12 +394,8 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
               <button class="modal-close" (click)="closeModal()"><app-icon name="close" [size]="18"></app-icon></button>
             </div>
             <div class="modal-body">
-              <!-- Location / Zone Selection (MANDATORY) -->
               <div class="form-group">
-                <label class="required-label">
-                  Stol Joylashuvi (Zona) *
-                  <span class="label-hint">(Zal, Ko'cha, Ayvon, Podval...)</span>
-                </label>
+                <label>Stol Joylashuvi (Zona) *</label>
                 <div class="zone-select-row">
                   <select [(ngModel)]="newTable.zoneId" class="pos-input pos-select">
                     <option value="" disabled>-- Joylashuvni tanlang --</option>
@@ -219,7 +403,7 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
                       <option [value]="zone.id">{{ zone.name }}</option>
                     }
                   </select>
-                  <button type="button" class="btn-add-zone" (click)="toggleCustomZone()" [title]="showCustomZone() ? 'Yopish' : 'Yangi zona kiritish'">
+                  <button type="button" class="btn-add-zone" (click)="toggleCustomZone()">
                     {{ showCustomZone() ? 'Bekor qilish' : '+ Yangi joy' }}
                   </button>
                 </div>
@@ -227,30 +411,23 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
                 @if (showCustomZone()) {
                   <div class="custom-zone-input-wrap">
                     <input type="text" [(ngModel)]="customZoneName" placeholder="Masalan: Ayvon, Podval, Bog'..." class="pos-input" />
-                    <button type="button" class="btn btn--primary btn-sm" (click)="addNewZone()" [disabled]="!customZoneName.trim()">
+                    <button type="button" class="btn btn--primary" (click)="addNewZone()" [disabled]="!customZoneName.trim()">
                       Qo'shish
                     </button>
                   </div>
                 }
-
-                @if (!newTable.zoneId && !newTable.zoneName) {
-                  <span class="field-validation-error"><app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Stol joylashuvini (zal, ko'cha, ayvon, podval...) tanlash shart!</span>
-                }
               </div>
 
-              <!-- Table Number -->
               <div class="form-group">
-                <label class="required-label">Stol Raqami *</label>
+                <label>Stol Raqami *</label>
                 <input type="text" [(ngModel)]="newTable.tableNumber" placeholder="Masalan: 11 yoki K-1, AY-1" class="pos-input" />
               </div>
 
-              <!-- Table Name -->
               <div class="form-group">
                 <label>Stol Nomi</label>
                 <input type="text" [(ngModel)]="newTable.name" placeholder="Masalan: Stol 11 yoki Ayvon 1" class="pos-input" />
               </div>
 
-              <!-- Capacity -->
               <div class="form-group">
                 <label>Sig'imi (Odamlar soni)</label>
                 <input type="number" [(ngModel)]="newTable.capacity" min="1" max="50" class="pos-input" />
@@ -275,37 +452,32 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
           <div class="modal-card" (click)="$event.stopPropagation()">
             <div class="modal-header">
               <div>
-                <h3 class="modal-title">{{ editingZoneId ? 'Joyni Tahrirlash' : 'Yangi Joy Qo\'shish' }}</h3>
-                <p class="modal-sub">Joy nomi va ushbu joy uchun foizni belgilang</p>
+                <h3 class="modal-title">{{ editingZoneId ? 'Joyni tahrirlash' : 'Yangi joy qo‘shish' }}</h3>
+                <p class="modal-sub">Zal yoki joylashuv parametrlarini belgilang</p>
               </div>
               <button class="modal-close" (click)="closeZoneModal()"><app-icon name="close" [size]="18"></app-icon></button>
             </div>
+
             <div class="modal-body">
               <div class="form-group">
-                <label class="required-label">Joy Nomi *</label>
-                <input type="text" [(ngModel)]="zoneForm.name" placeholder="Masalan: Zal, Premium, Olib ketish, VIP..." class="pos-input" />
+                <label>Joy nomi *</label>
+                <input type="text" [(ngModel)]="zoneForm.name" placeholder="Masalan: Asosiy zal, VIP zal, Terassa" class="pos-input" />
               </div>
 
               <div class="form-group">
-                <label class="required-label">
-                  Stol / Joy Foizi (%) *
-                  <span class="label-hint">(Buyurtma hisobiga avtomatik qo'shiladi)</span>
-                </label>
-                <div class="percentage-input-wrap">
-                  <input type="number" [(ngModel)]="zoneForm.percentage" min="0" max="100" step="0.5" placeholder="0" class="pos-input" />
-                  <span class="percentage-symbol">%</span>
-                </div>
+                <label>Xizmat haqi foizi (%)</label>
+                <input type="number" [(ngModel)]="zoneForm.percentage" min="0" max="100" class="pos-input" />
               </div>
 
               <div class="form-group">
-                <label>Tavsif (ixtiyoriy)</label>
-                <input type="text" [(ngModel)]="zoneForm.description" placeholder="Qo'shimcha izoh..." class="pos-input" />
+                <label>Izoh</label>
+                <input type="text" [(ngModel)]="zoneForm.description" placeholder="Qisqacha tavsif" class="pos-input" />
               </div>
             </div>
 
             <div class="modal-footer">
               <button class="btn btn--secondary" (click)="closeZoneModal()">{{ 'common.cancel' | translate }}</button>
-              <button class="btn btn--primary" (click)="saveZone()" [disabled]="!zoneForm.name.trim() || zoneForm.percentage === null || zoneForm.percentage < 0">
+              <button class="btn btn--primary" (click)="saveZone()" [disabled]="!zoneForm.name.trim()">
                 <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
               </button>
             </div>
@@ -313,926 +485,28 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
         </div>
       }
     </div>
-  `,
-  styles: [`
-    .tables-page {
-      padding: 24px;
-    }
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .page-title {
-      font-size: 26px;
-      font-weight: 800;
-      color: var(--text-primary);
-      margin: 0 0 4px;
-    }
-    .page-subtitle {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin: 0;
-    }
-    .header-actions {
-      display: flex;
-      gap: 12px;
-    }
-    .tables-stats {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .stat-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .stat-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-    .stat-pill--free .stat-indicator { background: var(--success); }
-    .stat-pill--occupied .stat-indicator { background: var(--danger); }
-    .stat-value {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--text-primary);
-    }
-
-    /* Zone Filter Tabs - Classic, Prominent & High Contrast */
-    .zone-filter-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      background: var(--bg-card);
-      padding: 16px 20px;
-      border-radius: var(--radius-lg, 12px);
-      border: 1.5px solid var(--border);
-      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
-    }
-
-    .zone-tabs-wrap {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      flex: 1;
-    }
-
-    .zone-filter-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-
-    .zone-filter-icon {
-      font-size: 16px;
-    }
-
-    .zone-filter-title {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: var(--text-primary);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-
-    .zone-tabs {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    .zone-tab {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      padding: 9px 18px;
-      min-height: 44px;
-      border-radius: 10px;
-      border: 1.5px solid var(--border);
-      background: var(--bg-main, #f8fafc);
-      color: var(--text-primary, #1e293b);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-      .zone-tab-icon {
-        font-size: 17px;
-        line-height: 1;
-        display: inline-flex;
-        align-items: center;
-      }
-
-      .zone-tab-name {
-        font-weight: 700;
-        letter-spacing: -0.2px;
-      }
-
-      .zone-tab-pct {
-        font-size: 11.5px;
-        font-weight: 800;
-        padding: 2px 7px;
-        border-radius: 6px;
-        background: rgba(245, 158, 11, 0.15);
-        color: #d97706;
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        line-height: 1.2;
-
-        &--zero {
-          background: rgba(148, 163, 184, 0.12);
-          color: var(--text-muted, #64748b);
-          border-color: rgba(148, 163, 184, 0.25);
-          font-weight: 600;
-        }
-      }
-
-      .zone-tab-count {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 24px;
-        height: 24px;
-        padding: 0 6px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 800;
-        background: rgba(0, 0, 0, 0.06);
-        color: var(--text-primary);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-      }
-
-      &:hover {
-        border-color: var(--primary);
-        background: var(--bg-card);
-        color: var(--primary);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-
-        .zone-tab-count {
-          border-color: var(--primary);
-          color: var(--primary);
-        }
-      }
-
-      &.active {
-        background: var(--primary);
-        color: #ffffff;
-        border-color: var(--primary);
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-        transform: translateY(-1px);
-
-        .zone-tab-icon {
-          filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-        }
-
-        .zone-tab-pct {
-          background: rgba(255, 255, 255, 0.25);
-          color: #ffffff;
-          border-color: rgba(255, 255, 255, 0.4);
-
-          &--zero {
-            background: rgba(255, 255, 255, 0.15);
-            color: rgba(255, 255, 255, 0.85);
-            border-color: rgba(255, 255, 255, 0.25);
-          }
-        }
-
-        .zone-tab-count {
-          background: #ffffff;
-          color: var(--primary);
-          border-color: #ffffff;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-        }
-      }
-    }
-
-    .zone-action-buttons {
-      display: flex;
-      gap: 8px;
-    }
-    .btn-zone-action {
-      padding: 8px 14px;
-      min-height: 40px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      color: var(--text-primary);
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.1);
-        border-color: var(--primary);
-        color: var(--primary);
-        transform: translateY(-1px);
-      }
-      &--danger {
-        border-color: rgba(239, 68, 68, 0.3);
-        background: rgba(239, 68, 68, 0.08);
-        color: #ef4444;
-        &:hover {
-          background: #ef4444;
-          color: white;
-          border-color: #ef4444;
-        }
-      }
-    }
-
-    .tables-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-    }
-    .table-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all var(--transition);
-      position: relative;
-
-      &:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-      }
-
-      &--free {
-        border-color: rgba(16, 185, 129, 0.4);
-        &:hover { border-color: var(--success); }
-      }
-
-      &--occupied {
-        border-color: rgba(239, 68, 68, 0.4);
-        background: rgba(239, 68, 68, 0.05);
-        &:hover { border-color: var(--danger); }
-      }
-
-      &--other-waiter {
-        border-color: rgba(245, 158, 11, 0.4);
-        background: rgba(245, 158, 11, 0.04);
-        cursor: not-allowed;
-        opacity: 0.9;
-        &:hover {
-          transform: none;
-          box-shadow: none;
-          border-color: rgba(239, 68, 68, 0.6);
-        }
-      }
-
-      &__header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-
-      &__number {
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--text-primary);
-      }
-
-      &__zone-badge {
-        margin-bottom: 8px;
-        span {
-          display: inline-block;
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--text-muted);
-          background: var(--bg-tertiary);
-          padding: 2px 8px;
-          border-radius: 6px;
-          border: 1px solid var(--border);
-        }
-      }
-
-      &__body {
-        text-align: center;
-        padding: 8px 0;
-      }
-
-      &__icon {
-        font-size: 30px;
-        margin-bottom: 6px;
-      }
-
-      &__name {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 4px;
-      }
-
-      &__capacity {
-        font-size: 13px;
-        color: var(--text-muted);
-      }
-
-      &__active-order {
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: rgba(239, 68, 68, 0.12);
-        border: 1px dashed rgba(239, 68, 68, 0.4);
-        border-radius: var(--radius-md);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 3px;
-      }
-
-      &__item-count {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary);
-      }
-
-      &__amount {
-        font-size: 16px;
-        font-weight: 800;
-        color: #ef4444;
-        letter-spacing: 0.3px;
-      }
-
-      &__other-waiter-info {
-        margin-top: 8px;
-        padding: 8px;
-        background: rgba(245, 158, 11, 0.08);
-        border: 1px dashed rgba(245, 158, 11, 0.3);
-        border-radius: var(--radius-md);
-        text-align: center;
-      }
-      .other-waiter-badge {
-        display: inline-block;
-        font-size: 12px;
-        font-weight: 700;
-        color: #f59e0b;
-        margin-bottom: 2px;
-      }
-      .other-waiter-hint {
-        font-size: 11px;
-        color: var(--text-muted);
-        margin: 0;
-      }
-
-      &__footer {
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--border);
-      }
-    }
-
-    .table-status-badge {
-      font-size: 11px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 100px;
-      text-transform: uppercase;
-    }
-    .badge--free {
-      background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
-    }
-    .badge--occupied {
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-    }
-    .badge--other-waiter {
-      background: rgba(245, 158, 11, 0.15);
-      color: #f59e0b;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .btn-action {
-      width: 100%;
-      padding: 8px;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background var(--transition);
-
-      &--order {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        &:hover { background: #10b981; color: white; }
-      }
-
-      &--view {
-        background: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        &:hover { background: #ef4444; color: white; }
-      }
-
-      &--blocked {
-        background: rgba(148, 163, 184, 0.15);
-        color: var(--text-muted);
-        cursor: not-allowed;
-      }
-
-      &--release {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-        &:hover { background: #f59e0b; color: white; }
-      }
-    }
-
-    .table-card__btn-group {
-      display: flex;
-      gap: 6px;
-      width: 100%;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-
-      &--primary {
-        background: var(--primary);
-        color: white;
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      }
-      &--secondary {
-        background: var(--bg-card);
-        color: var(--text-primary);
-        border: 1px solid var(--border);
-      }
-    }
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 12px;
-    }
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .modal-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      width: 100%;
-      max-width: 480px;
-      padding: 24px;
-      box-shadow: var(--shadow-xl);
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-    .modal-title {
-      margin: 0 0 4px;
-      color: var(--text-primary);
-      font-size: 20px;
-    }
-    .modal-sub {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--text-muted);
-      &:hover { color: var(--text-primary); }
-    }
-    .form-group {
-      margin-bottom: 16px;
-      label {
-        display: block;
-        margin-bottom: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-secondary);
-      }
-    }
-    .required-label {
-      color: var(--text-primary) !important;
-    }
-    .label-hint {
-      font-weight: normal;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    .zone-select-row {
-      display: flex;
-      gap: 8px;
-    }
-    .pos-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      background: var(--bg-main);
-      color: var(--text-primary);
-      box-sizing: border-box;
-      font-size: 14px;
-    }
-    .pos-select {
-      cursor: pointer;
-    }
-    .btn-add-zone {
-      white-space: nowrap;
-      padding: 0 14px;
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid var(--primary);
-      border-radius: var(--radius-md);
-      color: var(--primary);
-      font-weight: 700;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-      &:hover {
-        background: var(--primary);
-        color: white;
-      }
-    }
-    .custom-zone-input-wrap {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      padding: 8px;
-      background: var(--bg-main);
-      border-radius: var(--radius-md);
-      border: 1px dashed var(--primary);
-    }
-
-    .percentage-input-wrap {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-    .percentage-symbol {
-      position: absolute;
-      right: 14px;
-      font-weight: 700;
-      color: var(--primary);
-      pointer-events: none;
-    }
-    .field-validation-error {
-      display: block;
-      color: #ef4444;
-      font-size: 12px;
-      font-weight: 600;
-      margin-top: 6px;
-    }
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 24px;
-    }
-    .loading-container, .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
-    }
-    .empty-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
-    }
-    .mt-4 { margin-top: 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ============================================================
-     * RESPONSIVE BREAKPOINTS (Mobile & Tablet)
-     * ============================================================ */
-    @media (max-width: 1023px) {
-      .tables-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 14px;
-      }
-    }
-
-    @media (max-width: 767px) {
-      .tables-page {
-        gap: 10px;
-      }
-
-      .page-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-          flex-wrap: wrap;
-
-          .btn {
-            flex: 1;
-            min-height: 44px;
-            justify-content: center;
-          }
-        }
-      }
-
-      .tables-stats {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-
-        .stat-pill {
-          padding: 8px 6px;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          gap: 2px;
-
-          .stat-label {
-            font-size: 10.5px;
-          }
-
-          .stat-value {
-            font-size: 14px;
-          }
-        }
-      }
-
-      .zone-filter-bar {
-        padding: 8px 10px;
-        margin-bottom: 8px;
-      }
-
-      .zone-tabs-wrap {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        width: 100%;
-      }
-
-      .zone-filter-header {
-        display: none;
-      }
-
-      .zone-tabs {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        gap: 8px;
-        width: 100%;
-        padding-bottom: 6px;
-
-        &::-webkit-scrollbar {
-          height: 3px;
-        }
-      }
-
-      .zone-tab {
-        padding: 7px 12px;
-        min-height: 42px;
-        font-size: 13px;
-        white-space: nowrap;
-        flex-shrink: 0;
-        gap: 6px;
-
-        .zone-tab-icon {
-          font-size: 15px;
-        }
-
-        .zone-tab-name {
-          font-size: 12.5px;
-        }
-
-        .zone-tab-pct {
-          font-size: 10.5px;
-          padding: 1px 5px;
-        }
-
-        .zone-tab-count {
-          min-width: 20px;
-          height: 20px;
-          font-size: 11px;
-        }
-      }
-
-      .zone-action-buttons {
-        width: 100%;
-        display: flex;
-        gap: 8px;
-
-        .btn-zone-action {
-          flex: 1;
-          justify-content: center;
-          min-height: 40px;
-        }
-      }
-
-      /* 2 COLUMNS ON MOBILE (Section 4 requirement) */
-      .tables-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-      }
-
-      .table-card {
-        padding: 10px 8px;
-        border-radius: 12px;
-
-        &__header {
-          margin-bottom: 4px;
-        }
-
-        &__number {
-          font-size: 15px;
-        }
-
-        .table-status-badge {
-          font-size: 9.5px;
-          padding: 2px 5px;
-        }
-
-        &__zone-badge {
-          margin-bottom: 4px;
-          span {
-            font-size: 9.5px;
-            padding: 1px 5px;
-          }
-        }
-
-        &__body {
-          padding: 4px 0;
-        }
-
-        &__icon {
-          font-size: 22px;
-          margin-bottom: 2px;
-        }
-
-        &__name {
-          font-size: 13px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        &__capacity {
-          font-size: 11px;
-        }
-
-        &__other-waiter-info {
-          .other-waiter-badge {
-            font-size: 10px;
-          }
-          .other-waiter-hint {
-            display: none;
-          }
-        }
-
-        &__active-order {
-          .table-card__item-count {
-            font-size: 11px;
-          }
-          .table-card__amount {
-            font-size: 12.5px;
-          }
-        }
-
-        &__footer {
-          margin-top: 6px;
-        }
-
-        .btn-action {
-          min-height: 42px;
-          font-size: 12px;
-          padding: 6px 8px;
-          border-radius: 8px;
-          width: 100%;
-        }
-
-        .table-card__btn-group {
-          display: flex;
-          gap: 4px;
-
-          .btn-action--view {
-            flex: 2;
-          }
-
-          .btn-action--release {
-            flex: 1;
-            padding: 6px 4px;
-            font-size: 11px;
-          }
-        }
-      }
-    }
-
-    /* Small screens <= 359px (1 column as per requirement 5) */
-    @media (max-width: 359px) {
-      .tables-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
-
-      .table-card {
-        padding: 12px 14px;
-
-        &__number {
-          font-size: 15px;
-        }
-
-        &__name {
-          font-size: 14px;
-        }
-
-        .btn-action {
-          min-height: 44px;
-          font-size: 13px;
-          padding: 8px;
-        }
-      }
-    }
-
-    /* POS Monitor / Full HD (>= 1536px) */
-    @media (min-width: 1536px) {
-      .tables-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 22px;
-      }
-
-      .table-card {
-        padding: 20px;
-        border-radius: 16px;
-
-        &__number {
-          font-size: 20px;
-        }
-
-        &__name {
-          font-size: 17px;
-        }
-
-        .btn-action {
-          min-height: 46px;
-          font-size: 14px;
-        }
-      }
-    }
-  `]
+  `
 })
 export class TablesComponent implements OnInit, OnDestroy {
+  @ViewChild('viewport') viewportEl?: ElementRef<HTMLDivElement>;
+
   tables = signal<RestaurantTable[]>([]);
   zones = signal<TableZone[]>([]);
   selectedZoneId = signal<string | null>(null);
+  viewMode = signal<'canvas' | 'grid'>('canvas');
   loading = signal(true);
+
+  // Canvas Pan & Zoom State
+  zoom = signal<number>(1.0);
+  panX = signal<number>(0);
+  panY = signal<number>(0);
+  isPanning = false;
+  private panStartX = 0;
+  private panStartY = 0;
+  private initialPanX = 0;
+  private initialPanY = 0;
+
+  // Modals state
   showAddModal = signal(false);
   showCustomZone = signal(false);
   customZoneName = '';
@@ -1243,7 +517,6 @@ export class TablesComponent implements OnInit, OnDestroy {
     percentage: 5,
     description: ''
   };
-  private wsUnsub?: () => void;
 
   newTable: CreateTableRequest = {
     zoneId: '',
@@ -1251,6 +524,8 @@ export class TablesComponent implements OnInit, OnDestroy {
     name: '',
     capacity: 4
   };
+
+  private wsUnsub?: () => void;
 
   freeCount = () => this.tables().filter(t => t.status === 'FREE').length;
   occupiedCount = () => this.tables().filter(t => t.status === 'OCCUPIED').length;
@@ -1272,6 +547,7 @@ export class TablesComponent implements OnInit, OnDestroy {
   constructor(
     private tableService: TableService,
     private router: Router,
+    private route: ActivatedRoute,
     private notify: NotificationService,
     public auth: AuthService,
     private wsService: WebsocketService
@@ -1280,6 +556,14 @@ export class TablesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadAll();
     this.setupWebSocket();
+
+    // Check query params if zoneId was passed (e.g. returning from /pos)
+    this.route.queryParams.subscribe(params => {
+      if (params['zoneId']) {
+        this.selectedZoneId.set(params['zoneId']);
+        setTimeout(() => this.fitToView(), 150);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -1349,10 +633,33 @@ export class TablesComponent implements OnInit, OnDestroy {
 
   selectZone(zoneId: string | null): void {
     this.selectedZoneId.set(zoneId);
+    this.panX.set(0);
+    this.panY.set(0);
+    if (zoneId) {
+      if (this.viewportEl) {
+        this.fitToView();
+      } else {
+        setTimeout(() => this.fitToView(), 30);
+      }
+    }
   }
 
   countByZone(zoneId: string): number {
     return this.tables().filter(t => t.zoneId === zoneId).length;
+  }
+
+  occupiedCountByZone(zoneId: string): number {
+    return this.tables().filter(t => t.zoneId === zoneId && t.status === 'OCCUPIED').length;
+  }
+
+  freeCountByZone(zoneId: string): number {
+    return this.tables().filter(t => t.zoneId === zoneId && t.status === 'FREE').length;
+  }
+
+  getOccupancyRate(zoneId: string): number {
+    const total = this.countByZone(zoneId);
+    if (total === 0) return 0;
+    return Math.round((this.occupiedCountByZone(zoneId) / total) * 100);
   }
 
   getZoneIcon(name?: string): string {
@@ -1370,18 +677,34 @@ export class TablesComponent implements OnInit, OnDestroy {
     return !this.isWaiter() && this.auth.hasPermission('MANAGE_TABLES');
   }
 
-  onSelectTable(table: RestaurantTable): void {
+  openCanvas(): void {
+    const zoneId = this.selectedZoneId();
+    if (zoneId) {
+      this.router.navigate(['/tables/canvas', zoneId]);
+    } else {
+      this.router.navigate(['/tables/canvas']);
+    }
+  }
+
+  openConstructorForZone(zoneId: string): void {
+    this.router.navigate(['/tables/canvas', zoneId]);
+  }
+
+  onSelectTable(table: RestaurantTable, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
     if (table.status === 'OCCUPIED' && table.myTable === false) {
       this.notify.warning("Bu stol boshqa ofitsantga biriktirilgan.");
       return;
     }
 
     if (table.status === 'FREE') {
-      // Yangi buyurtma: stolda mahsulot tanlanmasdan oldin bazada bo'sh buyurtma yaratilmaydi.
-      // Mahsulot tanlanib "Oshxonaga yuborish" bosilgandagina buyurtma yaratiladi va stol band qilinadi.
       this.router.navigate(['/pos'], {
         queryParams: {
           tableId: table.id,
+          zoneId: table.zoneId,
           tableNumber: table.tableNumber,
           tableName: table.name
         }
@@ -1392,6 +715,7 @@ export class TablesComponent implements OnInit, OnDestroy {
     this.router.navigate(['/pos'], {
       queryParams: {
         tableId: table.id,
+        zoneId: table.zoneId,
         tableNumber: table.tableNumber,
         tableName: table.name,
         orderId: table.currentOrderId
@@ -1399,26 +723,64 @@ export class TablesComponent implements OnInit, OnDestroy {
     });
   }
 
-  onReleaseTable(event: Event, table: RestaurantTable): void {
-    event.stopPropagation();
-    this.tableService.releaseTable(table.id).subscribe({
-      next: (res) => {
-        if (res.success) {
-          this.notify.success(`Stol #${table.tableNumber} muvaffaqiyatli bo'shatildi`);
-          this.loadTables();
-        }
-      },
-      error: (err) => {
-        this.notify.error(err.error?.message || "Stolni bo'shatishda xatolik yuz berdi");
-      }
-    });
+  // ─── Canvas Pan & Zoom Controls ───────────────────────────────────────────
+  zoomIn(): void {
+    this.zoom.update(z => Math.min(2.5, +(z + 0.15).toFixed(2)));
   }
 
+  zoomOut(): void {
+    this.zoom.update(z => Math.max(0.4, +(z - 0.15).toFixed(2)));
+  }
+
+  resetZoom(): void {
+    this.zoom.set(1.0);
+    this.panX.set(0);
+    this.panY.set(0);
+  }
+
+  fitToView(): void {
+    if (!this.viewportEl) return;
+    const vp = this.viewportEl.nativeElement;
+    const zone = this.selectedZone();
+    const w = zone?.canvasWidth || 1200;
+    const h = zone?.canvasHeight || 800;
+    const pad = 48;
+    const availW = Math.max(100, vp.clientWidth - pad);
+    const availH = Math.max(100, vp.clientHeight - pad);
+    const scaleX = availW / w;
+    const scaleY = availH / h;
+    const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.2), 1.5);
+    this.zoom.set(+scale.toFixed(2));
+    this.panX.set(0);
+    this.panY.set(0);
+  }
+
+  onCanvasMouseDown(event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest('.canvas-table')) return;
+    this.isPanning = true;
+    this.panStartX = event.clientX;
+    this.panStartY = event.clientY;
+    this.initialPanX = this.panX();
+    this.initialPanY = this.panY();
+  }
+
+  onCanvasMouseMove(event: MouseEvent): void {
+    if (!this.isPanning) return;
+    const dx = event.clientX - this.panStartX;
+    const dy = event.clientY - this.panStartY;
+    this.panX.set(this.initialPanX + dx);
+    this.panY.set(this.initialPanY + dy);
+  }
+
+  onCanvasMouseUp(): void {
+    this.isPanning = false;
+  }
+
+  // ─── Modal Management ─────────────────────────────────────────────────────
   openAddModal(): void {
     if (this.isWaiter()) return;
-    const defaultZone = this.selectedZoneId() || (this.zones().length > 0 ? this.zones()[0].id : '');
     this.newTable = {
-      zoneId: defaultZone,
+      zoneId: this.selectedZoneId() || (this.zones()[0]?.id || ''),
       tableNumber: '',
       name: '',
       capacity: 4
@@ -1430,54 +792,45 @@ export class TablesComponent implements OnInit, OnDestroy {
 
   closeModal(): void {
     this.showAddModal.set(false);
-    this.showCustomZone.set(false);
-    this.customZoneName = '';
   }
 
   toggleCustomZone(): void {
-    this.showCustomZone.update(v => !v);
+    this.showCustomZone.set(!this.showCustomZone());
+    if (!this.showCustomZone()) {
+      this.customZoneName = '';
+    }
   }
 
   addNewZone(): void {
-    const name = this.customZoneName.trim();
-    if (!name) return;
-
-    this.tableService.createZone({ name }).subscribe({
+    if (!this.customZoneName.trim()) return;
+    this.tableService.createZone({ name: this.customZoneName.trim() }).subscribe({
       next: (res) => {
         if (res.success && res.data) {
-          this.notify.success(`"${res.data.name}" zonasi qo'shildi!`);
-          this.zones.update(list => [...list, res.data]);
+          this.notify.success(`"${res.data.name}" zonasi muvaffaqiyatli yaratildi`);
+          this.loadZones();
           this.newTable.zoneId = res.data.id;
-          this.customZoneName = '';
           this.showCustomZone.set(false);
+          this.customZoneName = '';
         }
       },
       error: (err) => {
-        this.notify.error(err.error?.message || "Zona qo'shishda xatolik yuz berdi");
+        this.notify.error(err.error?.message || "Zonani yaratishda xatolik yuz berdi");
       }
     });
   }
 
   saveNewTable(): void {
-    if (!this.newTable.tableNumber?.trim()) {
-      this.notify.error("Stol raqami kiritilishi shart!");
+    if (!this.newTable.tableNumber || (!this.newTable.zoneId && !this.newTable.zoneName)) {
+      this.notify.warning("Stol raqami va joylashuv zonasi kiritilishi shart!");
       return;
-    }
-    if (!this.newTable.zoneId && !this.newTable.zoneName) {
-      this.notify.error("Stol joylashuvi (Zal, Ko'cha, Ayvon, Podval...) tanlanishi shart!");
-      return;
-    }
-
-    if (!this.newTable.name?.trim()) {
-      this.newTable.name = 'Stol ' + this.newTable.tableNumber;
     }
 
     this.tableService.createTable(this.newTable).subscribe({
       next: (res) => {
         if (res.success) {
-          this.notify.success("Stol muvaffaqiyatli qo'shildi!");
+          this.notify.success("Stol muvaffaqiyatli qo'shildi");
           this.closeModal();
-          this.loadTables();
+          this.loadAll();
         }
       },
       error: (err) => {
@@ -1487,18 +840,16 @@ export class TablesComponent implements OnInit, OnDestroy {
   }
 
   openAddZoneModal(): void {
-    if (this.isWaiter()) return;
     this.editingZoneId = null;
     this.zoneForm = { name: '', percentage: 5, description: '' };
     this.showZoneModal.set(true);
   }
 
   openEditZoneModal(zone: TableZone): void {
-    if (this.isWaiter()) return;
     this.editingZoneId = zone.id;
     this.zoneForm = {
       name: zone.name,
-      percentage: zone.percentage ?? 0,
+      percentage: zone.percentage || 0,
       description: zone.description || ''
     };
     this.showZoneModal.set(true);
@@ -1513,67 +864,49 @@ export class TablesComponent implements OnInit, OnDestroy {
     if (!this.zoneForm.name.trim()) return;
 
     if (this.editingZoneId) {
-      this.tableService.updateZone(this.editingZoneId, {
-        name: this.zoneForm.name.trim(),
-        percentage: Number(this.zoneForm.percentage) || 0,
-        description: this.zoneForm.description.trim()
-      }).subscribe({
+      this.tableService.updateZone(this.editingZoneId, this.zoneForm).subscribe({
         next: (res) => {
           if (res.success) {
-            this.notify.success(`"${res.data.name}" joyi muvaffaqiyatli yangilandi!`);
+            this.notify.success("Zona muvaffaqiyatli yangilandi");
             this.closeZoneModal();
             this.loadZones();
           }
         },
         error: (err) => {
-          this.notify.error(err.error?.message || 'Joyni yangilashda xatolik');
+          this.notify.error(err.error?.message || "Zonani saqlashda xatolik yuz berdi");
         }
       });
     } else {
-      this.tableService.createZone({
-        name: this.zoneForm.name.trim(),
-        percentage: Number(this.zoneForm.percentage) || 0,
-        description: this.zoneForm.description.trim()
-      }).subscribe({
+      this.tableService.createZone(this.zoneForm).subscribe({
         next: (res) => {
           if (res.success) {
-            this.notify.success(`"${res.data.name}" joyi muvaffaqiyatli yaratildi!`);
+            this.notify.success("Zona muvaffaqiyatli yaratildi");
             this.closeZoneModal();
             this.loadZones();
           }
         },
         error: (err) => {
-          this.notify.error(err.error?.message || 'Joy yaratishda xatolik');
+          this.notify.error(err.error?.message || "Zonani yaratishda xatolik yuz berdi");
         }
       });
     }
   }
 
   deleteCurrentZone(zone: TableZone): void {
-    const tableCount = this.countByZone(zone.id);
-    const tableWord = tableCount === 1 ? 'stol' : 'stol';
-    const confirmMessage = tableCount > 0
-      ? `"${zone.name}" joyini o'chirmoqchimisiz?\n\nBu amaliyot ushbu joyga tegishli ${tableCount} ta ${tableWord}ni ham o'chiradi.\n\nDavom etish uchun OK bosing.`
-      : `"${zone.name}" joyini o'chirmoqchimisiz?\n\nDavom etish uchun OK bosing.`;
-
-    if (!confirm(confirmMessage)) return;
+    if (!confirm(`"${zone.name}" zonasini va unga tegishli barcha stollarni o‘chirmoqchimisiz?`)) {
+      return;
+    }
 
     this.tableService.deleteZone(zone.id).subscribe({
-      next: () => {
-        const msg = tableCount > 0
-          ? `"${zone.name}" joyi va ${tableCount} ta stol o'chirildi!`
-          : `"${zone.name}" joyi o'chirildi!`;
-        this.notify.success(msg);
-        // Reset zone filter so deleted zone's tables won't remain visible
-        this.selectedZoneId.set(null);
-        // Refresh both zones and tables to reflect deletion
-        this.loadZones();
-        this.loadTables();
+      next: (res) => {
+        if (res.success) {
+          this.notify.success("Zona muvaffaqiyatli o‘chirildi");
+          this.selectedZoneId.set(null);
+          this.loadAll();
+        }
       },
       error: (err) => {
-        // Backend returns Uzbek error message for active orders — show it directly
-        const backendMsg: string = err?.error?.message || err?.error?.error || '';
-        this.notify.error(backendMsg || 'Joyni o\'chirishda xatolik yuz berdi');
+        this.notify.error(err.error?.message || "Zonani o‘chirishda xatolik yuz berdi");
       }
     });
   }

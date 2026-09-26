@@ -1976,14 +1976,17 @@ export class PosComponent implements OnInit {
       if (params['tableId']) {
         this.selectedTable.set({
           id: params['tableId'],
+          zoneId: params['zoneId'],
           tableNumber: params['tableNumber'] || '',
           name: params['tableName'] || 'Stol ' + params['tableNumber'],
           capacity: 4,
           shape: 'rectangle',
+          tableType: 'rectangle',
           posX: 0,
           posY: 0,
           width: 100,
           height: 80,
+          rotation: 0,
           status: 'OCCUPIED',
           active: true
         });
@@ -2343,14 +2346,16 @@ export class PosComponent implements OnInit {
     const orderId = this.currentOrderId();
     const hasSentItems = this.cart().some(i => (i.sentQuantity || 0) > 0);
 
+    const targetQueryParams = table?.zoneId ? { zoneId: table.zoneId } : undefined;
+
     // If order exists in DB but no items were ever sent to kitchen and cart has no items, auto-free table:
     if (orderId && !hasSentItems && table && (!this.cart().length || this.cart().every(i => !i.id))) {
       this.tableService.releaseTable(table.id).subscribe({
-        next: () => this.router.navigate(['/tables']),
-        error: () => this.router.navigate(['/tables'])
+        next: () => this.router.navigate(['/tables'], { queryParams: targetQueryParams }),
+        error: () => this.router.navigate(['/tables'], { queryParams: targetQueryParams })
       });
     } else {
-      this.router.navigate(['/tables']);
+      this.router.navigate(['/tables'], { queryParams: targetQueryParams });
     }
   }
 
