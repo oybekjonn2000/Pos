@@ -164,7 +164,7 @@ export interface PosCartItem {
           </div>
           <button type="button" class="mobile-cart-bar__btn" (click)="$event.stopPropagation(); toggleMobileCart(true)">
             <span>Savatcha</span>
-            <span class="arrow">▲</span>
+            <span class="arrow"><app-icon name="chevron-up" [size]="14"></app-icon></span>
           </button>
         </div>
       }

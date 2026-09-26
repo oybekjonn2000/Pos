@@ -32,7 +32,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
       <div class="page-header">
         <div class="header-left">
           <h1 class="page-title"><app-icon name="trending-up" [size]="24" class="title-icon"></app-icon> {{ 'reports.title' | translate }}</h1>
-          <p class="page-subtitle">PostgreSQL bazasidan real-time hisoblangan savdo, mahsulotlar, oshxona va moliya hisobotlari</p>
+          <p class="page-subtitle">{{ 'reports.subtitle' | translate }}</p>
         </div>
         <div class="header-actions">
           <button class="pos-btn pos-btn--secondary" (click)="loadCurrentReport()">
@@ -47,11 +47,11 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
       <!-- FILTER BAR -->
       <div class="pos-card filter-bar">
         <div class="filter-presets">
-          <button class="preset-btn" [class.active]="selectedPreset === 'today'" (click)="setPreset('today')">Bugun</button>
-          <button class="preset-btn" [class.active]="selectedPreset === 'yesterday'" (click)="setPreset('yesterday')">Kecha</button>
-          <button class="preset-btn" [class.active]="selectedPreset === 'week'" (click)="setPreset('week')">Bu hafta</button>
-          <button class="preset-btn" [class.active]="selectedPreset === 'month'" (click)="setPreset('month')">Bu oy</button>
-          <button class="preset-btn" [class.active]="selectedPreset === 'custom'" (click)="selectedPreset = 'custom'">Boshqa sana</button>
+          <button class="preset-btn" [class.active]="selectedPreset === 'today'" (click)="setPreset('today')">{{ 'common.today' | translate }}</button>
+          <button class="preset-btn" [class.active]="selectedPreset === 'yesterday'" (click)="setPreset('yesterday')">{{ 'common.yesterday' | translate }}</button>
+          <button class="preset-btn" [class.active]="selectedPreset === 'week'" (click)="setPreset('week')">{{ 'common.thisWeek' | translate }}</button>
+          <button class="preset-btn" [class.active]="selectedPreset === 'month'" (click)="setPreset('month')">{{ 'common.thisMonth' | translate }}</button>
+          <button class="preset-btn" [class.active]="selectedPreset === 'custom'" (click)="selectedPreset = 'custom'">{{ 'common.customDate' | translate }}</button>
         </div>
 
         <div class="filter-inputs">
@@ -62,17 +62,17 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
           </div>
 
           <select class="pos-select" [(ngModel)]="filters.kitchenId" (change)="onFilterChange()" [disabled]="isLoading" *ngIf="activeTab !== 'stock'">
-            <option value="">Barcha oshxonalar</option>
+            <option value="">{{ 'kitchen.allStations' | translate }}</option>
             <option *ngFor="let k of kitchens" [value]="k.id">{{ k.name }}</option>
           </select>
 
           <select class="pos-select" [(ngModel)]="filters.waiterId" (change)="onFilterChange()" [disabled]="isLoading" *ngIf="activeTab !== 'stock'">
-            <option value="">Barcha ofitsiantlar</option>
+            <option value="">{{ 'reports.waiterPerformance' | translate }} ({{ 'common.all' | translate }})</option>
             <option *ngFor="let w of waiters" [value]="w.id">{{ w.firstName }} {{ w.lastName || '' }}</option>
           </select>
 
           <select class="pos-select" [(ngModel)]="filters.warehouseId" (change)="onFilterChange()" [disabled]="isLoading" *ngIf="activeTab === 'stock'">
-            <option value="">Barcha omborlar</option>
+            <option value="">{{ 'common.all' | translate }}</option>
             <option *ngFor="let wh of warehouses" [value]="wh.id">{{ wh.name }}</option>
           </select>
         </div>
@@ -81,26 +81,26 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
       <!-- TABS -->
       <div class="sub-nav-tabs">
         <button class="tab-btn" [class.active]="activeTab === 'sales'" (click)="setTab('sales')">
-          <app-icon name="bar-chart" [size]="16"></app-icon> <span>Savdo (Umumiy)</span>
+          <app-icon name="bar-chart" [size]="16"></app-icon> <span>{{ 'reports.salesSummary' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'products'" (click)="setTab('products')">
-          <app-icon name="utensils" [size]="16"></app-icon> <span>Mahsulotlar Savdosi</span>
+          <app-icon name="utensils" [size]="16"></app-icon> <span>{{ 'reports.productSales' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'profit'" (click)="setTab('profit')">
-          <app-icon name="dollar-sign" [size]="16"></app-icon> <span>Foyda & Zarar (P&L)</span>
+          <app-icon name="dollar-sign" [size]="16"></app-icon> <span>{{ 'reports.profitLoss' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'cashier'" (click)="setTab('cashier')">
-          <app-icon name="credit-card" [size]="16"></app-icon> <span>Kassa & To'lovlar</span>
+          <app-icon name="credit-card" [size]="16"></app-icon> <span>{{ 'reports.cashierReport' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'waiters'" (click)="setTab('waiters')">
-          <app-icon name="users" [size]="16"></app-icon> <span>Ofitsiantlar</span>
+          <app-icon name="users" [size]="16"></app-icon> <span>{{ 'reports.waiterPerformance' | translate }}</span>
         </button>
         <button class="tab-btn" [class.active]="activeTab === 'kitchens'" (click)="setTab('kitchens')">
-          <app-icon name="chef" [size]="16"></app-icon> <span>Oshxonalar</span>
+          <app-icon name="chef" [size]="16"></app-icon> <span>{{ 'reports.kitchenPerformance' | translate }}</span>
         </button>
         <!-- Ombor hozircha disable:
         <button class="tab-btn" [class.active]="activeTab === 'stock'" (click)="setTab('stock')">
-          <app-icon name="package" [size]="16"></app-icon> <span>Ombor Harakati</span>
+          <app-icon name="package" [size]="16"></app-icon> <span>{{ 'reports.stockReport' | translate }}</span>
         </button>
         -->
       </div>
@@ -157,7 +157,7 @@ type ReportTab = 'sales' | 'products' | 'profit' | 'cashier' | 'waiters' | 'kitc
           </div>
 
           <div class="kpi-card">
-            <div class="kpi-icon kpi-icon--red">↩️</div>
+            <div class="kpi-icon kpi-icon--red"><app-icon name="undo" [size]="24"></app-icon></div>
             <div class="kpi-info">
               <span class="kpi-label">Qaytarilgan Summa</span>
               <h3 class="kpi-value text-danger">{{ (salesSummary?.refundedAmount || 0) | number }} so'm</h3>

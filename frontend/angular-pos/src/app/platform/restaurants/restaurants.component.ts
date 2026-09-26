@@ -47,7 +47,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">⏸️</div>
+          <div class="stat-card__icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;"><app-icon name="pause" [size]="20"></app-icon></div>
           <div class="stat-card__body">
             <div class="stat-card__label">To‘xtatilgan (Suspended)</div>
             <div class="stat-card__val">{{ suspendedCount() }}</div>
@@ -97,7 +97,7 @@ import { NotificationService } from '../../core/services/notification.service';
             [class.active]="statusFilter() === 'SUSPENDED'"
             (click)="statusFilter.set('SUSPENDED')"
           >
-            ⏸️ To‘xtatilgan
+            <app-icon name="pause" [size]="14"></app-icon> To‘xtatilgan
           </button>
         </div>
       </div>
@@ -187,7 +187,7 @@ import { NotificationService } from '../../core/services/notification.service';
                             (click)="toggleStatus(res, 'SUSPENDED')"
                             title="Restoran faoliyatini vaqtinchalik to‘xtatish"
                           >
-                            ⏸️ To‘xtatish
+                            <app-icon name="pause" [size]="14"></app-icon> To‘xtatish
                           </button>
                         } @else {
                           <button
@@ -196,7 +196,7 @@ import { NotificationService } from '../../core/services/notification.service';
                             (click)="toggleStatus(res, 'ACTIVE')"
                             title="Restoranni qayta faollashtirish"
                           >
-                            ▶️ Faollashtirish
+                            <app-icon name="play" [size]="14"></app-icon> Faollashtirish
                           </button>
                         }
                       </div>

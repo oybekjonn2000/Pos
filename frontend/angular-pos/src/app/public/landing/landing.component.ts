@@ -35,7 +35,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             @if (auth.isAuthenticated()) {
               <a [routerLink]="auth.getDefaultRoute()" class="btn btn-primary btn-sm">
-                Dashboardga o'tish →
+                Dashboardga o'tish <app-icon name="arrow-right" [size]="14"></app-icon>
               </a>
             } @else {
               <a routerLink="/login" class="btn btn-outline btn-sm">
@@ -144,7 +144,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
             <!-- Feature 5 -->
             <div class="feature-card">
-              <div class="feature-icon icon-cyan">🪑</div>
+              <div class="feature-icon"><app-icon name="tables" [size]="28"></app-icon></div>
               <h3 class="feature-title">Stollar va Zallar Xaritasi</h3>
               <p class="feature-text">
                 Restoran zallarini (Asosiy zal, VIP xonalar, Yozgi ayvon) qulay boshqarish, stollarning bandlik ranglari.
@@ -1082,7 +1082,7 @@ export class LandingComponent implements OnInit {
   getPlanFeatures(plan: PlanResponse): string[] {
     if (plan.code === 'PRO') {
       return [
-        '⭐️ Barcha STANDARD imkoniyatlari',
+        'Barcha STANDARD imkoniyatlari',
         'Oshxona Ekrani (KDS)',
         'Mobil Ofitsiant Ilovasi',
         'Cheksiz xodimlar, stollar va mahsulotlar',

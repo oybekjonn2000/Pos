@@ -1,4 +1,4 @@
-export type SupportedLang = 'uz' | 'ru' | 'en';
+export type SupportedLang = 'uz' | 'oz' | 'ru' | 'en';
 
 export interface LanguageOption {
   code: SupportedLang;
@@ -7,9 +7,10 @@ export interface LanguageOption {
 }
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { code: 'uz', name: 'O‘zbekcha', flag: '🇺🇿' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-  { code: 'en', name: 'English', flag: '🇬🇧' }
+  { code: 'uz', name: 'O‘zbekcha', flag: 'UZ' },
+  { code: 'oz', name: 'Ўзбекча', flag: 'UZ' },
+  { code: 'ru', name: 'Русский', flag: 'RU' },
+  { code: 'en', name: 'English', flag: 'EN' }
 ];
 
 export const DEFAULT_LANGUAGE: SupportedLang = 'uz';

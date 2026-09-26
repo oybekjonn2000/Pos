@@ -60,8 +60,10 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
       <div class="pos-content" [class.sidebar-collapsed]="sidebarCollapsed" [class.no-sidebar]="auth.isWaiter()">
         <app-topbar 
+          [sidebarCollapsed]="sidebarCollapsed"
           (toggleMobileMenu)="mobileMenuOpen = !mobileMenuOpen"
-          (openLanSettings)="showLanModal = true" />
+          (openLanSettings)="showLanModal = true"
+          (openProfile)="showProfileModal = true" />
         <main class="pos-page" [class.pos-page--in-pos]="isInPos()">
           <router-outlet />
         </main>
@@ -75,15 +77,15 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           <!-- Super Admin: Platform management links -->
           <a routerLink="/platform/dashboard" routerLinkActive="active" class="mobile-nav-item">
             <span class="mobile-nav-icon"><app-icon name="dashboard" [size]="20"></app-icon></span>
-            <span class="mobile-nav-label">Dashboard</span>
+            <span class="mobile-nav-label">{{ 'nav.platformDashboard' | translate }}</span>
           </a>
           <a routerLink="/platform/restaurants" routerLinkActive="active" class="mobile-nav-item">
             <span class="mobile-nav-icon"><app-icon name="building" [size]="20"></app-icon></span>
-            <span class="mobile-nav-label">Restoranlar</span>
+            <span class="mobile-nav-label">{{ 'nav.restaurants' | translate }}</span>
           </a>
           <a routerLink="/platform/subscriptions" routerLinkActive="active" class="mobile-nav-item">
             <span class="mobile-nav-icon"><app-icon name="credit-card" [size]="20"></app-icon></span>
-            <span class="mobile-nav-label">Obunalar</span>
+            <span class="mobile-nav-label">{{ 'nav.subscriptions' | translate }}</span>
           </a>
         } @else if (auth.isWaiter()) {
           <a routerLink="/tables" routerLinkActive="active" class="mobile-nav-item">
@@ -107,11 +109,11 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           </a>
           <a routerLink="/tables" routerLinkActive="active" class="mobile-nav-item">
             <span class="mobile-nav-icon"><app-icon name="tables" [size]="20"></app-icon></span>
-            <span class="mobile-nav-label">Stollar</span>
+            <span class="mobile-nav-label">{{ 'nav.tables' | translate }}</span>
           </a>
           <a routerLink="/orders" routerLinkActive="active" class="mobile-nav-item">
             <span class="mobile-nav-icon"><app-icon name="orders" [size]="20"></app-icon></span>
-            <span class="mobile-nav-label">Buyurtmalar</span>
+            <span class="mobile-nav-label">{{ 'nav.orders' | translate }}</span>
           </a>
           <button type="button" class="mobile-nav-item" (click)="mobileMenuOpen = true">
             <span class="mobile-nav-icon"><app-icon name="products" [size]="20"></app-icon></span>

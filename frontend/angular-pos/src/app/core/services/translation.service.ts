@@ -24,6 +24,7 @@ export class TranslationService {
   readonly currencySymbol = computed(() => {
     switch (this.currentLang()) {
       case 'uz': return "so'm";
+      case 'oz': return "сўм";
       case 'ru': return 'сум';
       case 'en': return 'UZS';
       default: return "so'm";
@@ -37,7 +38,7 @@ export class TranslationService {
   getInitialLang(): SupportedLang {
     try {
       const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-      if (saved === 'uz' || saved === 'ru' || saved === 'en') {
+      if (saved === 'uz' || saved === 'oz' || saved === 'ru' || saved === 'en') {
         return saved as SupportedLang;
       }
     } catch (e) {

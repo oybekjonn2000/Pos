@@ -143,7 +143,7 @@ export interface KitchenTableCard {
             class="station-tab"
             [class.active]="selectedKitchen?.id === k.id"
             (click)="selectKitchen(k)">
-            <span class="station-icon">{{ getKitchenIcon(k.code) }}</span>
+            <span class="station-icon"><app-icon [name]="getKitchenIcon(k.code)" [size]="18"></app-icon></span>
             <span class="station-name">{{ k.name }}</span>
             <span class="station-code">{{ k.code }}</span>
           </button>
@@ -267,7 +267,7 @@ export interface KitchenTableCard {
       <!-- Station Banner -->
       <div class="current-station-banner" *ngIf="selectedKitchen">
         <div class="banner-content">
-          <span class="station-badge">{{ getKitchenIcon(selectedKitchen.code) }} {{ selectedKitchen.name }}</span>
+          <span class="station-badge"><app-icon [name]="getKitchenIcon(selectedKitchen.code)" [size]="14"></app-icon> {{ selectedKitchen.name }}</span>
           <span class="banner-desc">{{ selectedKitchen.description || 'Stansiya faol' }}</span>
         </div>
         <div class="banner-meta">
@@ -497,7 +497,7 @@ export interface KitchenTableCard {
               Pro Tarifga O'tish
             </a>
             <a routerLink="/dashboard" class="btn-back-dash">
-              ← Boshqaruv Paneliga Qaytish
+              <app-icon name="arrow-left" [size]="16"></app-icon> Boshqaruv Paneliga Qaytish
             </a>
           </div>
         </div>

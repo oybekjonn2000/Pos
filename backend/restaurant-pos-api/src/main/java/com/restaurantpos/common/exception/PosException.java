@@ -57,4 +57,16 @@ public class PosException extends RuntimeException {
     public static PosException paymentRequired(String message) {
         return new PosException(message, "PAYMENT_REQUIRED", HttpStatus.PAYMENT_REQUIRED);
     }
+
+    public static PosException proPlanRequired(String message) {
+        return new PosException(message, "PRO_PLAN_REQUIRED", HttpStatus.FORBIDDEN);
+    }
+
+    public static PosException proPlanRequired() {
+        return new PosException(
+                "Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud. Iltimos, boshqaruv panelida 'Obuna & To'lov' bo'limi orqali PRO tarifiga o'ting.",
+                "PRO_PLAN_REQUIRED",
+                HttpStatus.FORBIDDEN
+        );
+    }
 }

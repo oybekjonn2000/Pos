@@ -91,6 +91,13 @@ begin
 
     // Grant recursive Full Control to BUILTIN\Users (SID S-1-5-32-545) on ProgramData directory
     Exec('icacls.exe', '"' + ExpandConstant('{commonappdata}\RestaurantPOS') + '" /grant:r "*S-1-5-32-545:(OI)(CI)F" /T /Q /C', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+
+    // Force a completely clean install: create clean-install.flag and purge any leftover user storage
+    SaveStringToFile(ExpandConstant('{commonappdata}\RestaurantPOS\config\clean-install.flag'), 'CLEAN_INSTALL', False);
+    DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Local Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Session Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Local Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Session Storage'), True, True, True);
   end;
 end;
 

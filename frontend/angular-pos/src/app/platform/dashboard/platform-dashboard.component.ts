@@ -84,7 +84,7 @@ import { NotificationService } from '../../core/services/notification.service';
           <div class="metric-val">{{ stats()?.totalRestaurants ?? 0 }}</div>
           <div class="metric-footer">
             <span class="sub-stat text-success">{{ stats()?.activeRestaurants ?? 0 }} faol</span>
-            <span class="sub-stat text-warning">⏸️ {{ stats()?.suspendedRestaurants ?? 0 }} to‘xtatilgan</span>
+            <span class="sub-stat text-warning"><app-icon name="pause" [size]="12"></app-icon> {{ stats()?.suspendedRestaurants ?? 0 }} to‘xtatilgan</span>
           </div>
         </div>
 

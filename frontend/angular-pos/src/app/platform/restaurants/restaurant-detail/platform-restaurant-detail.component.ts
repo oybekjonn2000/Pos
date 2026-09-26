@@ -19,7 +19,7 @@ import { NotificationService } from '../../../core/services/notification.service
       <!-- Back Navigation Bar -->
       <div class="top-nav">
         <a routerLink="/platform/restaurants" class="back-link">
-          ← Restoranlar ro‘yxatiga qaytish
+          <app-icon name="arrow-left" [size]="16"></app-icon> Restoranlar ro‘yxatiga qaytish
         </a>
       </div>
 
@@ -58,11 +58,11 @@ import { NotificationService } from '../../../core/services/notification.service
           <div class="res-banner__actions">
             @if (detail()?.status === 'ACTIVE') {
               <button type="button" class="btn btn-warning" (click)="toggleStatus('SUSPENDED')">
-                ⏸️ Faoliyatni To‘xtatish
+                <app-icon name="pause" [size]="16"></app-icon> Faoliyatni To‘xtatish
               </button>
             } @else {
               <button type="button" class="btn btn-success" (click)="toggleStatus('ACTIVE')">
-                ▶️ Faollashtirish
+                <app-icon name="play" [size]="16"></app-icon> Faollashtirish
               </button>
             }
           </div>
@@ -157,7 +157,7 @@ import { NotificationService } from '../../../core/services/notification.service
           <div class="kpi-card">
             <div class="kpi-header">
               <span class="kpi-label">Faollik Nazorati</span>
-              <span class="kpi-icon">⏱️</span>
+              <span class="kpi-icon"><app-icon name="clock" [size]="20"></app-icon></span>
             </div>
             <div class="activity-timeline">
               <div class="act-item">

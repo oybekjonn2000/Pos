@@ -405,7 +405,7 @@ import {
             </div>
             <div class="modal-footer">
               <a [href]="resolveReceiptUrl(activeReceiptModal())" target="_blank" class="btn btn-outline-primary">
-                Alohida oynada ochish ↗
+                Alohida oynada ochish <app-icon name="arrow-up-right" [size]="14"></app-icon>
               </a>
               <button type="button" class="btn btn-secondary" (click)="activeReceiptModal.set(null)">
                 Yopish

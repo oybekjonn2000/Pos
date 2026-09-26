@@ -10,26 +10,27 @@ import {
   SubscriptionRequestResponse,
   PaymentCardSettings
 } from '../../core/services/billing.service';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-restaurant-billing',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppIconComponent],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
   template: `
     <div class="billing-container">
       <!-- Page Header -->
       <div class="billing-header">
         <div>
-          <h1 class="page-title">Obuna va To'lov</h1>
-          <p class="page-subtitle">Restoraningiz uchun qulay tarif va muddatni tanlab, to'g'ridan-to'g'ri to'lov qiling</p>
+          <h1 class="page-title">{{ 'billing.title' | translate }}</h1>
+          <p class="page-subtitle">{{ 'billing.subtitle' | translate }}</p>
         </div>
 
         @if (currentSub()) {
           <div class="current-sub-pill" [class.active-pill]="currentSub()!.operating">
             <span class="dot"></span>
-            <span>Joriy tarif: <strong>{{ currentSub()!.planName }}</strong></span>
+            <span>{{ 'billing.currentPlan' | translate }}: <strong>{{ currentSub()!.planName }}</strong></span>
             <span class="divider">|</span>
-            <span>{{ currentSub()!.daysRemaining }} kun qoldi</span>
+            <span>{{ currentSub()!.daysRemaining }} {{ 'billing.daysRemaining' | translate }}</span>
           </div>
         }
       </div>
@@ -42,7 +43,7 @@ import {
           [class.active]="activeTab === 'form'"
           (click)="activeTab = 'form'"
         >
-          <app-icon name="file-text" [size]="16"></app-icon> Obunaga Ariza Berish
+          <app-icon name="file-text" [size]="16"></app-icon> {{ 'billing.applySubscription' | translate }}
         </button>
         <button 
           type="button" 
@@ -50,7 +51,7 @@ import {
           [class.active]="activeTab === 'history'"
           (click)="activeTab = 'history'; loadHistory()"
         >
-          <app-icon name="clock" [size]="16"></app-icon> Arizalar Tarixi
+          <app-icon name="clock" [size]="16"></app-icon> {{ 'billing.applicationHistory' | translate }}
           @if (requestHistory().length > 0) {
             <span class="tab-badge">{{ requestHistory().length }}</span>
           }
@@ -66,7 +67,7 @@ import {
           <div class="status-banner banner-pending">
             <div class="banner-icon-col">
               <div class="pulse-ring">
-                <span class="icon-pulse">⏳</span>
+                <span class="icon-pulse"><app-icon name="hourglass" [size]="22"></app-icon></span>
               </div>
             </div>
             <div class="banner-body">
@@ -135,7 +136,7 @@ import {
               <div class="section-title-row">
                 <span class="step-num">1</span>
                 <div>
-                  <h2 class="section-title">Tarifni tanlang</h2>
+                  <h2 class="section-title">{{ 'billing.selectPlan' | translate }}</h2>
                   <p class="section-hint">Restoraningiz miqyosiga mos tarifni tanlang</p>
                 </div>
               </div>
@@ -177,7 +178,7 @@ import {
               <div class="section-title-row">
                 <span class="step-num">2</span>
                 <div>
-                  <h2 class="section-title">Obuna muddatini tanlang</h2>
+                  <h2 class="section-title">{{ 'billing.durationMonths' | translate }}</h2>
                   <p class="section-hint">Muddat qancha uzoq bo'lsa, xizmat uzluksiz ishlaydi</p>
                 </div>
               </div>
@@ -294,7 +295,7 @@ import {
               <div class="section-title-row">
                 <span class="step-num">4</span>
                 <div>
-                  <h2 class="section-title">To'lov chekini yuklash</h2>
+                  <h2 class="section-title">{{ 'billing.uploadReceipt' | translate }}</h2>
                   <p class="section-hint">To'lov qilinganligini tasdiqlovchi chek rasmi yoki PDF fayli</p>
                 </div>
               </div>
@@ -363,9 +364,9 @@ import {
                 >
                   @if (submitting()) {
                     <span class="spinner-sm"></span>
-                    <span>Ariza yuborilmoqda...</span>
+                    <span>{{ 'common.loading' | translate }}</span>
                   } @else {
-                    <app-icon name="send" [size]="16"></app-icon> <span>Ariza Yuborish ({{ formatPrice(totalAmount()) }} UZS)</span>
+                    <app-icon name="send" [size]="16"></app-icon> <span>{{ 'billing.submitApplication' | translate }} ({{ formatPrice(totalAmount()) }} UZS)</span>
                   }
                 </button>
 
@@ -515,7 +516,7 @@ import {
             </div>
             <div class="modal-footer">
               <a [href]="resolveReceiptUrl(activeReceiptModal())" target="_blank" class="btn btn-outline-primary">
-                Alohida oynada ochish ↗
+                Alohida oynada ochish <app-icon name="arrow-up-right" [size]="14"></app-icon>
               </a>
               <button type="button" class="btn btn-secondary" (click)="activeReceiptModal.set(null)">
                 Yopish

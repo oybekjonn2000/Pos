@@ -75,7 +75,7 @@ import { BillingService, PlanResponse } from '../../core/services/billing.servic
                 <!-- Limits Summary (All Unlimited) -->
                 <div class="plan-card__limits">
                   <div class="limit-item">
-                    <span class="limit-icon">🪑</span>
+                    <span class="limit-icon"><app-icon name="tables" [size]="14"></app-icon></span>
                     <span class="limit-label">Stollar soni:</span>
                     <strong class="limit-val text-success">Cheksiz</strong>
                   </div>
@@ -593,7 +593,7 @@ export class PricingComponent implements OnInit {
   getPlanFeatures(plan: PlanResponse): string[] {
     if (plan.code === 'PRO') {
       return [
-        '⭐️ Barcha STANDARD imkoniyatlari',
+        'Barcha STANDARD imkoniyatlari',
         'Oshxona Ekrani (KDS - Kitchen Display System)',
         'Mobil Ofitsiant Ilovasi (Android planshet / telefon)',
         'Cheksiz xodimlar, stollar, mahsulotlar va buyurtmalar',

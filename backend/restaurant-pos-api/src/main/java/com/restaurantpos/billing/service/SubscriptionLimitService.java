@@ -140,7 +140,7 @@ public class SubscriptionLimitService {
             } else if ("MOBILE_APP".equalsIgnoreCase(featureCode)) {
                 featureName = "Mobil Ofitsiant Ilovasi (APK)";
             }
-            throw PosException.forbidden(
+            throw PosException.proPlanRequired(
                     String.format("Ushbu funksiya (%s) faqat PRO tarifida mavjud. Iltimos, tarifingizni PRO ga yangilang.", featureName)
             );
         }

@@ -211,7 +211,7 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
                 [(ngModel)]="formData.categoryId"
                 class="pos-input"
                 required>
-                <option [ngValue]="''" disabled selected>Kategoriyani tanlang ▼</option>
+                <option [ngValue]="''" disabled selected>Kategoriyani tanlang</option>
                 <option *ngFor="let cat of categories" [value]="cat.id">
                   {{ cat.name }} ({{ cat.kitchenName || getKitchenName(cat.kitchenId) }})
                 </option>

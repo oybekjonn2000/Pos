@@ -69,7 +69,13 @@ import { AppIconComponent } from '../icon/icon.component';
     }
 
     .lang-flag {
-      font-size: 15px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 5px;
+      background: var(--bg-active, #e2e8f0);
+      color: var(--icon-color, #243B64);
+      border-radius: 4px;
       line-height: 1;
     }
 

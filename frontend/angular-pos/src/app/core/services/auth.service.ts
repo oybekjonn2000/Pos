@@ -133,7 +133,7 @@ export class AuthService {
   }
 
   refreshToken(): Observable<ApiResponse<TokenResponse> | null> {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken');
     if (!refreshToken) return of(null);
 
     return this.http.post<ApiResponse<TokenResponse>>(`${this.API}/refresh`, { refreshToken }).pipe(
@@ -150,9 +150,14 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    try {
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+    } catch {}
     this._user.set(null);
     this._accessToken.set(null);
     this.router.navigate(['/login']);
@@ -187,26 +192,43 @@ export class AuthService {
   }
 
   storeTokens(data: TokenResponse): void {
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    try {
+      // Store in sessionStorage so auth is discarded on application restart / window close
+      sessionStorage.setItem('accessToken', data.accessToken);
+      sessionStorage.setItem('refreshToken', data.refreshToken);
+      sessionStorage.setItem('user', JSON.stringify(data.user));
+      // Purge any persistent localStorage auth keys
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+    } catch (e) {
+      console.warn('Could not store auth tokens in sessionStorage', e);
+    }
     this._accessToken.set(data.accessToken);
     this._user.set(data.user);
   }
 
   private loadToken(): string | null {
-    return localStorage.getItem('accessToken');
+    try {
+      // Purge any leftover legacy tokens in localStorage on app startup
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      return sessionStorage.getItem('accessToken');
+    } catch {
+      return null;
+    }
   }
 
   private loadUser(): UserInfo | null {
     try {
-      const stored = localStorage.getItem('user');
+      const stored = sessionStorage.getItem('user');
       if (!stored || stored === 'undefined' || stored === 'null') {
         return null;
       }
       return JSON.parse(stored);
     } catch (e) {
-      console.error('Failed to parse user from localStorage', e);
+      console.error('Failed to parse user from sessionStorage', e);
       return null;
     }
   }

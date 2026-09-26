@@ -72,6 +72,7 @@ begin
     DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Local Storage'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\restaurant-pos-desktop\Session Storage'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Local Storage'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\RestaurantPOS\Session Storage'), True, True, True);
   end;
 end;
 

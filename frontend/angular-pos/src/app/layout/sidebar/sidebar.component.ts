@@ -82,17 +82,16 @@ interface NavItem {
           </div>
         }
 
-        <div class="sidebar__user" [title]="collapsed() && !mobileOpen ? auth.user()?.fullName ?? '' : ''">
-          <div class="sidebar__avatar">
-            {{ getUserInitials() }}
-          </div>
+        <!-- Logout Button in Bottom-Left -->
+        <button type="button" 
+                class="sidebar__logout-btn" 
+                (click)="logout()" 
+                [title]="collapsed() && !mobileOpen ? ('auth.logout' | translate) : ''">
+          <span class="sidebar__logout-icon"><app-icon name="logout" [size]="18"></app-icon></span>
           @if (!collapsed() || mobileOpen) {
-            <div class="sidebar__user-info">
-              <div class="sidebar__user-name">{{ auth.user()?.fullName }}</div>
-              <div class="sidebar__user-role">{{ auth.user()?.role || auth.user()?.username }}</div>
-            </div>
+            <span class="sidebar__logout-label">{{ 'auth.logout' | translate }}</span>
           }
-        </div>
+        </button>
       </div>
     </nav>
   `,
@@ -113,6 +112,11 @@ interface NavItem {
 
       &.collapsed {
         width: var(--sidebar-collapsed-width);
+
+        .sidebar__logout-btn {
+          justify-content: center;
+          padding: 10px 0;
+        }
       }
 
       &__logo {
@@ -121,7 +125,7 @@ interface NavItem {
         justify-content: space-between;
         padding: 0 16px;
         height: var(--topbar-height);
-        border-bottom: 1px solid var(--divider);
+        border-bottom: 1px solid var(--border);
         user-select: none;
         flex-shrink: 0;
       }
@@ -246,30 +250,43 @@ interface NavItem {
         flex-shrink: 0;
       }
 
-      &__user {
+      &__logout-btn {
+        width: 100%;
         display: flex;
         align-items: center;
         gap: 12px;
         padding: 10px 12px;
         border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-sans);
+        font-size: 13.5px;
+        font-weight: 500;
         cursor: pointer;
-        transition: background var(--transition);
+        transition: all var(--transition);
+        text-align: left;
+        box-sizing: border-box;
 
-        &:hover { background: var(--sidebar-active); }
-      }
+        &:hover {
+          background: rgba(239, 68, 68, 0.08);
+          color: var(--danger);
+          border-color: rgba(239, 68, 68, 0.2);
+        }
 
-      &__avatar {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary), var(--accent));
-        color: white;
-        font-size: 13px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        .sidebar__logout-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          color: inherit;
+        }
+
+        .sidebar__logout-label {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
       }
 
       &__server-badge {
@@ -328,20 +345,6 @@ interface NavItem {
         }
       }
 
-      &__user-name {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 150px;
-      }
-
-      &__user-role {
-        font-size: 11px;
-        color: var(--text-muted);
-      }
     }
 
     /* Tablet compact icon mode (768px - 1023px) */
@@ -354,7 +357,8 @@ interface NavItem {
         .sidebar__label,
         .sidebar__user-info,
         .server-badge-text,
-        .server-badge-cog {
+        .server-badge-cog,
+        .sidebar__logout-label {
           display: none !important;
         }
 
@@ -373,7 +377,7 @@ interface NavItem {
         }
 
         .sidebar__server-badge,
-        .sidebar__user {
+        .sidebar__logout-btn {
           justify-content: center;
           padding: 8px 0;
         }
@@ -425,14 +429,14 @@ export class SidebarComponent {
   }
 
   readonly platformNavItems: NavItem[] = [
-    { icon: 'dashboard', label: 'Platforma Dashboard', route: '/platform/dashboard' },
-    { icon: 'building', label: 'Restoranlar', route: '/platform/restaurants' },
-    { icon: 'credit-card', label: 'Obunalar', route: '/platform/subscriptions' },
-    { icon: 'cash', label: 'To‘lovlar', route: '/platform/payments' },
-    { icon: 'coins', label: 'Savdo monitoringi', route: '/platform/sales' },
-    { icon: 'users', label: 'Xodimlar monitoringi', route: '/platform/employees' },
-    { icon: 'laptop', label: 'Qurilmalar', route: '/platform/devices' },
-    { icon: 'trending-up', label: 'Platforma hisobotlari', route: '/platform/reports' }
+    { icon: 'dashboard', label: 'Platforma Dashboard', key: 'nav.platformDashboard', route: '/platform/dashboard' },
+    { icon: 'building', label: 'Restoranlar', key: 'nav.restaurants', route: '/platform/restaurants' },
+    { icon: 'credit-card', label: 'Obunalar', key: 'nav.subscriptions', route: '/platform/subscriptions' },
+    { icon: 'cash', label: 'To‘lovlar', key: 'nav.payments', route: '/platform/payments' },
+    { icon: 'coins', label: 'Savdo monitoringi', key: 'nav.salesMonitoring', route: '/platform/sales' },
+    { icon: 'users', label: 'Xodimlar monitoringi', key: 'nav.employeeMonitoring', route: '/platform/employees' },
+    { icon: 'laptop', label: 'Qurilmalar', key: 'nav.devices', route: '/platform/devices' },
+    { icon: 'trending-up', label: 'Platforma hisobotlari', key: 'nav.platformReports', route: '/platform/reports' }
   ];
 
   readonly restaurantNavItems: NavItem[] = [
@@ -440,12 +444,12 @@ export class SidebarComponent {
     { icon: 'tables', label: 'Joylar va Stollar', key: 'nav.tables', route: '/tables' },
     { icon: 'orders', label: 'Buyurtmalar', key: 'nav.orders', route: '/orders' },
     { icon: 'chef', label: 'Oshxona (KDS)', key: 'nav.kitchen', route: '/kitchen', permission: 'KITCHEN_VIEW', proOnly: true },
-    { icon: 'smartphone', label: 'Mobil Ofitsiant', key: 'nav.pos', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
+    { icon: 'smartphone', label: 'Mobil Ofitsiant', key: 'nav.mobileWaiter', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
     { icon: 'products', label: 'Mahsulotlar', key: 'nav.products', route: '/products', permission: 'MANAGE_PRODUCTS' },
     { icon: 'folder', label: 'Kategoriyalar', key: 'nav.categories', route: '/categories', permission: 'MANAGE_CATEGORIES' },
     { icon: 'cooking-pot', label: 'Oshxonalar', key: 'nav.kitchenManagement', route: '/kitchens', permission: 'MANAGE_SETTINGS', disallowRoles: ['KITCHEN', 'WAITER'] },
     // { icon: 'products', label: 'Ombor', route: '/inventory', permission: 'VIEW_STOCK' }, // Hozircha disable qilindi
-    { icon: 'users', label: 'Mijozlar', route: '/customers', adminOnly: true },
+    { icon: 'users', label: 'Mijozlar', key: 'nav.customers', route: '/customers', adminOnly: true },
     { icon: 'user', label: 'Xodimlar', key: 'nav.employees', route: '/employees', permission: 'MANAGE_USERS' },
     { icon: 'trending-up', label: 'Hisobotlar', key: 'nav.reports', route: '/reports', permission: 'VIEW_REPORTS' },
     { icon: 'credit-card', label: 'Tarif & Billing', key: 'nav.billing', route: '/restaurant/billing', adminOnly: true },
@@ -486,6 +490,10 @@ export class SidebarComponent {
   toggleCollapse(): void {
     this.collapsed.update(v => !v);
     this.collapsedChange.emit(this.collapsed());
+  }
+
+  logout(): void {
+    this.auth.logout();
   }
 
   getUserInitials(): string {

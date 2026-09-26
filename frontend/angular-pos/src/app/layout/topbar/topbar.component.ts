@@ -1,4 +1,4 @@
-import { Component, computed, Output, EventEmitter, inject } from '@angular/core';
+import { Component, computed, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { ConnectionService } from '../../core/services/connection.service';
@@ -6,15 +6,14 @@ import { LanStatusService } from '../../core/services/lan-status.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { LanguageSelectorComponent } from '../../shared/components/language-selector/language-selector.component';
-import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, DatePipe, AppIconComponent, LanguageSelectorComponent, TranslatePipe],
+  imports: [CommonModule, DatePipe, AppIconComponent, LanguageSelectorComponent],
   template: `
-    <header class="topbar">
+    <header class="topbar" [class.collapsed]="sidebarCollapsed">
       <div class="topbar__left">
         @if (!auth.isWaiter()) {
           <button type="button" class="topbar__hamburger" (click)="toggleMobileMenu.emit()" title="Menyuni ochish/yopish" aria-label="Menyu">
@@ -24,9 +23,6 @@ import { TranslationService } from '../../core/services/translation.service';
           </button>
         }
         <div class="topbar__title-group">
-          <div class="topbar__title">
-            {{ pageTitle }}
-          </div>
           <div class="tenant-badge" [class.tenant-badge--super]="auth.isSuperAdmin()">
             <span class="tenant-icon"><app-icon [name]="auth.isSuperAdmin() ? 'globe' : 'building'" [size]="14"></app-icon></span>
             <span class="tenant-name">{{ auth.restaurantName() }}</span>
@@ -75,11 +71,15 @@ import { TranslationService } from '../../core/services/translation.service';
           </button>
         </div>
 
-        <!-- User menu -->
-        <div class="topbar__user" (click)="logout()" [title]="'auth.logout' | translate">
-          <span class="user-fullname">{{ auth.user()?.fullName }}</span>
-          <span class="user-logout-hint" style="color: var(--text-muted)">⟵ {{ 'auth.logout' | translate }}</span>
-          <span class="user-logout-icon"><app-icon name="logout" [size]="16"></app-icon></span>
+        <!-- User Profile (Admin block) -->
+        <div class="topbar__user" (click)="openProfile.emit()" [title]="auth.user()?.fullName || 'Foydalanuvchi'">
+          <div class="topbar__avatar">
+            {{ getUserInitials() }}
+          </div>
+          <div class="topbar__user-info">
+            <span class="topbar__user-name">{{ auth.user()?.fullName }}</span>
+            <span class="topbar__user-role">{{ auth.user()?.role || auth.user()?.username }}</span>
+          </div>
         </div>
       </div>
     </header>
@@ -87,6 +87,11 @@ import { TranslationService } from '../../core/services/translation.service';
   styles: [`
     :host-context(.no-sidebar) .topbar {
       left: 0 !important;
+    }
+
+    :host-context(.sidebar-collapsed) .topbar,
+    .topbar.collapsed {
+      left: var(--sidebar-collapsed-width) !important;
     }
 
     .topbar {
@@ -228,24 +233,56 @@ import { TranslationService } from '../../core/services/translation.service';
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 6px 14px;
-        border-radius: var(--radius-sm);
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--text-secondary);
+        padding: 4px 12px 4px 6px;
+        border-radius: 100px;
+        background: var(--bg-tertiary);
         border: 1px solid var(--border);
+        cursor: pointer;
+        user-select: none;
         transition: all var(--transition);
 
         &:hover {
           background: var(--bg-hover);
-          color: var(--danger);
-          border-color: var(--danger);
+          border-color: var(--primary-light);
         }
 
-        .user-logout-icon {
-          display: none;
-          font-size: 16px;
+        .topbar__avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--primary), #8b5cf6);
+          color: white;
+          font-size: 12px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .topbar__user-info {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.2;
+          text-align: left;
+        }
+
+        .topbar__user-name {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text-primary);
+          max-width: 140px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .topbar__user-role {
+          font-size: 10px;
+          font-weight: 700;
+          color: var(--primary);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
       }
 
@@ -359,23 +396,12 @@ import { TranslationService } from '../../core/services/translation.service';
         }
 
         &__user {
-          padding: 5px 8px;
-          min-height: 36px;
+          padding: 2px;
+          border-radius: 50%;
+          min-height: auto;
 
-          .user-fullname {
-            max-width: 65px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 11.5px;
-          }
-
-          .user-logout-hint {
+          .topbar__user-info {
             display: none;
-          }
-
-          .user-logout-icon {
-            display: inline-block;
           }
         }
       }
@@ -383,10 +409,11 @@ import { TranslationService } from '../../core/services/translation.service';
   `]
 })
 export class TopbarComponent {
+  @Input() sidebarCollapsed = false;
   @Output() openLanSettings = new EventEmitter<void>();
   @Output() toggleMobileMenu = new EventEmitter<void>();
+  @Output() openProfile = new EventEmitter<void>();
 
-  pageTitle = 'Restaurant POS';
   currentTime = new Date();
 
   lan = inject(LanStatusService);
@@ -414,6 +441,11 @@ export class TopbarComponent {
     const base = sim ? 'SIMULATING OFFLINE - Click to toggle' : 'Click to simulate offline mode';
     const pending = this.connection.pendingSyncCount();
     return pending > 0 ? `${base} | ${pending} pending sync events` : base;
+  }
+
+  getUserInitials(): string {
+    const name = this.auth.user()?.fullName ?? 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   }
 
   logout(): void {

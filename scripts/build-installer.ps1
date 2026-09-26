@@ -65,16 +65,13 @@ New-Item -ItemType Directory -Force $DIST_INSTALLER | Out-Null
 # ========================================================
 Write-Host "`n[1/6] Building Angular Frontend (Production, base-href ./)..." -ForegroundColor Green
 Set-Location (Join-Path $ROOT_DIR "frontend\angular-pos")
-& npx.cmd ng build --configuration production --base-href ./
+& npm.cmd run build:desktop
 if ($LASTEXITCODE -ne 0) { throw "Angular build failed!" }
 
 # ========================================================
 # 2. Build Spring Boot Backend Fat JAR
 # ========================================================
 Write-Host "`n[2/6] Building Spring Boot Fat JAR..." -ForegroundColor Green
-Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | ForEach-Object {
-    Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
-}
 Set-Location (Join-Path $ROOT_DIR "backend\restaurant-pos-api")
 $env:JAVA_HOME = $JDK_DIR
 $env:PATH = "$JDK_DIR\bin;$env:PATH"

@@ -9,11 +9,12 @@ import { NotificationService } from '../../core/services/notification.service';
 import { ExcelService } from '../../core/services/excel.service';
 import { ExcelImportModalComponent } from '../../shared/components/excel-import-modal/excel-import-modal.component';
 import { AppIconComponent } from '../../shared/components/icon/icon.component';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-kitchen-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent, AppIconComponent],
+  imports: [CommonModule, FormsModule, MatPaginatorModule, ExcelImportModalComponent, AppIconComponent, TranslatePipe],
   template: `
     <div class="kitchens-page fade-in">
       <!-- Page Header -->
@@ -21,24 +22,24 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
         <div class="header-left">
           <div class="header-icon-wrap"><app-icon name="cooking-pot" [size]="24"></app-icon></div>
           <div>
-            <h1 class="page-title">Oshxonalar Boshqaruvi</h1>
-            <p class="page-subtitle">Oshxonalar (stansiyalar), buyurtma yo'nalishi (routing) va xodimlar biriktiruvi</p>
+            <h1 class="page-title">{{ 'kitchenManagement.title' | translate }}</h1>
+            <p class="page-subtitle">{{ 'kitchenManagement.subtitle' | translate }}</p>
           </div>
         </div>
 
         <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" title="Bo'sh Excel shablonini yuklab olish">
-            <span><app-icon name="download" [size]="14"></app-icon> {{ downloadingTemplate ? 'Yuklanmoqda...' : 'Shablon' }}</span>
+          <button class="pos-btn pos-btn--outline" (click)="downloadTemplate()" [disabled]="downloadingTemplate" [title]="'kitchenManagement.template' | translate">
+            <span><app-icon name="download" [size]="14"></app-icon> {{ downloadingTemplate ? ('common.loading' | translate) : ('kitchenManagement.template' | translate) }}</span>
           </button>
-          <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" title="Oshxonalarni Excel faylga eksport qilish">
-            <span><app-icon name="upload" [size]="14"></app-icon> {{ exportingExcel ? 'Eksport...' : 'Export' }}</span>
+          <button class="pos-btn pos-btn--secondary" (click)="exportExcel()" [disabled]="exportingExcel" [title]="'kitchenManagement.export' | translate">
+            <span><app-icon name="upload" [size]="14"></app-icon> {{ exportingExcel ? ('common.loading' | translate) : ('kitchenManagement.export' | translate) }}</span>
           </button>
-          <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" title="Excel fayldan oshxonalarni yuklash">
-            <span><app-icon name="download" [size]="14"></app-icon> Import</span>
+          <button class="pos-btn pos-btn--secondary" (click)="showImportModal = true" [title]="'kitchenManagement.import' | translate">
+            <span><app-icon name="download" [size]="14"></app-icon> {{ 'kitchenManagement.import' | translate }}</span>
           </button>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()">
             <app-icon name="plus" [size]="14"></app-icon>
-            <span>Yangi Oshxona Qo'shish</span>
+            <span>{{ 'kitchenManagement.addKitchen' | translate }}</span>
           </button>
         </div>
       </div>
@@ -48,28 +49,28 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
         <div class="metric-card">
           <div class="metric-icon metric-icon--purple"><app-icon name="cooking-pot" [size]="20"></app-icon></div>
           <div class="metric-content">
-            <span class="metric-label">Jami Oshxonalar</span>
+            <span class="metric-label">{{ 'kitchenManagement.totalKitchens' | translate }}</span>
             <span class="metric-value">{{ kitchens.length }}</span>
           </div>
         </div>
         <div class="metric-card">
           <div class="metric-icon metric-icon--green"><app-icon name="check-circle" [size]="20" class="icon--success"></app-icon></div>
           <div class="metric-content">
-            <span class="metric-label">Faol (ACTIVE)</span>
+            <span class="metric-label">{{ 'kitchenManagement.activeKitchens' | translate }}</span>
             <span class="metric-value">{{ activeCount }}</span>
           </div>
         </div>
         <div class="metric-card">
           <div class="metric-icon metric-icon--amber"><app-icon name="pause" [size]="20"></app-icon></div>
           <div class="metric-content">
-            <span class="metric-label">Nofaol (INACTIVE)</span>
+            <span class="metric-label">{{ 'kitchenManagement.inactiveKitchens' | translate }}</span>
             <span class="metric-value">{{ inactiveCount }}</span>
           </div>
         </div>
         <div class="metric-card">
           <div class="metric-icon metric-icon--blue"><app-icon name="chef" [size]="20"></app-icon></div>
           <div class="metric-content">
-            <span class="metric-label">Biriktirilgan Xodimlar</span>
+            <span class="metric-label">{{ 'kitchenManagement.assignedCooks' | translate }}</span>
             <span class="metric-value">{{ totalAssignedStaff }}</span>
           </div>
         </div>
@@ -83,7 +84,7 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
             <input
               type="text"
               class="pos-input search-input"
-              placeholder="Oshxona nomi yoki tavsifi bo'yicha qidirish..."
+              [placeholder]="'common.search' | translate"
               [(ngModel)]="searchQuery"
               (ngModelChange)="onSearchChange()"
             />
@@ -95,26 +96,26 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
               class="filter-tab"
               [class.active]="statusFilter === 'ALL'"
               (click)="setStatusFilter('ALL')">
-              Barchasi ({{ kitchens.length }})
+              {{ 'common.all' | translate }} ({{ kitchens.length }})
             </button>
             <button
               class="filter-tab"
               [class.active]="statusFilter === 'ACTIVE'"
               (click)="setStatusFilter('ACTIVE')">
-              Faol ({{ activeCount }})
+              {{ 'common.active' | translate }} ({{ activeCount }})
             </button>
             <button
               class="filter-tab"
               [class.active]="statusFilter === 'INACTIVE'"
               (click)="setStatusFilter('INACTIVE')">
-              Nofaol ({{ inactiveCount }})
+              {{ 'common.inactive' | translate }} ({{ inactiveCount }})
             </button>
           </div>
         </div>
 
         <div class="toolbar-right">
           <button class="pos-btn pos-btn--secondary pos-btn--sm" (click)="loadData()" [disabled]="loading">
-            <span><app-icon name="refresh" [size]="14"></app-icon> Yangilash</span>
+            <span><app-icon name="refresh" [size]="14"></app-icon> {{ 'common.refresh' | translate }}</span>
           </button>
         </div>
       </div>
@@ -123,16 +124,16 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
       <div class="pos-card table-card">
         <div *ngIf="loading && kitchens.length === 0" class="state-container">
           <div class="spinner"></div>
-          <p>Oshxonalar yuklanmoqda...</p>
+          <p>{{ 'common.loading' | translate }}</p>
         </div>
 
         <div *ngIf="!loading && filteredKitchens.length === 0" class="state-container empty-state">
           <div class="empty-icon"><app-icon name="cooking-pot" [size]="48"></app-icon></div>
-          <h3>Oshxonalar topilmadi</h3>
-          <p *ngIf="searchQuery || statusFilter !== 'ALL'">Qidiruv yoki filtr mezonlariga mos keladigan oshxona topilmadi.</p>
-          <p *ngIf="!searchQuery && statusFilter === 'ALL'">Tizimda hozircha oshxona mavjud emas. Yangi oshxona qo'shishingiz mumkin.</p>
+          <h3>{{ 'common.noRecords' | translate }}</h3>
+          <p *ngIf="searchQuery || statusFilter !== 'ALL'">{{ 'common.noData' | translate }}</p>
+          <p *ngIf="!searchQuery && statusFilter === 'ALL'">{{ 'common.noData' | translate }}</p>
           <button class="pos-btn pos-btn--primary" (click)="openCreateModal()" style="margin-top: 14px;">
-            <app-icon name="plus" [size]="16"></app-icon> Yangi oshxona qo'shish
+            <app-icon name="plus" [size]="16"></app-icon> {{ 'kitchenManagement.addKitchen' | translate }}
           </button>
         </div>
 
@@ -141,13 +142,13 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
             <thead>
               <tr>
                 <th style="width: 70px;">ID</th>
-                <th>Oshxona Nomi</th>
-                <th>Tavsif</th>
-                <th style="width: 140px; text-align: center;">Xodimlar</th>
-                <th style="width: 150px; text-align: center;">Kategoriyalar</th>
-                <th style="width: 140px; text-align: center;">Status</th>
-                <th style="width: 140px;">Yaratilgan Sana</th>
-                <th style="width: 220px; text-align: right;">Amallar</th>
+                <th>{{ 'kitchenManagement.stationName' | translate }}</th>
+                <th>{{ 'common.description' | translate }}</th>
+                <th style="width: 140px; text-align: center;">{{ 'nav.employees' | translate }}</th>
+                <th style="width: 150px; text-align: center;">{{ 'nav.categories' | translate }}</th>
+                <th style="width: 140px; text-align: center;">{{ 'common.status' | translate }}</th>
+                <th style="width: 140px;">{{ 'common.date' | translate }}</th>
+                <th style="width: 220px; text-align: right;">{{ 'common.actions' | translate }}</th>
               </tr>
             </thead>
             <tbody>

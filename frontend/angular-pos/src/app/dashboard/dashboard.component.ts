@@ -149,7 +149,7 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
         <div class="pos-card section-card">
           <div class="pos-card__header">
             <h2 class="pos-card__title"><app-icon name="tables" [size]="18"></app-icon> {{ 'dashboard.tablesMap' | translate }}</h2>
-            <a routerLink="/tables" class="view-all-link">{{ 'common.view' | translate }} →</a>
+            <a routerLink="/tables" class="view-all-link">{{ 'common.view' | translate }} <app-icon name="arrow-right" [size]="14"></app-icon></a>
           </div>
 
           <div class="tables-mini-grid">

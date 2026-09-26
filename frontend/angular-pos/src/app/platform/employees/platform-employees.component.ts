@@ -93,7 +93,7 @@ import { NotificationService } from '../../core/services/notification.service';
             <select class="pos-input" [(ngModel)]="selectedStatus" (change)="loadEmployees()">
               <option value="">Barchasi</option>
               <option value="true">Faol</option>
-              <option value="false">⏸️ To‘xtatilgan</option>
+              <option value="false">To‘xtatilgan</option>
             </select>
           </div>
         </div>
@@ -197,7 +197,7 @@ import { NotificationService } from '../../core/services/notification.service';
                             [disabled]="actionLoading() === emp.id"
                             title="Xodim hisobini vaqtinchalik bloklash"
                           >
-                            ⏸️ Bloklash
+                            <app-icon name="pause" [size]="14"></app-icon> Bloklash
                           </button>
                         } @else {
                           <button
@@ -207,7 +207,7 @@ import { NotificationService } from '../../core/services/notification.service';
                             [disabled]="actionLoading() === emp.id"
                             title="Xodim hisobini qayta faollashtirish"
                           >
-                            ▶️ Faollashtirish
+                            <app-icon name="play" [size]="14"></app-icon> Faollashtirish
                           </button>
                         }
                       } @else {

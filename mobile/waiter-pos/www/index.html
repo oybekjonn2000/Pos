@@ -29,6 +29,7 @@
         <div style="display: flex; justify-content: flex-end; padding: 12px 16px;">
           <select id="mobileLangSelect" onchange="app.changeLanguage(this.value)" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-weight: 600; font-size: 13px;">
             <option value="uz">🇺🇿 O‘zbekcha</option>
+            <option value="oz">🇺🇿 Ўзбекча</option>
             <option value="ru">🇷🇺 Русский</option>
             <option value="en">🇬🇧 English</option>
           </select>
@@ -92,6 +93,97 @@
           <p class="connect-hint">
             Telefon va POS kompyuter bitta Wi-Fi tarmog‘iga ulangan bo‘lishi kerak.
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- 1B. SCREEN: PRO TARIF CHEKLOVI VA ESLATMA                -->
+    <!-- ======================================================== -->
+    <div id="screenProBlocked" class="screen">
+      <div class="pro-blocked-view">
+        <div class="pro-blocked-header">
+          <div class="pro-tag-badge">
+            <svg class="pos-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>PRO TARIF TALAB ETILADI</span>
+          </div>
+          <select id="proLangSelect" onchange="app.changeLanguage(this.value)" class="lang-select-pill">
+            <option value="uz">🇺🇿 O‘zbekcha</option>
+            <option value="oz">🇺🇿 Ўзбекча</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="en">🇬🇧 English</option>
+          </select>
+        </div>
+
+        <div class="pro-blocked-card">
+          <div class="pro-icon-hero">
+            <div class="pro-icon-circle">
+              <svg class="pos-icon" viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <div class="pro-icon-accent">
+              <svg class="pos-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+          </div>
+
+          <h2 class="pro-blocked-title" data-i18n="proBlockedTitle">Mobil Ofitsiant Cheklangan</h2>
+          <p class="pro-blocked-desc" data-i18n="proBlockedMsg">
+            Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud. Siz ulangan restoran hozirda Standart tarifida ishlamoqda.
+          </p>
+
+          <!-- Eslatma / Ko'rsatma box -->
+          <div class="pro-notice-box">
+            <div class="pro-notice-header">
+              <svg class="pos-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span data-i18n="proBlockedNoticeHeader">ESLATMA / QANDAY YOQILADI:</span>
+            </div>
+            <div class="pro-notice-content">
+              <div class="pro-step">
+                <span class="pro-step-num">1</span>
+                <span data-i18n="proBlockedStep1">Asosiy POS kompyuterida Admin profiliga kiring</span>
+              </div>
+              <div class="pro-step">
+                <span class="pro-step-num">2</span>
+                <span data-i18n="proBlockedStep2">'Obuna & To‘lov' bo‘limiga o‘ting</span>
+              </div>
+              <div class="pro-step">
+                <span class="pro-step-num">3</span>
+                <span data-i18n="proBlockedStep3">Tarifni PRO ga yangilang (yoki sinov muddatini yoqing)</span>
+              </div>
+              <div class="pro-step">
+                <span class="pro-step-num">4</span>
+                <span data-i18n="proBlockedStep4">Yangilangandan so‘ng pastdagi tugmani bosing</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Server connection details -->
+          <div class="pro-meta-box">
+            <div class="pro-meta-row">
+              <span class="pro-meta-label">Restoran:</span>
+              <span id="proBlockedRestName" class="pro-meta-val">-</span>
+            </div>
+            <div class="pro-meta-row">
+              <span class="pro-meta-label">Server:</span>
+              <span id="proBlockedServerHost" class="pro-meta-val">-</span>
+            </div>
+            <div class="pro-meta-row">
+              <span class="pro-meta-label">Tarif holati:</span>
+              <span id="proBlockedPlan" class="pro-meta-val pro-meta-val--blocked" data-i18n="proBlockedActivePlan">Standart (Mobil APK cheklangan)</span>
+            </div>
+          </div>
+
+          <div id="proBlockedCustomMsg" class="pro-server-msg" style="display: none;"></div>
+
+          <div class="pro-actions">
+            <button type="button" id="btnRecheckPro" class="btn-primary btn-pro-recheck" onclick="app.recheckProSubscription()">
+              <svg class="pos-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span data-i18n="proBlockedRecheckBtn">Obunani Qayta Tekshirish</span>
+            </button>
+            <button type="button" class="btn-secondary btn-pro-change" onclick="app.showScreen('screenConnect')">
+              <svg class="pos-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              <span data-i18n="proBlockedChangeServerBtn">Boshqa serverga ulanish</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

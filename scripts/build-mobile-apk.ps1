@@ -16,6 +16,7 @@ Write-Host "==========================================================" -Foregro
 
 # 1. Environment sozlash
 $JavaCandidates = @(
+    "C:\Program Files\Java\jdk-21.0.12.1",
     "C:\Program Files\Java\jdk-21.0.12",
     "C:\Program Files\Java\jdk-21",
     $env:JAVA_HOME

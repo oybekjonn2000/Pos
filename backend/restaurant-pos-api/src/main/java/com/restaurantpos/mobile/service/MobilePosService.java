@@ -62,7 +62,7 @@ public class MobilePosService {
 
         boolean hasAccess = hasMobileAppAccess(tenant.getId());
         if (!hasAccess) {
-            throw PosException.forbidden("Ofitsiant mobil ilovasi faqat Pro tarifida mavjud. Iltimos, administratorga murojaat qiling.");
+            throw PosException.proPlanRequired("Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud. Restoran ma'muri boshqaruv panelida PRO tarifini faollashtirishi lozim.");
         }
 
         String planCode = "STANDARD";
@@ -103,7 +103,7 @@ public class MobilePosService {
         }
 
         if (!hasMobileAppAccess(tenant.getId())) {
-            throw PosException.forbidden("Ofitsiant mobil ilovasi faqat Pro tarifida mavjud.");
+            throw PosException.proPlanRequired("Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud.");
         }
 
         List<User> users = userRepository.findAllByTenantIdWithRoles(tenant.getId());
@@ -147,7 +147,7 @@ public class MobilePosService {
 
         // Check subscription
         if (!hasMobileAppAccess(tenant.getId())) {
-            throw PosException.forbidden("Ofitsiant mobil ilovasi faqat Pro tarifida mavjud.");
+            throw PosException.proPlanRequired("Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud.");
         }
 
         // Validate PIN
@@ -295,6 +295,10 @@ public class MobilePosService {
             return Collections.emptyList();
         }
 
+        if (!hasMobileAppAccess(tenantId)) {
+            throw PosException.proPlanRequired("Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud.");
+        }
+
         List<com.restaurantpos.orders.entity.Order> orders;
         if (user != null && user.isWaiter()) {
             orders = orderRepository.findActiveOrdersByWaiter(tenantId, user.getUserId());
@@ -349,6 +353,9 @@ public class MobilePosService {
      */
     @Transactional
     public void markItemServed(UUID orderId, UUID itemId, UUID tenantId, com.restaurantpos.auth.security.UserPrincipal user) {
+        if (tenantId != null && !hasMobileAppAccess(tenantId)) {
+            throw PosException.proPlanRequired("Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud.");
+        }
         kitchenService.updateItemKitchenStatus(itemId, "SERVED");
         log.info("Waiter {} marked item {} as SERVED for order {}", user != null ? user.getUsername() : "unknown", itemId, orderId);
     }

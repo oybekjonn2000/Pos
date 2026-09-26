@@ -81,7 +81,59 @@ class WaiterPosApp {
         readyDish: "Oshxonada taom tayyor!",
         loading: "Yuklanmoqda...",
         success: "Muvaffaqiyatli",
-        error: "Xatolik"
+        error: "Xatolik",
+        proBlockedTitle: "Mobil Ofitsiant Cheklangan",
+        proBlockedNoticeHeader: "ESLATMA: PRO TARIF TALAB QILINADI",
+        proBlockedMsg: "Ofitsiant mobil ilovasi (APK) faqat PRO tarifida mavjud. Siz ulangan restoran hozirda Standart tarifida ishlamoqda.",
+        proBlockedStep1: "Asosiy POS kompyuterida Admin profiliga kiring",
+        proBlockedStep2: "'Obuna & To‘lov' bo‘limiga o‘ting",
+        proBlockedStep3: "Tarifni PRO ga yangilang (yoki sinov muddatini yoqing)",
+        proBlockedStep4: "Yangilangandan so‘ng pastdagi tugmani bosing",
+        proBlockedRecheckBtn: "Obunani Qayta Tekshirish",
+        proBlockedRechecking: "Tekshirilmoqda...",
+        proBlockedChangeServerBtn: "Boshqa serverga ulanish",
+        proBlockedActivePlan: "Standart (Mobil APK cheklangan)",
+        proBlockedSuccessToast: "PRO tarif tasdiqlandi! Xush kelibsiz.",
+        proBlockedStillWarning: "Restoranda hali ham Standart tarif faol. Iltimos, admin tarifni PRO ga yangilashini kuting."
+      },
+      oz: {
+        connectTitle: "POS серверга уланиш",
+        connectSubtitle: "Официант иловасини марказий POS компьютерига улаш учун унинг Wi-Fi IP манзилини киритинг",
+        serverIp: "Сервер IP манзили *",
+        port: "Порт *",
+        connectBtn: "Серверга Уланиш",
+        selectWaiter: "Официант танланг",
+        selectWaiterSub: "Тизимда ишлаш учун ўз исмингизни босинг",
+        enterPin: "PIN кодни киритинг",
+        tables: "Столлар",
+        allZones: "Барчаси",
+        orders: "Буюртмалар",
+        newOrder: "Янги буюртма",
+        sendToKitchen: "Ошхонага юбориш",
+        cart: "Саватча",
+        total: "Жами",
+        close: "Ёпиш",
+        cancel: "Бекор қилиш",
+        available: "Бўш",
+        occupied: "Банд",
+        dishes: "таом",
+        readyDish: "Ошхонада таом тайёр!",
+        loading: "Юкланмоқда...",
+        success: "Муваффақиятли",
+        error: "Хатолик",
+        proBlockedTitle: "Мобил Официант Чекланган",
+        proBlockedNoticeHeader: "ЭСЛАТМА: PRO ТАРИФ ТАЛАБ ЭТИЛАДИ",
+        proBlockedMsg: "Официант мобил иловаси (APK) фақат PRO тарифида мавжуд. Сиз уланган ресторан ҳозирда Стандарт тарифида ишламоқда.",
+        proBlockedStep1: "Асосий POS компьютерида Админ профилига киринг",
+        proBlockedStep2: "'Обуна & Тўлов' бўлимига ўтинг",
+        proBlockedStep3: "Тарифни PRO га янгиланг (ёки синов муддатини ёқинг)",
+        proBlockedStep4: "Янгилангандан сўнг пастдаги тугмани босинг",
+        proBlockedRecheckBtn: "Обунани Қайта Текшириш",
+        proBlockedRechecking: "Текширилмоқда...",
+        proBlockedChangeServerBtn: "Бошқа серверга уланиш",
+        proBlockedActivePlan: "Стандарт (Мобил APK чекланган)",
+        proBlockedSuccessToast: "PRO тариф тасдиқланди! Хуш келибсиз.",
+        proBlockedStillWarning: "Ресторанда ҳали ҳам Стандарт тариф фаол. Илтимос, админ тарифни PRO га янгилашини кутинг."
       },
       ru: {
         connectTitle: "Подключение к POS серверу",
@@ -107,7 +159,20 @@ class WaiterPosApp {
         readyDish: "Блюдо готово на кухне!",
         loading: "Загрузка...",
         success: "Успешно",
-        error: "Ошибка"
+        error: "Ошибка",
+        proBlockedTitle: "Мобильный официант заблокирован",
+        proBlockedNoticeHeader: "ВНИМАНИЕ: ТРЕБУЕТСЯ ТАРИФ PRO",
+        proBlockedMsg: "Мобильное приложение официанта (APK) доступно только на тарифе PRO. Ресторан в настоящее время работает на тарифе Стандарт.",
+        proBlockedStep1: "Перейдите на основной компьютер POS под учетной записью Администратора",
+        proBlockedStep2: "Откройте раздел 'Подписка и оплата'",
+        proBlockedStep3: "Обновите тариф до PRO (или активируйте пробный период)",
+        proBlockedStep4: "После активации нажмите кнопку ниже",
+        proBlockedRecheckBtn: "Перепроверить подписку",
+        proBlockedRechecking: "Проверка...",
+        proBlockedChangeServerBtn: "Подключиться к другому серверу",
+        proBlockedActivePlan: "Стандарт (Мобильный APK заблокирован)",
+        proBlockedSuccessToast: "Тариф PRO подтвержден! Добро пожаловать.",
+        proBlockedStillWarning: "В ресторане все еще действует тариф Стандарт. Пожалуйста, подождите активации PRO администратором."
       },
       en: {
         connectTitle: "Connect to POS Server",
@@ -133,7 +198,20 @@ class WaiterPosApp {
         readyDish: "Dish ready in kitchen!",
         loading: "Loading...",
         success: "Success",
-        error: "Error"
+        error: "Error",
+        proBlockedTitle: "Mobile Waiter Restricted",
+        proBlockedNoticeHeader: "NOTICE: PRO PLAN REQUIRED",
+        proBlockedMsg: "The mobile waiter app (APK) is available only on the PRO plan. The connected restaurant is currently on the Standard plan.",
+        proBlockedStep1: "Open the main POS computer as Administrator",
+        proBlockedStep2: "Navigate to 'Subscription & Billing'",
+        proBlockedStep3: "Upgrade your plan to PRO (or activate trial)",
+        proBlockedStep4: "After upgrading, tap the button below",
+        proBlockedRecheckBtn: "Re-check Subscription",
+        proBlockedRechecking: "Checking...",
+        proBlockedChangeServerBtn: "Connect to another server",
+        proBlockedActivePlan: "Standard (Mobile APK restricted)",
+        proBlockedSuccessToast: "PRO plan confirmed! Welcome.",
+        proBlockedStillWarning: "Restaurant is still on the Standard plan. Please wait for the admin to upgrade to PRO."
       }
     };
     const cur = dict[this.lang] || dict.uz;
@@ -150,11 +228,33 @@ class WaiterPosApp {
     document.documentElement.lang = this.lang;
     const select = document.getElementById('mobileLangSelect');
     if (select) select.value = this.lang;
+    const proSelect = document.getElementById('proLangSelect');
+    if (proSelect) proSelect.value = this.lang;
 
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const k = el.getAttribute('data-i18n');
       if (k) el.textContent = this.t(k);
     });
+  }
+
+  svgIcon(name, size = 16) {
+    const icons = {
+      'check-circle': `<circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line>`,
+      'x-circle': `<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>`,
+      'arrow-right': `<line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>`,
+      'users': `<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>`,
+      'globe': `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`,
+      'map-pin': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>`,
+      'bell': `<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>`,
+      'utensils': `<path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"></path><path d="M15 2v20"></path><path d="M6 2v7a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2"></path><path d="M9 12v10"></path>`,
+      'x': `<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>`,
+      'plus': `<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>`,
+      'check': `<polyline points="20 6 9 17 4 12"></polyline>`,
+      'star': `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>`,
+      'lock': `<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>`
+    };
+    const body = icons[name] || `<circle cx="12" cy="12" r="10"></circle>`;
+    return `<svg class="pos-icon" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
   }
 
   init() {
@@ -281,6 +381,9 @@ class WaiterPosApp {
     try {
       await this.verifyAndConnectServer(candidateUrl, ip, port, false, restCode);
     } catch (err) {
+      if (err.isProBlocked) {
+        return;
+      }
       errText.textContent = err.message || 'Serverga ulanishning imkoni bo‘lmadi.';
       errBanner.style.display = 'flex';
     } finally {
@@ -295,11 +398,14 @@ class WaiterPosApp {
       await this.verifyAndConnectServer(this.serverBase, this.serverIp, this.serverPort, true, savedCode);
     } catch (err) {
       console.warn('Auto-connect failed:', err.message);
+      if (err.isProBlocked) {
+        return;
+      }
       this.showScreen('screenConnect');
       const errBanner = document.getElementById('connectErrorBanner');
       const errText = document.getElementById('connectErrorText');
       if (errBanner && errText) {
-        errText.textContent = 'POS serverga ulanib bo‘lmadi.';
+        errText.textContent = err.message || 'POS serverga ulanib bo‘lmadi.';
         errBanner.style.display = 'flex';
       }
     }
@@ -329,13 +435,35 @@ class WaiterPosApp {
 
     if (!res.ok) {
       let msg = 'POS server ishlamayapti.';
+      let errCode = '';
       try {
         const errJson = await res.json();
-        if (errJson && errJson.message) msg = errJson.message;
+        if (errJson) {
+          if (errJson.message) msg = errJson.message;
+          if (errJson.errorCode) errCode = errJson.errorCode;
+        }
       } catch (e) {}
 
-      if (res.status === 403) {
-        throw new Error('Ofitsiant mobil ilovasi faqat Pro tarifida mavjud.');
+      const isProReq = res.status === 403 || errCode === 'PRO_PLAN_REQUIRED' || msg.toLowerCase().includes('pro') || msg.toLowerCase().includes('tarif');
+      if (isProReq) {
+        this.serverIp = ip;
+        this.serverPort = port;
+        this.serverBase = baseUrl;
+        localStorage.setItem('pos_mobile_ip', ip);
+        localStorage.setItem('pos_mobile_port', port);
+        if (restaurantCode) {
+          localStorage.setItem('pos_mobile_restaurant_code', restaurantCode);
+        }
+
+        this.showProBlockedScreen({
+          serverIp: `${ip}:${port}`,
+          restaurantName: restaurantCode || 'Restoran',
+          message: msg
+        });
+
+        const err = new Error(msg);
+        err.isProBlocked = true;
+        throw err;
       }
       throw new Error(msg);
     }
@@ -375,6 +503,63 @@ class WaiterPosApp {
     this.showScreen('screenWaiters');
   }
 
+  showProBlockedScreen(info = {}) {
+    const hostEl = document.getElementById('proBlockedServerHost');
+    const restNameEl = document.getElementById('proBlockedRestName');
+    const msgEl = document.getElementById('proBlockedCustomMsg');
+
+    if (hostEl) hostEl.textContent = info.serverIp || `${this.serverIp}:${this.serverPort}`;
+    if (restNameEl) restNameEl.textContent = info.restaurantName || this.restaurant?.restaurantName || 'Restoran';
+    if (msgEl) {
+      if (info.message) {
+        msgEl.textContent = info.message;
+        msgEl.style.display = 'block';
+      } else {
+        msgEl.style.display = 'none';
+      }
+    }
+
+    this.stopTablesPolling();
+    this.stopReadyNotificationsPolling();
+    this.showScreen('screenProBlocked');
+  }
+
+  async recheckProSubscription() {
+    const btn = document.getElementById('btnRecheckPro');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-inline"></span> ${this.t('proBlockedRechecking')}`;
+    }
+
+    try {
+      const savedCode = localStorage.getItem('pos_mobile_restaurant_code') || '';
+      const candidateUrl = `http://${this.serverIp}:${this.serverPort}`;
+      await this.verifyAndConnectServer(candidateUrl, this.serverIp, this.serverPort, false, savedCode);
+      this.showToast(this.t('proBlockedSuccessToast'), 'success');
+    } catch (err) {
+      if (err.isProBlocked) {
+        this.showToast(this.t('proBlockedStillWarning'), 'error');
+      } else {
+        this.showToast(err.message || 'Serverga ulanib bo‘lmadi', 'error');
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+  }
+
+  checkIfProRestrictedAndShow(msg = null) {
+    this.logoutWaiter();
+    this.showProBlockedScreen({
+      serverIp: `${this.serverIp}:${this.serverPort}`,
+      restaurantName: this.restaurant?.restaurantName || 'Restoran',
+      message: msg || this.t('proBlockedMsg')
+    });
+  }
+
   // ========================================================
   // 2. WAITERS LIST (ONLY WAITER ROLE)
   // ========================================================
@@ -388,6 +573,11 @@ class WaiterPosApp {
       const url = `${this.serverBase}/api/mobile/waiters${restIdParam}`;
       const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
       const json = await res.json();
+
+      if (res.status === 403 || json.errorCode === 'PRO_PLAN_REQUIRED') {
+        this.checkIfProRestrictedAndShow(json.message);
+        return;
+      }
 
       if (json.success && Array.isArray(json.data)) {
         this.waiters = json.data;
@@ -567,9 +757,13 @@ class WaiterPosApp {
         // Open STOLLAR screen
         this.openTablesScreen();
       } else {
-        // Wrong PIN
+        // Wrong PIN or PRO restriction
         this.currentPin = '';
         this.updatePinDots();
+        if (res.status === 403 || json.errorCode === 'PRO_PLAN_REQUIRED') {
+          this.checkIfProRestrictedAndShow(json.message);
+          return;
+        }
         const msg = json.message || 'PIN kod noto‘g‘ri.';
         if (errorText) errorText.textContent = msg;
         if (errorEl) errorEl.style.display = 'flex';
@@ -644,6 +838,11 @@ class WaiterPosApp {
 
       if (tablesRes.status === 401 || zonesRes.status === 401) {
         this.logoutWaiter();
+        return;
+      }
+
+      if (tablesRes.status === 403 || zonesRes.status === 403) {
+        this.checkIfProRestrictedAndShow();
         return;
       }
 
@@ -1293,6 +1492,10 @@ class WaiterPosApp {
         }
       });
 
+      if (res.status === 403) {
+        this.checkIfProRestrictedAndShow();
+        return;
+      }
       if (!res.ok) return;
       const json = await res.json();
       if (!json.success || !Array.isArray(json.data)) return;

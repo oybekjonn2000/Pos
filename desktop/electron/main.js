@@ -333,6 +333,7 @@ function createMainWindow() {
     mainWindow.loadURL('http://localhost:4200');
   }
 
+  let isInitialLaunch = true;
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(`
       window.__POS_SERVER_URL__ = '${targetUrl}';
@@ -341,8 +342,15 @@ function createMainWindow() {
         localStorage.setItem('pos_server_url', '${targetUrl}');
         localStorage.setItem('pos_is_desktop', 'true');
         localStorage.setItem('pos_app_mode', '${currentAppMode}');
+        ${isInitialLaunch ? `
+        sessionStorage.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        ` : ''}
       } catch(e) {}
     `);
+    isInitialLaunch = false;
   });
 
   mainWindow.once('ready-to-show', () => {
