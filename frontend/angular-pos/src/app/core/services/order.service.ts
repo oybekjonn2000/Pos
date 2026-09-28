@@ -67,6 +67,10 @@ export interface Order {
   closedAt?: string;
   customerName?: string;
   customerPhone?: string;
+  debtDueDate?: string;
+  debtRemainingAmount?: number;
+  debtStatus?: string;
+  debtNotes?: string;
   items: OrderItem[];
 }
 
@@ -201,5 +205,9 @@ export class OrderService {
 
   closeOrder(orderId: string): Observable<ApiResponse<Order>> {
     return this.http.post<ApiResponse<Order>>(`${this.API}/${orderId}/close`, {});
+  }
+
+  settleOrderDebt(orderId: string): Observable<ApiResponse<Order>> {
+    return this.http.post<ApiResponse<Order>>(`${this.API}/${orderId}/settle-debt`, {});
   }
 }

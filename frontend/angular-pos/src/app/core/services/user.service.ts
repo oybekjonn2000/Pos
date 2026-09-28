@@ -77,6 +77,7 @@ export interface UpdateProfileRequest {
   phone: string;
   email?: string;
   currentPassword?: string;
+  currentPin?: string;
   newPassword?: string;
   newPin?: string;
 }

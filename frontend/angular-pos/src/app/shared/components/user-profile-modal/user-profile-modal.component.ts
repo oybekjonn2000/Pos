@@ -53,7 +53,7 @@ import { AppIconComponent } from '../icon/icon.component';
             class="tab-btn" 
             [class.active]="activeTab === 'security'" 
             (click)="activeTab = 'security'">
-            <app-icon name="lock" [size]="16"></app-icon> {{ isSuperAdmin() ? 'Parolni o\'zgartirish' : 'Xavfsizlik & PIN' }}
+            <app-icon name="lock" [size]="16"></app-icon> Parolni o'zgartirish
           </button>
         </div>
 
@@ -132,118 +132,76 @@ import { AppIconComponent } from '../icon/icon.component';
             </form>
           }
 
-          <!-- TAB 2: Security & PIN -->
+          <!-- TAB 2: Parolni o'zgartirish -->
           @if (activeTab === 'security') {
             <div class="security-sections">
-              <!-- PIN CODE BLOCK (Only for non-superadmin users) -->
-              @if (!isSuperAdmin()) {
-                <div class="security-card">
-                  <div class="sec-card-header">
-                    <div class="sec-icon"><app-icon name="key" [size]="18"></app-icon></div>
-                    <div>
-                      <h4 class="sec-title">Tezkor PIN Kod</h4>
-                      <p class="sec-desc">POS tizimiga yoki kassaga tezkor kirish uchun 4 xonali PIN kod</p>
-                    </div>
-                  </div>
-
-                  <div class="form-row form-row--two">
-                    <div class="form-group">
-                      <label class="form-label" for="newPin">Yangi PIN kod</label>
-                      <div class="input-wrap">
-                        <span class="input-icon"><app-icon name="hash" [size]="16"></app-icon></span>
-                        <input 
-                          id="newPin"
-                          type="password" 
-                          maxlength="4" 
-                          class="form-control font-mono" 
-                          [(ngModel)]="newPin" 
-                          placeholder="Masalan: 1234" />
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label class="form-label" for="confirmPin">PIN kodni tasdiqlang</label>
-                      <div class="input-wrap">
-                        <span class="input-icon"><app-icon name="hash" [size]="16"></app-icon></span>
-                        <input 
-                          id="confirmPin"
-                          type="password" 
-                          maxlength="4" 
-                          class="form-control font-mono" 
-                          [(ngModel)]="confirmPin" 
-                          placeholder="Qayta kiriting" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              }
-
               <!-- PASSWORD BLOCK -->
               <div class="security-card">
                 <div class="sec-card-header">
                   <div class="sec-icon"><app-icon name="lock" [size]="18"></app-icon></div>
                   <div>
-                    <h4 class="sec-title">Tizim Parolini O'zgartirish</h4>
+                    <h4 class="sec-title">Tizim Parolini Ozgartirish</h4>
                     <p class="sec-desc">Akkaunt xavfsizligi uchun kuchli paroldan foydalaning (kamida 4 ta belgi)</p>
                   </div>
                 </div>
 
-                <div class="form-row form-row--two">
+                <div class="form-grid">
                   <div class="form-group">
-                    <label class="form-label" for="newPass">Yangi parol</label>
-                    <div class="input-wrap">
-                      <span class="input-icon"><app-icon name="lock" [size]="16"></app-icon></span>
-                      <input 
-                        id="newPass"
-                        [type]="showNewPassword ? 'text' : 'password'" 
-                        class="form-control" 
-                        [(ngModel)]="newPassword" 
-                        placeholder="Kamida 4 belgi" />
-                      <button type="button" class="btn-toggle-eye" (click)="showNewPassword = !showNewPassword">
-                        <app-icon [name]="showNewPassword ? 'eye-off' : 'eye'" [size]="16"></app-icon>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label class="form-label" for="confirmPass">Parolni tasdiqlang</label>
-                    <div class="input-wrap">
-                      <span class="input-icon"><app-icon name="lock" [size]="16"></app-icon></span>
-                      <input 
-                        id="confirmPass"
-                        [type]="showNewPassword ? 'text' : 'password'" 
-                        class="form-control" 
-                        [(ngModel)]="confirmPassword" 
-                        placeholder="Qayta kiriting" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- CURRENT PASSWORD CONFIRMATION -->
-              @if ((!isSuperAdmin() && newPin) || newPassword) {
-                <div class="current-pass-confirm fade-in">
-                  <div class="form-group">
-                    <label class="form-label" for="currentPass">
-                      Joriy parolingiz <span class="required">*</span>
+                    <label class="form-label" for="currentPassword">
+                      Eski parol <span class="required">*</span>
                     </label>
                     <div class="input-wrap">
                       <span class="input-icon"><app-icon name="lock" [size]="16"></app-icon></span>
                       <input 
-                        id="currentPass"
+                        id="currentPassword"
                         [type]="showCurrentPassword ? 'text' : 'password'" 
+                        autocomplete="current-password"
                         class="form-control" 
                         [(ngModel)]="currentPassword" 
-                        placeholder="O'zgarishlarni tasdiqlash uchun joriy parolingizni kiriting" 
-                        required />
+                        placeholder="Amaldagi eski parolni kiriting" />
                       <button type="button" class="btn-toggle-eye" (click)="showCurrentPassword = !showCurrentPassword">
                         <app-icon [name]="showCurrentPassword ? 'eye-off' : 'eye'" [size]="16"></app-icon>
                       </button>
                     </div>
-                    <span class="field-hint text-warning">Xavfsizlik maqsadida yangi parol{{ isSuperAdmin() ? '' : ' yoki PIN' }} o'rnatish uchun joriy parol talab qilinadi</span>
+                  </div>
+
+                  <div class="form-row form-row--two">
+                    <div class="form-group">
+                      <label class="form-label" for="newPass">Yangi parol <span class="required">*</span></label>
+                      <div class="input-wrap">
+                        <span class="input-icon"><app-icon name="lock" [size]="16"></app-icon></span>
+                        <input 
+                          id="newPass"
+                          [type]="showNewPassword ? 'text' : 'password'" 
+                          autocomplete="new-password"
+                          class="form-control" 
+                          [(ngModel)]="newPassword" 
+                          placeholder="Kamida 4 belgi" />
+                        <button type="button" class="btn-toggle-eye" (click)="showNewPassword = !showNewPassword">
+                          <app-icon [name]="showNewPassword ? 'eye-off' : 'eye'" [size]="16"></app-icon>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="confirmPass">Parolni tasdiqlang <span class="required">*</span></label>
+                      <div class="input-wrap">
+                        <span class="input-icon"><app-icon name="lock" [size]="16"></app-icon></span>
+                        <input 
+                          id="confirmPass"
+                          [type]="showConfirmPassword ? 'text' : 'password'" 
+                          autocomplete="new-password"
+                          class="form-control" 
+                          [(ngModel)]="confirmPassword" 
+                          placeholder="Qayta kiriting" />
+                        <button type="button" class="btn-toggle-eye" (click)="showConfirmPassword = !showConfirmPassword">
+                          <app-icon [name]="showConfirmPassword ? 'eye-off' : 'eye'" [size]="16"></app-icon>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              }
+              </div>
             </div>
           }
         </div>
@@ -259,7 +217,11 @@ import { AppIconComponent } from '../icon/icon.component';
               <span>Saqlanmoqda...</span>
             } @else {
               <app-icon name="save" [size]="16"></app-icon>
-              <span>O'zgarishlarni saqlash</span>
+              @if (activeTab === 'security') {
+                <span>Parolni saqlash</span>
+              } @else {
+                <span>O'zgarishlarni saqlash</span>
+              }
             }
           </button>
         </div>
@@ -807,14 +769,13 @@ export class UserProfileModalComponent implements OnInit {
   lastName = '';
   phone = '';
   email = '';
-  newPin = '';
-  confirmPin = '';
   newPassword = '';
   confirmPassword = '';
   currentPassword = '';
 
   showCurrentPassword = false;
   showNewPassword = false;
+  showConfirmPassword = false;
 
   ngOnInit(): void {
     this.loadProfile();
@@ -883,22 +844,19 @@ export class UserProfileModalComponent implements OnInit {
       return;
     }
 
-    // PIN validation (Faqat superadmin bo'lmagan foydalanuvchilar uchun)
-    if (!this.isSuperAdmin() && this.newPin) {
-      if (!/^\d{1,4}$/.test(this.newPin.trim())) {
-        this.errorMessage.set('PIN kod 1 tadan 4 tagacha raqamdan iborat bo\'lishi kerak.');
+    // Password validation (agar yangi parol kiritilgan bo'lsa yoki xavfsizlik tabida bo'lsa)
+    const hasPassChanges = !!this.newPassword || !!this.confirmPassword || (this.activeTab === 'security' && !!this.currentPassword);
+    if (hasPassChanges) {
+      if (!this.currentPassword || !this.currentPassword.trim()) {
+        this.errorMessage.set('Parolni o\'zgartirish uchun avvalgi eski parolingizni kiriting.');
         this.activeTab = 'security';
         return;
       }
-      if (this.newPin.trim() !== this.confirmPin?.trim()) {
-        this.errorMessage.set('Yangi PIN kod va uning tasdig\'i mos kelmadi.');
+      if (!this.newPassword || !this.newPassword.trim()) {
+        this.errorMessage.set('Iltimos, yangi parolni kiriting.');
         this.activeTab = 'security';
         return;
       }
-    }
-
-    // Password validation
-    if (this.newPassword) {
       if (this.newPassword.trim().length < 4) {
         this.errorMessage.set('Yangi parol kamida 4 belgidan iborat bo\'lishi kerak.');
         this.activeTab = 'security';
@@ -911,23 +869,13 @@ export class UserProfileModalComponent implements OnInit {
       }
     }
 
-    const pinToSubmit = !this.isSuperAdmin() && this.newPin ? this.newPin.trim() : undefined;
-
-    // Check if security changed but current password is empty
-    if ((pinToSubmit || this.newPassword) && !this.currentPassword) {
-      this.errorMessage.set((this.isSuperAdmin() ? 'Parolni' : 'PIN yoki parolni') + ' yangilash uchun joriy parolingizni kiriting.');
-      this.activeTab = 'security';
-      return;
-    }
-
     const payload: UpdateProfileRequest = {
       firstName: this.firstName.trim(),
       lastName: this.lastName ? this.lastName.trim() : '',
       phone: this.phone.trim(),
       email: this.email ? this.email.trim() : undefined,
-      newPin: pinToSubmit,
-      newPassword: this.newPassword ? this.newPassword.trim() : undefined,
-      currentPassword: this.currentPassword ? this.currentPassword.trim() : undefined
+      currentPassword: hasPassChanges ? this.currentPassword.trim() : undefined,
+      newPassword: hasPassChanges ? this.newPassword.trim() : undefined
     };
 
     this.saving.set(true);
@@ -951,6 +899,9 @@ export class UserProfileModalComponent implements OnInit {
         this.saving.set(false);
         const msg = err.error?.message || 'Profilni yangilashda xatolik yuz berdi.';
         this.errorMessage.set(msg);
+        if (hasPassChanges) {
+          this.activeTab = 'security';
+        }
       }
     });
   }

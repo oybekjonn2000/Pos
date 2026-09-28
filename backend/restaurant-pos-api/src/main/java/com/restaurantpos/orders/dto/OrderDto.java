@@ -38,6 +38,11 @@ public class OrderDto {
         private String tableName;
         private UUID customerId;
         private String customerName;
+        private String customerPhone;
+        private java.time.LocalDate debtDueDate;
+        private BigDecimal debtRemainingAmount;
+        private String debtStatus;
+        private String debtNotes;
         private UUID waiterId;
         private String waiterName;
         private int guestCount;

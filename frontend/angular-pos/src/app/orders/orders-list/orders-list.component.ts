@@ -88,6 +88,12 @@ import { TranslationService } from '../../core/services/translation.service';
             (click)="setTab('PAID')">
             <app-icon name="scroll" [size]="14"></app-icon> {{ 'orders.orderHistory' | translate }} ({{ paidOrdersCount }})
           </button>
+          <button
+            class="tab-btn tab-btn--debt"
+            [class.active]="activeTab === 'DEBT'"
+            (click)="setTab('DEBT')">
+            <app-icon name="file-text" [size]="14"></app-icon> Qarzlar ({{ debtOrdersCount }})
+          </button>
         </div>
 
         <div class="revenue-badges-group">
@@ -309,8 +315,25 @@ import { TranslationService } from '../../core/services/translation.service';
                     <span class="mobile-label">To‘lov turi:</span>
                     <div class="payment-col">
                       <span class="payment-method-badge" [class.badge-card]="order.paymentMethod === 'CARD'" [class.badge-debt]="order.paymentMethod === 'DEBT'" [class.badge-cash]="order.paymentMethod !== 'CARD' && order.paymentMethod !== 'DEBT'">
-                        {{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz' : 'Naqd') }}
+                        {{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz (Nasiya)' : 'Naqd') }}
                       </span>
+                      <div class="debt-customer-mini" *ngIf="order.paymentMethod === 'DEBT' || order.debtStatus">
+                        <span class="debt-c-name" *ngIf="order.customerName">
+                          <app-icon name="user" [size]="11"></app-icon> <strong>{{ order.customerName }}</strong>
+                        </span>
+                        <span class="debt-c-phone" *ngIf="getOrderDebtPhone(order) !== '—'">
+                          <app-icon name="phone" [size]="10"></app-icon> {{ getOrderDebtPhone(order) }}
+                        </span>
+                        <span class="debt-c-due">
+                          <app-icon name="calendar" [size]="10"></app-icon> Muddat: {{ order.debtDueDate || 'Muddatsiz' }}
+                        </span>
+                        <span class="debt-c-notes" *ngIf="getOrderDebtNotes(order)" [title]="getOrderDebtNotes(order)">
+                          <app-icon name="file-text" [size]="10"></app-icon> {{ getOrderDebtNotes(order) }}
+                        </span>
+                        <span class="debt-status-pill" [class.paid]="order.debtStatus === 'PAID'">
+                          {{ order.debtStatus === 'PAID' ? 'To‘langan' : 'Ochiq qarz' }}
+                        </span>
+                      </div>
                       <span class="paid-sub-amount" *ngIf="order.paidAmount">
                         {{ order.paidAmount | number:'1.0-0' }} so'm
                       </span>
@@ -325,8 +348,8 @@ import { TranslationService } from '../../core/services/translation.service';
                   </td>
                   <td>
                     <span class="mobile-label">Holat:</span>
-                    <span class="status-pill pill--paid">
-                      TO‘LANGAN
+                    <span class="status-pill pill--paid" [style.background]="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID' ? 'rgba(245, 158, 11, 0.15)' : ''" [style.color]="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID' ? '#f59e0b' : ''">
+                      {{ order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID' ? 'QARZDA' : 'TO‘LANGAN' }}
                     </span>
                   </td>
                   <td class="actions-col">
@@ -336,6 +359,13 @@ import { TranslationService } from '../../core/services/translation.service';
                         title="Tafsilotlar (Faqat ko'rish)"
                         (click)="openDetailModal(order)">
                         <app-icon name="eye" [size]="14"></app-icon> Ko'rish
+                      </button>
+                      <button
+                        *ngIf="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID'"
+                        class="pos-btn pos-btn--warning pos-btn--sm"
+                        title="Qarz to'langan deb belgilash"
+                        (click)="settleDebt(order, $event)">
+                        <app-icon name="check" [size]="13"></app-icon> Qarzni yopish
                       </button>
                       <button
                         class="pos-btn pos-btn--primary pos-btn--sm"
@@ -384,6 +414,7 @@ import { TranslationService } from '../../core/services/translation.service';
                     <div class="tfoot-breakdown">
                       <span *ngIf="historyOrdersCashSum > 0" class="breakdown-cash"><app-icon name="cash" [size]="12"></app-icon> {{ historyOrdersCashSum | number:'1.0-0' }}</span>
                       <span *ngIf="historyOrdersCardSum > 0" class="breakdown-card"><app-icon name="credit-card" [size]="12"></app-icon> {{ historyOrdersCardSum | number:'1.0-0' }}</span>
+                      <span *ngIf="historyOrdersDebtSum > 0" class="breakdown-debt"><app-icon name="file-text" [size]="12"></app-icon> {{ historyOrdersDebtSum | number:'1.0-0' }}</span>
                     </div>
                   </div>
                 </td>
@@ -416,6 +447,11 @@ import { TranslationService } from '../../core/services/translation.service';
             <div class="summary-stat-chip" *ngIf="activeTab === 'PAID' && historyOrdersCardSum > 0">
               <span class="chip-label"><app-icon name="credit-card" [size]="14"></app-icon> Karta:</span>
               <strong class="chip-value card-text">{{ historyOrdersCardSum | number:'1.0-0' }} so'm</strong>
+            </div>
+
+            <div class="summary-stat-chip chip--debt" *ngIf="(activeTab === 'PAID' || activeTab === 'DEBT') && historyOrdersDebtSum > 0">
+              <span class="chip-label"><app-icon name="file-text" [size]="14"></app-icon> Qarz (Nasiya):</span>
+              <strong class="chip-value debt-text">{{ historyOrdersDebtSum | number:'1.0-0' }} so'm</strong>
             </div>
           </div>
 
@@ -473,6 +509,54 @@ import { TranslationService } from '../../core/services/translation.service';
           </div>
 
           <div class="modal-body">
+            <!-- QARZ (NASIYA) TAFSILOTLARI BLOKI -->
+            <div *ngIf="selectedOrder.paymentMethod === 'DEBT' || selectedOrder.customerName || selectedOrder.debtStatus" class="debt-details-card">
+              <div class="debt-card-header">
+                <div class="debt-card-title">
+                  <app-icon name="file-text" [size]="18" class="icon--debt"></app-icon>
+                  <strong>Qarz (Nasiya) ma'lumotlari</strong>
+                </div>
+                <span class="debt-badge-status" [class.badge-paid]="selectedOrder.debtStatus === 'PAID'">
+                  {{ selectedOrder.debtStatus === 'PAID' ? 'TO‘LANGAN' : 'OCHIQ (TO‘LANMAGAN)' }}
+                </span>
+              </div>
+              <div class="debt-info-grid">
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="user" [size]="13"></app-icon> Mijoz (Qarzdor):</span>
+                  <strong class="debt-info-value">{{ selectedOrder.customerName || '—' }}</strong>
+                </div>
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="phone" [size]="13"></app-icon> Telefon raqami:</span>
+                  <strong class="debt-info-value" [style.color]="getOrderDebtPhone(selectedOrder) !== '—' ? '#3b82f6' : ''">
+                    <span *ngIf="getOrderDebtPhone(selectedOrder) !== '—'">{{ getOrderDebtPhone(selectedOrder) }}</span>
+                    <span *ngIf="getOrderDebtPhone(selectedOrder) === '—'" style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Kiritilmagan</span>
+                  </strong>
+                </div>
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="credit-card" [size]="13"></app-icon> Qarz summasi:</span>
+                  <strong class="debt-info-value debt-sum-val">{{ (selectedOrder.paidAmount || selectedOrder.total || 0) | number:'1.0-0' }} so'm</strong>
+                </div>
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="calendar" [size]="13"></app-icon> Qaytarish muddati:</span>
+                  <strong class="debt-info-value">
+                    <span *ngIf="selectedOrder.debtDueDate" class="due-date-badge">{{ selectedOrder.debtDueDate }}</span>
+                    <span *ngIf="!selectedOrder.debtDueDate" style="color: var(--text-muted); font-size: 13px; font-weight: normal;">Belgilanmagan (Muddatsiz)</span>
+                  </strong>
+                </div>
+                <div class="debt-info-item debt-info-item--full">
+                  <span class="debt-info-label"><app-icon name="file-text" [size]="13"></app-icon> Qo'shimcha izoh / Sabab:</span>
+                  <div class="debt-info-notes" [class.notes-empty]="!getOrderDebtNotes(selectedOrder)">
+                    {{ getOrderDebtNotes(selectedOrder) || 'Izoh kiritilmagan' }}
+                  </div>
+                </div>
+              </div>
+              <div class="debt-card-actions" *ngIf="selectedOrder.debtStatus !== 'PAID'">
+                <button type="button" class="pos-btn pos-btn--success pos-btn--sm" (click)="settleDebt(selectedOrder)">
+                  <app-icon name="check" [size]="14"></app-icon> Qarz to'landi (Yopish)
+                </button>
+              </div>
+            </div>
+
             <div class="detail-meta-grid">
               <div><span>Joy:</span> <strong>{{ selectedOrder.zoneName ? (selectedOrder.zoneName + ' — ' + (selectedOrder.tableName || selectedOrder.tableNumber || 'Stol')) : (selectedOrder.tableName || selectedOrder.tableNumber || 'Joy') }}</strong></div>
               <div><span>Ofitsiant:</span> <strong>{{ selectedOrder.waiterName || '—' }}</strong></div>
@@ -483,7 +567,7 @@ import { TranslationService } from '../../core/services/translation.service';
               <div *ngIf="selectedOrder.closedAt"><span>Yopilgan vaqti:</span> <strong>{{ formatDateTime(selectedOrder.closedAt) }}</strong></div>
               <div *ngIf="selectedOrder.paidAt"><span>To‘lov vaqti:</span> <strong>{{ formatDateTime(selectedOrder.paidAt) }}</strong></div>
               <div *ngIf="selectedOrder.cashierName"><span>Kassir:</span> <strong>{{ selectedOrder.cashierName }}</strong></div>
-              <div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong>{{ selectedOrder.paymentMethod === 'CARD' ? 'Karta' : 'Naqd' }}</strong></div>
+              <div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong [style.color]="selectedOrder.paymentMethod === 'DEBT' ? '#f59e0b' : ''">{{ selectedOrder.paymentMethod === 'CARD' ? 'Karta' : (selectedOrder.paymentMethod === 'DEBT' ? 'Qarz (Nasiya)' : 'Naqd') }}</strong></div>
               <div *ngIf="selectedOrder.paidAmount"><span>To‘langan summa:</span> <strong style="color: #10b981;">{{ selectedOrder.paidAmount | number:'1.0-0' }} so'm</strong></div>
             </div>
 
@@ -846,7 +930,23 @@ import { TranslationService } from '../../core/services/translation.service';
                 </div>
                 <div class="r-total-row" *ngIf="selectedOrder.paymentMethod">
                   <span>To'lov usuli:</span>
-                  <span>{{ selectedOrder.paymentMethod === 'CARD' ? 'KARTA' : 'NAQD' }}</span>
+                  <span>{{ selectedOrder.paymentMethod === 'CARD' ? 'KARTA' : (selectedOrder.paymentMethod === 'DEBT' ? 'QARZ (NASIYA)' : 'NAQD') }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT' && selectedOrder.customerName">
+                  <span>Mijoz (Qarzdor):</span>
+                  <span>{{ selectedOrder.customerName }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT' && getOrderDebtPhone(selectedOrder) !== '—'">
+                  <span>Tel:</span>
+                  <span>{{ getOrderDebtPhone(selectedOrder) }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT'">
+                  <span>Qaytarish muddati:</span>
+                  <span>{{ selectedOrder.debtDueDate || 'Muddatsiz' }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT' && getOrderDebtNotes(selectedOrder)">
+                  <span>Qo'shimcha izoh:</span>
+                  <span>{{ getOrderDebtNotes(selectedOrder) }}</span>
                 </div>
                 <div class="r-total-row" *ngIf="selectedOrder.paidAmount">
                   <span>To'langan:</span>
@@ -1479,6 +1579,201 @@ import { TranslationService } from '../../core/services/translation.service';
         color: #f59e0b;
         border: 1px solid rgba(245, 158, 11, 0.3);
       }
+    }
+
+    .debt-customer-mini {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 4px;
+      padding: 4px 8px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 6px;
+      font-size: 11px;
+      text-align: left;
+
+      .debt-c-name {
+        color: #f59e0b;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .debt-c-phone {
+        color: var(--text-secondary);
+        font-family: var(--font-mono, monospace);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .debt-c-due {
+        color: #ef4444;
+        font-size: 10px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .debt-c-notes {
+        color: var(--text-muted);
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+      }
+      .debt-status-pill {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        margin-top: 2px;
+        width: fit-content;
+
+        &.paid {
+          background: rgba(16, 185, 129, 0.2);
+          color: #10b981;
+        }
+      }
+    }
+
+    .debt-details-card {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+
+      .debt-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+
+        .debt-card-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #f59e0b;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .debt-badge-status {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: rgba(245, 158, 11, 0.2);
+          color: #f59e0b;
+          border: 1px solid rgba(245, 158, 11, 0.35);
+
+          &.badge-paid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.35);
+          }
+        }
+      }
+
+      .debt-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+
+        .debt-info-item {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+
+          &--full {
+            grid-column: 1 / -1;
+          }
+
+          .debt-info-label {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+
+          .debt-info-value {
+            font-size: 13.5px;
+            color: var(--text-primary);
+
+            &.debt-sum-val {
+              color: #f59e0b;
+              font-size: 16px;
+              font-weight: 800;
+            }
+          }
+
+          .due-date-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+          }
+
+          .debt-info-notes {
+            font-size: 13px;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            line-height: 1.4;
+
+            &.notes-empty {
+              color: var(--text-muted);
+              font-style: italic;
+            }
+          }
+        }
+      }
+
+      .debt-card-actions {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(245, 158, 11, 0.15);
+        display: flex;
+        justify-content: flex-end;
+      }
+    }
+
+    .tab-btn--debt {
+      &.active {
+        color: #f59e0b !important;
+        border-bottom-color: #f59e0b !important;
+      }
+    }
+
+    .chip--debt {
+      .debt-text {
+        color: #f59e0b !important;
+      }
+    }
+
+    .breakdown-debt {
+      color: #f59e0b;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
     }
 
     .paid-sub-amount {
@@ -2648,7 +2943,7 @@ export class OrdersListComponent implements OnInit {
   tablesList: RestaurantTable[] = [];
   loading = false;
   searchQuery = '';
-  activeTab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' = 'ALL';
+  activeTab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' | 'DEBT' = 'ALL';
 
   // Pagination
   pageIndex = 0;
@@ -2772,17 +3067,23 @@ export class OrdersListComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID'): void {
+  setTab(tab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' | 'DEBT'): void {
     this.activeTab = tab;
     this.pageIndex = 0;
-    if (tab === 'PAID') {
+    if (tab === 'PAID' || tab === 'DEBT') {
       this.loadHistoryOrders();
     }
   }
 
   get filteredOrders(): Order[] {
-    if (this.activeTab === 'PAID') {
+    if (this.activeTab === 'PAID' || this.activeTab === 'DEBT') {
       return this.historyOrders.filter(order => {
+        // Debt tab filter
+        if (this.activeTab === 'DEBT') {
+          const isDebt = (order.paymentMethod || '').toUpperCase() === 'DEBT' || !!order.debtStatus;
+          if (!isDebt) return false;
+        }
+
         // Date filter
         if (this.dateFilter !== 'ALL') {
           const orderDate = this.getOrderDate(order);
@@ -2812,8 +3113,8 @@ export class OrdersListComponent implements OnInit {
           }
         }
 
-        // Payment method filter
-        if (this.paymentMethodFilter !== 'ALL') {
+        // Payment method filter (if on PAID tab)
+        if (this.activeTab !== 'DEBT' && this.paymentMethodFilter !== 'ALL') {
           if ((order.paymentMethod || '').toUpperCase() !== this.paymentMethodFilter) {
             return false;
           }
@@ -2833,7 +3134,9 @@ export class OrdersListComponent implements OnInit {
           const tblMatch = (order.tableName || order.tableNumber)?.toLowerCase().includes(q);
           const waiterMatch = order.waiterName?.toLowerCase().includes(q);
           const cashierMatch = order.cashierName?.toLowerCase().includes(q);
-          return numMatch || tblMatch || waiterMatch || cashierMatch;
+          const customerMatch = order.customerName?.toLowerCase().includes(q) || order.customerPhone?.includes(q);
+          const notesMatch = order.notes?.toLowerCase().includes(q) || order.debtNotes?.toLowerCase().includes(q);
+          return numMatch || tblMatch || waiterMatch || cashierMatch || customerMatch || notesMatch;
         }
 
         return true;
@@ -2940,22 +3243,59 @@ export class OrdersListComponent implements OnInit {
   }
 
   get historyOrdersPaidSum(): number {
-    if (this.activeTab !== 'PAID') return 0;
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
     return this.filteredOrders.reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
   }
 
   get historyOrdersCashSum(): number {
-    if (this.activeTab !== 'PAID') return 0;
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
     return this.filteredOrders
       .filter(o => (o.paymentMethod || 'CASH').toUpperCase() === 'CASH')
       .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
   }
 
   get historyOrdersCardSum(): number {
-    if (this.activeTab !== 'PAID') return 0;
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
     return this.filteredOrders
       .filter(o => (o.paymentMethod || '').toUpperCase() === 'CARD')
       .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get historyOrdersDebtSum(): number {
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
+    return this.filteredOrders
+      .filter(o => (o.paymentMethod || '').toUpperCase() === 'DEBT')
+      .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get debtOrdersCount(): number {
+    return this.historyOrders.filter(o => (o.paymentMethod || '').toUpperCase() === 'DEBT' || o.debtStatus === 'OPEN').length;
+  }
+
+  settleDebt(order: Order, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const customer = order.customerName || 'Ushbu mijoz';
+    const amount = (order.paidAmount || order.total || 0).toLocaleString();
+    if (!confirm(`"${customer}"ning ${amount} so'mlik qarzi to'landimi?\nQarz holati "TO'LANGAN" deb belgilanadi.`)) {
+      return;
+    }
+    this.orderService.settleOrderDebt(order.id).subscribe({
+      next: () => {
+        this.notify.success('Qarz muvaffaqiyatli to‘langan deb belgilandi!');
+        order.debtStatus = 'PAID';
+        order.debtRemainingAmount = 0;
+        if (this.selectedOrder && this.selectedOrder.id === order.id) {
+          this.selectedOrder.debtStatus = 'PAID';
+          this.selectedOrder.debtRemainingAmount = 0;
+        }
+        this.loadHistoryOrders();
+      },
+      error: (err) => {
+        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
+      }
+    });
   }
 
   get todayTotalRevenue(): number {
@@ -3053,6 +3393,45 @@ export class OrdersListComponent implements OnInit {
   openDetailModal(order: Order): void {
     this.selectedOrder = order;
     this.showDetailModal = true;
+    if (order?.id) {
+      this.orderService.getOrderById(order.id).subscribe({
+        next: (res) => {
+          if (res?.data && this.selectedOrder?.id === order.id) {
+            this.selectedOrder = res.data;
+            this.cdr.markForCheck();
+          }
+        },
+        error: (err) => console.warn('Could not refresh order details:', err)
+      });
+    }
+  }
+
+  getOrderDebtPhone(order: Order | null | undefined): string {
+    if (!order) return '—';
+    if (order.customerPhone && order.customerPhone.trim()) {
+      return order.customerPhone.trim();
+    }
+    const notes = (order as any).notes || '';
+    const match = notes.match(/\(([^)]+)\)/);
+    if (match && match[1] && match[1].trim()) {
+      return match[1].trim();
+    }
+    return '—';
+  }
+
+  getOrderDebtNotes(order: Order | null | undefined): string {
+    if (!order) return '';
+    if (order.debtNotes && order.debtNotes.trim()) {
+      return order.debtNotes.trim();
+    }
+    const notes = (order as any).notes || '';
+    if (notes.includes('|')) {
+      return notes.split('|').slice(1).join('|').trim();
+    }
+    if (notes && !notes.startsWith('Qarz (Nasiya):') && !notes.startsWith("Kassa to'lovi:")) {
+      return notes.trim();
+    }
+    return '';
   }
 
   onPaymentButtonClick(order: Order): void {

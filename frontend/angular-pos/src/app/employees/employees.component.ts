@@ -151,27 +151,14 @@ import { NotificationService } from '../core/services/notification.service';
                       <app-icon name="edit" [size]="14"></app-icon> Tahrirlash
                     </button>
                     <button
-                      *ngIf="emp.username || emp.role === 'ADMIN'"
-                      class="pos-btn pos-btn--secondary pos-btn--sm"
-                      title="Parolni almashtirish"
-                      (click)="openResetPasswordModal(emp)">
-                      <app-icon name="key" [size]="14"></app-icon> Parol
-                    </button>
-                    <button
-                      class="pos-btn pos-btn--secondary pos-btn--sm"
-                      title="PIN-kodni o'zgartirish"
-                      (click)="openQuickPinModal(emp)">
-                      <app-icon name="hash" [size]="14"></app-icon> PIN
-                    </button>
-                    <button
-                      *ngIf="emp.active"
+                      *ngIf="emp.active && !isAdmin(emp)"
                       class="pos-btn pos-btn--danger pos-btn--sm"
                       title="Xodimni nofaol qilish"
                       (click)="toggleActive(emp)">
                       <app-icon name="slash" [size]="14"></app-icon>
                     </button>
                     <button
-                      *ngIf="!emp.active"
+                      *ngIf="!emp.active && !isAdmin(emp)"
                       class="pos-btn pos-btn--success pos-btn--sm btn-reactivate"
                       title="Xodimni qayta faollashtirish"
                       (click)="toggleActive(emp)">
@@ -1383,7 +1370,17 @@ export class EmployeesComponent implements OnInit {
     });
   }
 
+  isAdmin(emp?: Employee | null): boolean {
+    if (!emp || !emp.role) return false;
+    const r = emp.role.toUpperCase();
+    return r === 'ADMIN' || r === 'RESTAURANT_ADMIN' || r === 'SUPER_ADMIN';
+  }
+
   toggleActive(emp: Employee): void {
+    if (this.isAdmin(emp)) {
+      this.notify.warning('Administrator xodimni nofaol qilib bo\'lmaydi.');
+      return;
+    }
     const updatedStatus = !emp.active;
 
     if (!updatedStatus) {

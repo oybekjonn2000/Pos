@@ -122,23 +122,40 @@ public class UserService {
             hasPinUpdate = false; // Superadmin does not need or use PIN code
         }
 
-        // If password or PIN is being updated, verify current password if present
-        if (hasPasswordUpdate || hasPinUpdate) {
+        // If password is being updated, verify current password
+        if (hasPasswordUpdate) {
+            String currPass = request.getCurrentPassword();
+            if (currPass == null || currPass.isBlank()) {
+                throw PosException.badRequest("Parolni o'zgartirish uchun joriy parolingizni kiriting.");
+            }
             if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
-                if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
-                    throw PosException.badRequest("Parol" + (hasPinUpdate ? " yoki PIN kodni" : "") + " o'zgartirish uchun joriy parolingizni kiriting.");
-                }
-                if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
-                    throw PosException.badRequest("Joriy parol noto'g'ri kiritildi.");
+                if (!passwordEncoder.matches(currPass, user.getPasswordHash())) {
+                    throw PosException.badRequest("Eski parol noto'g'ri kiritildi.");
                 }
             } else if (user.getPinHash() != null && !user.getPinHash().isBlank()) {
-                if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
-                    throw PosException.badRequest("PIN kodni o'zgartirish uchun joriy PIN kod yoki parolni kiriting.");
+                if (!passwordEncoder.matches(currPass, user.getPinHash())) {
+                    throw PosException.badRequest("Eski PIN kod noto'g'ri kiritildi.");
                 }
-                boolean matchesPin = passwordEncoder.matches(request.getCurrentPassword(), user.getPinHash());
-                if (!matchesPin) {
-                    throw PosException.badRequest("Joriy PIN kod noto'g'ri kiritildi.");
-                }
+            }
+        }
+
+        // If PIN is being updated, verify current PIN
+        if (hasPinUpdate) {
+            String currPin = (request.getCurrentPin() != null && !request.getCurrentPin().isBlank())
+                    ? request.getCurrentPin().trim()
+                    : (request.getCurrentPassword() != null ? request.getCurrentPassword().trim() : null);
+
+            if (currPin == null || currPin.isBlank()) {
+                throw PosException.badRequest("PIN kodni o'zgartirish uchun eski PIN kodni kiriting.");
+            }
+
+            boolean pinMatches = user.getPinHash() != null && !user.getPinHash().isBlank()
+                    && passwordEncoder.matches(currPin, user.getPinHash());
+            boolean passMatches = user.getPasswordHash() != null && !user.getPasswordHash().isBlank()
+                    && passwordEncoder.matches(currPin, user.getPasswordHash());
+
+            if (!pinMatches && !passMatches) {
+                throw PosException.badRequest("Eski PIN kod noto'g'ri kiritildi.");
             }
         }
 

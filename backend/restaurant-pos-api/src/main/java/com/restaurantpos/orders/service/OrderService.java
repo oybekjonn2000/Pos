@@ -73,6 +73,7 @@ public class OrderService {
     private final com.restaurantpos.common.websocket.WebSocketNotificationService wsNotification;
     private final com.restaurantpos.printers.service.PrintRoutingService printRoutingService;
     private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
+    private final com.restaurantpos.debt.repository.DebtRepository debtRepository;
 
     private static final AtomicInteger ORDER_COUNTER = new AtomicInteger(100);
     private static final AtomicInteger CANCEL_COUNTER = new AtomicInteger(100);
@@ -609,16 +610,92 @@ public class OrderService {
         BigDecimal paidAmount = null;
         BigDecimal changeAmount = null;
 
-        if (order.getStatus() == Order.OrderStatus.PAID || order.getPaymentStatus() == Order.PaymentStatus.PAID) {
-            List<Payment> payments = paymentRepository.findByOrderId(order.getId());
-            if (!payments.isEmpty()) {
-                Payment p = payments.get(0);
-                paymentMethod = p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null;
-                paidAmount = p.getAmount();
-                changeAmount = p.getChangeAmount();
-                if (cashierId == null && p.getCashier() != null) {
-                    cashierId = p.getCashier().getId();
-                    cashierName = p.getCashier().getFirstName() + " " + (p.getCashier().getLastName() != null ? p.getCashier().getLastName() : "");
+        List<Payment> payments = paymentRepository.findByOrderId(order.getId());
+        if (payments != null && !payments.isEmpty()) {
+            Payment p = payments.get(0);
+            paymentMethod = p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null;
+            paidAmount = p.getAmount();
+            changeAmount = p.getChangeAmount();
+            if (cashierId == null && p.getCashier() != null) {
+                cashierId = p.getCashier().getId();
+                cashierName = p.getCashier().getFirstName() + " " + (p.getCashier().getLastName() != null ? p.getCashier().getLastName() : "");
+            }
+        }
+
+        String customerPhone = null;
+        if (order.getCustomer() != null) {
+            customerPhone = order.getCustomer().getPhone();
+        }
+        java.time.LocalDate debtDueDate = null;
+        BigDecimal debtRemainingAmount = null;
+        String debtStatus = null;
+        String debtNotes = null;
+
+        UUID tenantId = order.getTenant() != null ? order.getTenant().getId() : null;
+        if (tenantId != null) {
+            Optional<com.restaurantpos.debt.entity.Debt> debtOpt = debtRepository.findByTenantIdAndOrderIdAndDeletedAtIsNull(tenantId, order.getId());
+            if (debtOpt.isEmpty() && payments != null && !payments.isEmpty()) {
+                debtOpt = debtRepository.findByTenantIdAndPaymentIdAndDeletedAtIsNull(tenantId, payments.get(0).getId());
+            }
+            if (debtOpt.isPresent()) {
+                com.restaurantpos.debt.entity.Debt d = debtOpt.get();
+                debtDueDate = d.getDueDate();
+                debtRemainingAmount = d.getRemainingAmount();
+                debtStatus = d.getStatus() != null ? d.getStatus().name() : null;
+                debtNotes = d.getNotes();
+                if ((customerPhone == null || customerPhone.isBlank()) && d.getCustomer() != null) {
+                    customerPhone = d.getCustomer().getPhone();
+                }
+            }
+        }
+
+        if ("DEBT".equalsIgnoreCase(paymentMethod) || debtStatus != null || debtDueDate != null) {
+            if (debtStatus == null) {
+                debtStatus = "OPEN";
+            }
+            if (debtRemainingAmount == null) {
+                debtRemainingAmount = paidAmount != null ? paidAmount : order.getTotal();
+            }
+            if (payments != null && !payments.isEmpty()) {
+                for (Payment p : payments) {
+                    String pNotes = p.getNotes();
+                    if (pNotes != null && !pNotes.isBlank()) {
+                        if (debtNotes == null || debtNotes.isBlank()) {
+                            if (pNotes.contains("|")) {
+                                debtNotes = pNotes.substring(pNotes.indexOf('|') + 1).trim();
+                            } else if (!pNotes.startsWith("Qarz (Nasiya):")) {
+                                debtNotes = pNotes.trim();
+                            }
+                        }
+                        if ((customerPhone == null || customerPhone.isBlank()) && pNotes.contains("(") && pNotes.contains(")")) {
+                            int start = pNotes.indexOf('(') + 1;
+                            int end = pNotes.indexOf(')', start);
+                            if (end > start) {
+                                String extracted = pNotes.substring(start, end).trim();
+                                if (!extracted.isEmpty()) {
+                                    customerPhone = extracted;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if ((debtNotes == null || debtNotes.isBlank()) && order.getNotes() != null && !order.getNotes().isBlank()) {
+                String oNotes = order.getNotes();
+                if (oNotes.contains("|")) {
+                    debtNotes = oNotes.substring(oNotes.indexOf('|') + 1).trim();
+                } else if (!oNotes.startsWith("Qarz (Nasiya):")) {
+                    debtNotes = oNotes.trim();
+                }
+                if ((customerPhone == null || customerPhone.isBlank()) && oNotes.contains("(") && oNotes.contains(")")) {
+                    int start = oNotes.indexOf('(') + 1;
+                    int end = oNotes.indexOf(')', start);
+                    if (end > start) {
+                        String extracted = oNotes.substring(start, end).trim();
+                        if (!extracted.isEmpty()) {
+                            customerPhone = extracted;
+                        }
+                    }
                 }
             }
         }
@@ -638,6 +715,11 @@ public class OrderService {
                 .tableName(order.getTable() != null ? order.getTable().getName() : null)
                 .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
                 .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null)
+                .customerPhone(customerPhone)
+                .debtDueDate(debtDueDate)
+                .debtRemainingAmount(debtRemainingAmount)
+                .debtStatus(debtStatus)
+                .debtNotes(debtNotes)
                 .waiterId(order.getWaiter() != null ? order.getWaiter().getId() : null)
                 .waiterName(order.getWaiter() != null ? order.getWaiter().getFirstName() + " " + (order.getWaiter().getLastName() != null ? order.getWaiter().getLastName() : "") : null)
                 .subtotal(order.getSubtotal())
@@ -1317,5 +1399,34 @@ public class OrderService {
                 .fullOrder(r.isFullOrder())
                 .createdAt(r.getCreatedAt())
                 .build();
+    }
+
+    @Transactional
+    public OrderDto.Response settleOrderDebt(UUID orderId, UUID tenantId, com.restaurantpos.auth.security.UserPrincipal user) {
+        Order order = orderRepository.findByIdAndTenantIdAndDeletedAtIsNull(orderId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Buyurtma topilmadi: " + orderId));
+
+        Optional<com.restaurantpos.debt.entity.Debt> debtOpt = debtRepository.findByTenantIdAndOrderIdAndDeletedAtIsNull(tenantId, orderId);
+        if (debtOpt.isEmpty()) {
+            throw PosException.badRequest("Ushbu buyurtmaga biriktirilgan qarz ma'lumoti topilmadi");
+        }
+
+        com.restaurantpos.debt.entity.Debt debt = debtOpt.get();
+        if (debt.getStatus() == com.restaurantpos.debt.entity.DebtStatus.PAID) {
+            throw PosException.badRequest("Ushbu qarz allaqachon to'langan");
+        }
+
+        debt.setStatus(com.restaurantpos.debt.entity.DebtStatus.PAID);
+        debt.setRemainingAmount(BigDecimal.ZERO);
+        debt.setPaidAt(java.time.Instant.now());
+        debtRepository.save(debt);
+
+        log.info("[DEBT_SETTLED] Order debt settled successfully. orderId: {}, tenantId: {}, settledBy: {}",
+                orderId, tenantId, user.getUsername());
+
+        Order saved = orderRepository.save(order);
+        OrderDto.Response resp = toResponse(saved);
+        wsNotification.notifyOrderStatusChanged(tenantId, resp);
+        return resp;
     }
 }

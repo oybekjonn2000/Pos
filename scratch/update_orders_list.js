@@ -1,130 +1,715 @@
 const fs = require('fs');
-const path = require('path');
+const path = 'e:/ANtiG/Pos/frontend/angular-pos/src/app/orders/orders-list/orders-list.component.ts';
 
-const filePath = path.join(__dirname, '../frontend/angular-pos/src/app/orders/orders-list/orders-list.component.ts');
-let content = fs.readFileSync(filePath, 'utf8');
+let content = fs.readFileSync(path, 'utf8');
 
-// 1. Add AppIconComponent to imports
-if (!content.includes('AppIconComponent')) {
-  content = content.replace(
-    "import { NotificationService } from '../../core/services/notification.service';",
-    "import { NotificationService } from '../../core/services/notification.service';\nimport { AppIconComponent } from '../../shared/components/icon/icon.component';"
-  );
-  content = content.replace(
-    "imports: [CommonModule, FormsModule, RouterModule, MatPaginatorModule],",
-    "imports: [CommonModule, FormsModule, RouterModule, MatPaginatorModule, AppIconComponent],"
-  );
+// 1. Tab button: add Qarzlar tab button
+const targetTab = `<app-icon name="scroll" [size]="14"></app-icon> {{ 'orders.orderHistory' | translate }} ({{ paidOrdersCount }})
+          </button>
+        </div>`;
+
+const replaceTab = `<app-icon name="scroll" [size]="14"></app-icon> {{ 'orders.orderHistory' | translate }} ({{ paidOrdersCount }})
+          </button>
+          <button
+            class="tab-btn tab-btn--debt"
+            [class.active]="activeTab === 'DEBT'"
+            (click)="setTab('DEBT')">
+            <app-icon name="file-text" [size]="14"></app-icon> Qarzlar ({{ debtOrdersCount }})
+          </button>
+        </div>`;
+
+if (content.includes(targetTab)) {
+  content = content.replace(targetTab, replaceTab);
+  console.log('Tab button updated');
+} else {
+  console.log('Target tab not found directly, trying normalized line endings');
+  const normalized = targetTab.replace(/\r?\n/g, '\r\n');
+  if (content.includes(normalized)) {
+    content = content.replace(normalized, replaceTab.replace(/\r?\n/g, '\r\n'));
+    console.log('Tab button updated with CRLF');
+  } else {
+    console.error('Failed to find targetTab');
+  }
 }
 
-// 2. Replace header icons
-content = content.replace('<h1 class="page-title">📋 Buyurtmalar & Kassa</h1>', '<h1 class="page-title"><app-icon name="orders" [size]="24"></app-icon> Buyurtmalar & Kassa</h1>');
-content = content.replace('<span class="search-icon">🔍</span>', '<span class="search-icon"><app-icon name="search" [size]="16"></app-icon></span>');
-content = content.replace('<span [class.spinning]="loading">🔄</span>', '<app-icon name="refresh" [size]="16" [class.spinning]="loading"></app-icon>');
-content = content.replace('<span>➕ Joylar va Stollar</span>', '<span><app-icon name="plus" [size]="16"></app-icon> Joylar va Stollar</span>');
+// 2. Table row payment column & settle button
+const targetPaymentCol = `                      <span class="payment-method-badge" [class.badge-card]="order.paymentMethod === 'CARD'" [class.badge-debt]="order.paymentMethod === 'DEBT'" [class.badge-cash]="order.paymentMethod !== 'CARD' && order.paymentMethod !== 'DEBT'">
+                        {{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz' : 'Naqd') }}
+                      </span>
+                      <span class="paid-sub-amount" *ngIf="order.paidAmount">
+                        {{ order.paidAmount | number:'1.0-0' }} so'm
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="mobile-label">Xodimlar:</span>
+                    <div class="staff-info">
+                      <div class="staff-line"><span>Ofitsiant:</span> <strong>{{ order.waiterName || '—' }}</strong></div>
+                      <div class="staff-line"><span>Kassir:</span> <strong>{{ order.cashierName || '—' }}</strong></div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="mobile-label">Holat:</span>
+                    <span class="status-pill pill--paid">
+                      TO‘LANGAN
+                    </span>
+                  </td>
+                  <td class="actions-col">
+                    <div class="action-buttons">
+                      <button
+                        class="pos-btn pos-btn--secondary pos-btn--sm"
+                        title="Tafsilotlar (Faqat ko'rish)"
+                        (click)="openDetailModal(order)">
+                        <app-icon name="eye" [size]="14"></app-icon> Ko'rish
+                      </button>
+                      <button
+                        class="pos-btn pos-btn--primary pos-btn--sm"
+                        title="Chek chiqarish"
+                        (click)="openReceiptModal(order)">
+                        <app-icon name="receipt" [size]="14"></app-icon> Chek
+                      </button>`;
 
-// 3. Filter tabs
-content = content.replace("🔒 Yopilgan / To'lov Kutilmoqda", "<app-icon name=\"lock\" [size=\"14\"></app-icon> Yopilgan / To'lov Kutilmoqda");
-content = content.replace("📁 Buyurtma Tarixi", "<app-icon name=\"scroll\" [size=\"14\"></app-icon> Buyurtma Tarixi");
+const replacePaymentCol = `                      <span class="payment-method-badge" [class.badge-card]="order.paymentMethod === 'CARD'" [class.badge-debt]="order.paymentMethod === 'DEBT'" [class.badge-cash]="order.paymentMethod !== 'CARD' && order.paymentMethod !== 'DEBT'">
+                        {{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz (Nasiya)' : 'Naqd') }}
+                      </span>
+                      <div class="debt-customer-mini" *ngIf="order.paymentMethod === 'DEBT' && (order.customerName || order.customerPhone)">
+                        <span class="debt-c-name" *ngIf="order.customerName">
+                          <app-icon name="user" [size]="11"></app-icon> <strong>{{ order.customerName }}</strong>
+                        </span>
+                        <span class="debt-c-phone" *ngIf="order.customerPhone">
+                          <app-icon name="phone" [size]="10"></app-icon> {{ order.customerPhone }}
+                        </span>
+                        <span class="debt-c-due" *ngIf="order.debtDueDate">
+                          <app-icon name="calendar" [size]="10"></app-icon> Muddat: {{ order.debtDueDate }}
+                        </span>
+                        <span class="debt-status-pill" [class.paid]="order.debtStatus === 'PAID'">
+                          {{ order.debtStatus === 'PAID' ? 'To‘langan' : 'Ochiq qarz' }}
+                        </span>
+                      </div>
+                      <span class="paid-sub-amount" *ngIf="order.paidAmount">
+                        {{ order.paidAmount | number:'1.0-0' }} so'm
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="mobile-label">Xodimlar:</span>
+                    <div class="staff-info">
+                      <div class="staff-line"><span>Ofitsiant:</span> <strong>{{ order.waiterName || '—' }}</strong></div>
+                      <div class="staff-line"><span>Kassir:</span> <strong>{{ order.cashierName || '—' }}</strong></div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="mobile-label">Holat:</span>
+                    <span class="status-pill pill--paid" [style.background]="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID' ? 'rgba(245, 158, 11, 0.15)' : ''" [style.color]="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID' ? '#f59e0b' : ''">
+                      {{ order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID' ? 'QARZDA' : 'TO‘LANGAN' }}
+                    </span>
+                  </td>
+                  <td class="actions-col">
+                    <div class="action-buttons">
+                      <button
+                        class="pos-btn pos-btn--secondary pos-btn--sm"
+                        title="Tafsilotlar (Faqat ko'rish)"
+                        (click)="openDetailModal(order)">
+                        <app-icon name="eye" [size]="14"></app-icon> Ko'rish
+                      </button>
+                      <button
+                        *ngIf="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID'"
+                        class="pos-btn pos-btn--warning pos-btn--sm"
+                        title="Qarz to'langan deb belgilash"
+                        (click)="settleDebt(order, $event)">
+                        <app-icon name="check" [size]="13"></app-icon> Qarzni yopish
+                      </button>
+                      <button
+                        class="pos-btn pos-btn--primary pos-btn--sm"
+                        title="Chek chiqarish"
+                        (click)="openReceiptModal(order)">
+                        <app-icon name="receipt" [size]="14"></app-icon> Chek
+                      </button>`;
 
-// 4. History filter bar
-content = content.replace('<span class="filter-label">📅 Sana:</span>', '<span class="filter-label"><app-icon name="clock" [size]="14"></app-icon> Sana:</span>');
-content = content.replace('<span class="filter-label">💳 To\'lov turi:</span>', '<span class="filter-label"><app-icon name="credit-card" [size]="14"></app-icon> To\'lov turi:</span>');
-content = content.replace('>💵 Naqd</button>', '><app-icon name="cash" [size]="14"></app-icon> Naqd</button>');
-content = content.replace('>💳 Karta</button>', '><app-icon name="credit-card" [size]="14"></app-icon> Karta</button>');
-content = content.replace('>📝 Qarz</button>', '><app-icon name="file-text" [size]="14"></app-icon> Qarz</button>');
-content = content.replace('<span class="filter-label">🪑 Stol:</span>', '<span class="filter-label"><app-icon name="tables" [size]="14"></app-icon> Stol:</span>');
+function doReplace(t, r) {
+  const normT = t.replace(/\r?\n/g, '\r\n');
+  const normR = r.replace(/\r?\n/g, '\r\n');
+  if (content.includes(normT)) {
+    content = content.replace(normT, normR);
+    return true;
+  }
+  const lfT = t.replace(/\r?\n/g, '\n');
+  const lfR = r.replace(/\r?\n/g, '\n');
+  if (content.includes(lfT)) {
+    content = content.replace(lfT, lfR);
+    return true;
+  }
+  return false;
+}
 
-// 5. Empty state
-content = content.replace('<div class="empty-icon">📂</div>', '<div class="empty-icon"><app-icon name="orders" [size]="48"></app-icon></div>');
+if (doReplace(targetPaymentCol, replacePaymentCol)) {
+  console.log('Payment col updated');
+} else {
+  console.error('Failed to update Payment col');
+}
 
-// 6. Map pin
-content = content.replaceAll("📍 {{ order.zoneName", "<app-icon name=\"map-pin\" [size]=\"14\"></app-icon> {{ order.zoneName");
-content = content.replaceAll("📍 {{ selectedOrder.zoneName", "<app-icon name=\"map-pin\" [size]=\"14\"></app-icon> {{ selectedOrder.zoneName");
+// 3. Footer breakdown & summary
+const targetBreakdown = `<span *ngIf="historyOrdersCardSum > 0" class="breakdown-card"><app-icon name="credit-card" [size]="12"></app-icon> {{ historyOrdersCardSum | number:'1.0-0' }}</span>
+                    </div>`;
 
-// 7. Actions in table
-content = content.replaceAll("👁️ Ko'rish", "<app-icon name=\"eye\" [size]=\"14\"></app-icon> Ko'rish");
-content = content.replaceAll("💳 To'lov qilish", "<app-icon name=\"credit-card\" [size]=\"14\"></app-icon> To'lov qilish");
-content = content.replaceAll("🧾 Chek", "<app-icon name=\"receipt\" [size]=\"14\"></app-icon> Chek");
-content = content.replace('title="Bekor qilish"\n                        (click)="openCancelOrderModal(order, $event)">\n                        ❌', 'title="Bekor qilish"\n                        (click)="openCancelOrderModal(order, $event)">\n                        <app-icon name="close" [size]="14"></app-icon>');
+const replaceBreakdown = `<span *ngIf="historyOrdersCardSum > 0" class="breakdown-card"><app-icon name="credit-card" [size]="12"></app-icon> {{ historyOrdersCardSum | number:'1.0-0' }}</span>
+                      <span *ngIf="historyOrdersDebtSum > 0" class="breakdown-debt"><app-icon name="file-text" [size]="12"></app-icon> {{ historyOrdersDebtSum | number:'1.0-0' }}</span>
+                    </div>`;
 
-// 8. Payment method badge
-content = content.replace(
-  "{{ order.paymentMethod === 'CARD' ? '💳 Karta' : (order.paymentMethod === 'DEBT' ? '📝 Qarz' : '💵 Naqd') }}",
-  "{{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz' : 'Naqd') }}"
-);
-content = content.replace(
-  "<strong>{{ selectedOrder.paymentMethod === 'CARD' ? '💳 Karta' : '💵 Naqd' }}</strong>",
-  "<strong>{{ selectedOrder.paymentMethod === 'CARD' ? 'Karta' : 'Naqd' }}</strong>"
-);
+if (doReplace(targetBreakdown, replaceBreakdown)) {
+  console.log('Breakdown updated');
+} else {
+  console.error('Failed to update breakdown');
+}
 
-// 9. Table breakdown
-content = content.replace('💵 {{ historyOrdersCashSum | number:\'1.0-0\' }}', '<app-icon name="cash" [size]="12"></app-icon> {{ historyOrdersCashSum | number:\'1.0-0\' }}');
-content = content.replace('💳 {{ historyOrdersCardSum | number:\'1.0-0\' }}', '<app-icon name="credit-card" [size]="12"></app-icon> {{ historyOrdersCardSum | number:\'1.0-0\' }}');
+// 4. Summary bar chips
+const targetChips = `<div class="summary-stat-chip" *ngIf="activeTab === 'PAID' && historyOrdersCardSum > 0">
+              <span class="chip-label"><app-icon name="credit-card" [size]="14"></app-icon> Karta:</span>
+              <strong class="chip-value card-text">{{ historyOrdersCardSum | number:'1.0-0' }} so'm</strong>
+            </div>
+          </div>`;
 
-// 10. Summary chips
-content = content.replace("{{ activeTab === 'PAID' ? '📁 Yopilgan buyurtmalar:' : '📋 Faol buyurtmalar:' }}", "{{ activeTab === 'PAID' ? 'Yopilgan buyurtmalar:' : 'Faol buyurtmalar:' }}");
-content = content.replace('<span class="chip-label">🍽️ Taomlar soni:</span>', '<span class="chip-label"><app-icon name="products" [size]="14"></app-icon> Taomlar soni:</span>');
-content = content.replace('<span class="chip-label">💵 Naqd:</span>', '<span class="chip-label"><app-icon name="cash" [size]="14"></app-icon> Naqd:</span>');
-content = content.replace('<span class="chip-label">💳 Karta:</span>', '<span class="chip-label"><app-icon name="credit-card" [size]="14"></app-icon> Karta:</span>');
+const replaceChips = `<div class="summary-stat-chip" *ngIf="activeTab === 'PAID' && historyOrdersCardSum > 0">
+              <span class="chip-label"><app-icon name="credit-card" [size]="14"></app-icon> Karta:</span>
+              <strong class="chip-value card-text">{{ historyOrdersCardSum | number:'1.0-0' }} so'm</strong>
+            </div>
 
-// 11. Modal details
-content = content.replace('📁 TARIXIY BUYURTMA (FAQAT KO‘RISH)', '<app-icon name="scroll" [size]="16"></app-icon> TARIXIY BUYURTMA (FAQAT KO‘RISH)');
-content = content.replaceAll('<button class="close-btn" (click)="closeModals()">✕</button>', '<button class="close-btn" (click)="closeModals()"><app-icon name="close" [size]="16"></app-icon></button>');
-content = content.replace('💬 Izoh: {{ selectedOrder.notes }}', '<app-icon name="file-text" [size]="14"></app-icon> Izoh: {{ selectedOrder.notes }}');
-content = content.replace('⚠️ Sabab: <em>{{ item.voidReason || \'Mijoz rad etdi\' }}</em>', '<app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Sabab: <em>{{ item.voidReason || \'Mijoz rad etdi\' }}</em>');
-content = content.replaceAll('🚫 Bekor qilish', '<app-icon name="ban" [size]="14"></app-icon> Bekor qilish');
-content = content.replace('🚫 Butun buyurtmani bekor qilish', '<app-icon name="ban" [size]="14"></app-icon> Butun buyurtmani bekor qilish');
-content = content.replace('🔒 Tarixdagi yopilgan buyurtma faqat ko‘rish uchun. Stolga yoki oshxonaga qaytarilmaydi.', '<app-icon name="lock" [size]="14"></app-icon> Tarixdagi yopilgan buyurtma faqat ko‘rish uchun. Stolga yoki oshxonaga qaytarilmaydi.');
-content = content.replace('🔒 Hisob yopilgan. Kassadan to\'lov qabul qilinishi kutilmoqda.', '<app-icon name="lock" [size]="14"></app-icon> Hisob yopilgan. Kassadan to\'lov qabul qilinishi kutilmoqda.');
-content = content.replace('🧾 Chekni ko\'rish / Chop etish', '<app-icon name="receipt" [size]="14"></app-icon> Chekni ko\'rish / Chop etish');
-content = content.replace('🔒 Hisobni yopish', '<app-icon name="lock" [size]="14"></app-icon> Hisobni yopish');
-content = content.replace('💳 TO‘LOV QILISH', '<app-icon name="credit-card" [size]="14"></app-icon> TO‘LOV QILISH');
-content = content.replace('💳 TO‘LANGAN', 'TO‘LANGAN');
+            <div class="summary-stat-chip chip--debt" *ngIf="(activeTab === 'PAID' || activeTab === 'DEBT') && historyOrdersDebtSum > 0">
+              <span class="chip-label"><app-icon name="file-text" [size]="14"></app-icon> Qarz (Nasiya):</span>
+              <strong class="chip-value debt-text">{{ historyOrdersDebtSum | number:'1.0-0' }} so'm</strong>
+            </div>
+          </div>`;
 
-// 12. Payment Modal
-content = content.replace('<h2 class="modal-title">💳 To\'lovni qabul qilish</h2>', '<h2 class="modal-title"><app-icon name="credit-card" [size]="20"></app-icon> To\'lovni qabul qilish</h2>');
-content = content.replace('<span class="icon">💵</span>', '<span class="icon"><app-icon name="cash" [size]="20"></app-icon></span>');
-content = content.replace('<span class="icon">💳</span>', '<span class="icon"><app-icon name="credit-card" [size]="20"></app-icon></span>');
-content = content.replace('<span class="icon">📝</span>', '<span class="icon"><app-icon name="file-text" [size]="20"></app-icon></span>');
-content = content.replace('⚠️ Berilgan summa yetarli emas', '<app-icon name="alert-triangle" [size]="14" class="icon--warning"></app-icon> Berilgan summa yetarli emas');
-content = content.replace('<div class="card-icon">💳</div>', '<div class="card-icon"><app-icon name="credit-card" [size]="32"></app-icon></div>');
-content = content.replace('<span class="alert-icon">⚠️</span>', '<span class="alert-icon"><app-icon name="alert-triangle" [size]="16" class="icon--warning"></app-icon></span>');
-content = content.replace("(payMethod === 'DEBT' ? '📝 Qarzni rasmiylashtirish' : '✅ To‘lovni tasdiqlash')", "(payMethod === 'DEBT' ? 'Qarzni rasmiylashtirish' : 'To‘lovni tasdiqlash')");
+if (doReplace(targetChips, replaceChips)) {
+  console.log('Chips updated');
+} else {
+  console.error('Failed to update chips');
+}
 
-// 13. Receipt & Cancel Modals
-content = content.replace('<h2 class="modal-title">🧾 Chek Chop Etish</h2>', '<h2 class="modal-title"><app-icon name="receipt" [size]="20"></app-icon> Chek Chop Etish</h2>');
-content = content.replaceAll('🖨️ Chop etish (Print)', '<app-icon name="printer" [size]="16"></app-icon> Chop etish (Print)');
-content = content.replace('🖨️ Chekni chiqarish (Print)', '<app-icon name="printer" [size]="16"></app-icon> Chekni chiqarish (Print)');
-content = content.replace('🚫 {{ isFullOrderCancel ? "Buyurtmani to\'liq bekor qilish" : "Mahsulotni bekor qilish" }}', '<app-icon name="ban" [size]="18"></app-icon> {{ isFullOrderCancel ? "Buyurtmani to\'liq bekor qilish" : "Mahsulotni bekor qilish" }}');
-content = content.replaceAll('<button class="close-btn" (click)="closeCancelModal()">✕</button>', '<button class="close-btn" (click)="closeCancelModal()"><app-icon name="close" [size]="16"></app-icon></button>');
-content = content.replaceAll('<button class="close-btn" (click)="showCancelReceiptModal = false">✕</button>', '<button class="close-btn" (click)="showCancelReceiptModal = false"><app-icon name="close" [size]="16"></app-icon></button>');
-content = content.replace('⚠️ <strong>DIQQAT:</strong>', '<app-icon name="alert-triangle" [size]="16" class="icon--warning"></app-icon> <strong>DIQQAT:</strong>');
-content = content.replace('ℹ️ Qisman bekor qilish:', '<app-icon name="info" [size]="14"></app-icon> Qisman bekor qilish:');
-content = content.replace('<span>⚠️ {{ isFullOrderCancel ? "HA, BUTUN BUYURTMANI BEKOR QILISH" : "BEKOR QILISHNI TASDIQLASH" }}</span>', '<span><app-icon name="alert-triangle" [size]="16" class="icon--warning"></app-icon> {{ isFullOrderCancel ? "HA, BUTUN BUYURTMANI BEKOR QILISH" : "BEKOR QILISHNI TASDIQLASH" }}</span>');
-content = content.replace('<h2 class="modal-title">🧾 Bekor qilish cheki</h2>', '<h2 class="modal-title"><app-icon name="receipt" [size]="20"></app-icon> Bekor qilish cheki</h2>');
+// 5. Order Detail Modal: Debt Details Card
+const targetDetailMeta = `<div class="modal-body">
+            <div class="detail-meta-grid">`;
 
-// 14. Helper methods status labels
-content = content.replace("case 'CLOSED': return '🔒 YOPILGAN';", "case 'CLOSED': return 'YOPILGAN';");
-content = content.replace("case 'OPEN': return '🟡 OCHIQ';", "case 'OPEN': return 'OCHIQ';");
-content = content.replace("case 'DRAFT': return '⚪ QORALAMA';", "case 'DRAFT': return 'QORALAMA';");
-content = content.replace("case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';", "case 'SENT_TO_KITCHEN': return 'OSHXONADA';");
-content = content.replace("case 'COOKING': return '🟠 TAYYORLANMOQDA';", "case 'COOKING': return 'TAYYORLANMOQDA';");
-content = content.replace("case 'READY': return '🟢 TAYYOR';", "case 'READY': return 'TAYYOR';");
-content = content.replace("case 'PAID': return '💳 TO‘LANGAN';", "case 'PAID': return 'TO‘LANGAN';");
-content = content.replace("case 'COMPLETED': return '✅ YAKUNLANGAN';", "case 'COMPLETED': return 'YAKUNLANGAN';");
-content = content.replace("case 'CANCELLED': return '🔴 BEKOR QILINDI';", "case 'CANCELLED': return 'BEKOR QILINDI';");
+const replaceDetailMeta = `<div class="modal-body">
+            <!-- QARZ (NASIYA) TAFSILOTLARI BLOKI -->
+            <div *ngIf="selectedOrder.paymentMethod === 'DEBT' || selectedOrder.customerName || selectedOrder.debtStatus" class="debt-details-card">
+              <div class="debt-card-header">
+                <div class="debt-card-title">
+                  <app-icon name="file-text" [size]="18" class="icon--debt"></app-icon>
+                  <strong>Qarz (Nasiya) ma'lumotlari</strong>
+                </div>
+                <span class="debt-badge-status" [class.badge-paid]="selectedOrder.debtStatus === 'PAID'">
+                  {{ selectedOrder.debtStatus === 'PAID' ? 'TO‘LANGAN' : 'OCHIQ (TO‘LANMAGAN)' }}
+                </span>
+              </div>
+              <div class="debt-info-grid">
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="user" [size]="13"></app-icon> Mijoz (Qarzdor):</span>
+                  <strong class="debt-info-value">{{ selectedOrder.customerName || '—' }}</strong>
+                </div>
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="phone" [size]="13"></app-icon> Telefon raqami:</span>
+                  <strong class="debt-info-value">{{ selectedOrder.customerPhone || '—' }}</strong>
+                </div>
+                <div class="debt-info-item">
+                  <span class="debt-info-label"><app-icon name="credit-card" [size]="13"></app-icon> Qarz summasi:</span>
+                  <strong class="debt-info-value debt-sum-val">{{ (selectedOrder.paidAmount || selectedOrder.total || 0) | number:'1.0-0' }} so'm</strong>
+                </div>
+                <div class="debt-info-item" *ngIf="selectedOrder.debtDueDate">
+                  <span class="debt-info-label"><app-icon name="calendar" [size]="13"></app-icon> Qaytarish muddati:</span>
+                  <strong class="debt-info-value">{{ selectedOrder.debtDueDate }}</strong>
+                </div>
+                <div class="debt-info-item debt-info-item--full" *ngIf="selectedOrder.debtNotes">
+                  <span class="debt-info-label"><app-icon name="file-text" [size]="13"></app-icon> Izoh / Sabab:</span>
+                  <span class="debt-info-notes">{{ selectedOrder.debtNotes }}</span>
+                </div>
+              </div>
+              <div class="debt-card-actions" *ngIf="selectedOrder.debtStatus !== 'PAID'">
+                <button type="button" class="pos-btn pos-btn--success pos-btn--sm" (click)="settleDebt(selectedOrder)">
+                  <app-icon name="check" [size]="14"></app-icon> Qarz to'landi (Yopish)
+                </button>
+              </div>
+            </div>
 
-content = content.replace("if (item.voided || item.kitchenStatus === 'CANCELLED') return '🔴 BEKOR QILINDI';", "if (item.voided || item.kitchenStatus === 'CANCELLED') return 'BEKOR QILINDI';");
-content = content.replace("case 'NEW': return '🟡 YANGI';", "case 'NEW': return 'YANGI';");
-content = content.replace("case 'SENT_TO_KITCHEN': return '🔵 OSHXONADA';", "case 'SENT_TO_KITCHEN': return 'OSHXONADA';");
-content = content.replace("case 'ACCEPTED': return '🟣 QABUL QILINDI';", "case 'ACCEPTED': return 'QABUL QILINDI';");
-content = content.replace("case 'COOKING': return '🟠 TAYYORLANMOQDA';", "case 'COOKING': return 'TAYYORLANMOQDA';");
-content = content.replace("case 'READY': return '🟢 TAYYOR';", "case 'READY': return 'TAYYOR';");
-content = content.replace("case 'SERVED': return '✅ TARQATILDI';", "case 'SERVED': return 'TARQATILDI';");
-content = content.replace("default: return `🟡 ${st}`;", "default: return st;");
+            <div class="detail-meta-grid">`;
 
-content = content.replace("return '🟢 TO‘LANGAN';", "return 'TO‘LANGAN';");
-content = content.replace("return '🟠 TO‘LANMAGAN';", "return 'TO‘LANMAGAN';");
+if (doReplace(targetDetailMeta, replaceDetailMeta)) {
+  console.log('Detail modal debt card added');
+} else {
+  console.error('Failed to add Detail modal debt card');
+}
 
-fs.writeFileSync(filePath, content, 'utf8');
-console.log('Successfully updated orders-list.component.ts');
+// 6. Detail modal payment method text
+const targetModalPay = `<div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong>{{ selectedOrder.paymentMethod === 'CARD' ? 'Karta' : 'Naqd' }}</strong></div>`;
+const replaceModalPay = `<div *ngIf="selectedOrder.paymentMethod"><span>To‘lov turi:</span> <strong [style.color]="selectedOrder.paymentMethod === 'DEBT' ? '#f59e0b' : ''">{{ selectedOrder.paymentMethod === 'CARD' ? 'Karta' : (selectedOrder.paymentMethod === 'DEBT' ? 'Qarz (Nasiya)' : 'Naqd') }}</strong></div>`;
+
+if (doReplace(targetModalPay, replaceModalPay)) {
+  console.log('Detail modal payment method text updated');
+} else {
+  console.error('Failed to update modal payment method');
+}
+
+// 7. Receipt modal payment & customer
+const targetReceiptPay = `<div class="r-total-row" *ngIf="selectedOrder.paymentMethod">
+                  <span>To'lov usuli:</span>
+                  <span>{{ selectedOrder.paymentMethod === 'CARD' ? 'KARTA' : 'NAQD' }}</span>
+                </div>`;
+
+const replaceReceiptPay = `<div class="r-total-row" *ngIf="selectedOrder.paymentMethod">
+                  <span>To'lov usuli:</span>
+                  <span>{{ selectedOrder.paymentMethod === 'CARD' ? 'KARTA' : (selectedOrder.paymentMethod === 'DEBT' ? 'QARZ (NASIYA)' : 'NAQD') }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT' && selectedOrder.customerName">
+                  <span>Mijoz (Qarzdor):</span>
+                  <span>{{ selectedOrder.customerName }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT' && selectedOrder.customerPhone">
+                  <span>Tel:</span>
+                  <span>{{ selectedOrder.customerPhone }}</span>
+                </div>
+                <div class="r-total-row" *ngIf="selectedOrder.paymentMethod === 'DEBT' && selectedOrder.debtDueDate">
+                  <span>Qaytarish muddati:</span>
+                  <span>{{ selectedOrder.debtDueDate }}</span>
+                </div>`;
+
+if (doReplace(targetReceiptPay, replaceReceiptPay)) {
+  console.log('Receipt modal updated');
+} else {
+  console.error('Failed to update receipt modal');
+}
+
+// 8. SCSS styles
+const targetStyles = `      &.badge-debt {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+    }
+
+    .paid-sub-amount {`;
+
+const replaceStyles = `      &.badge-debt {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+    }
+
+    .debt-customer-mini {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 4px;
+      padding: 4px 8px;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 6px;
+      font-size: 11px;
+      text-align: left;
+
+      .debt-c-name {
+        color: #f59e0b;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .debt-c-phone {
+        color: var(--text-secondary);
+        font-family: var(--font-mono, monospace);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .debt-c-due {
+        color: #ef4444;
+        font-size: 10px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .debt-status-pill {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        margin-top: 2px;
+        width: fit-content;
+
+        &.paid {
+          background: rgba(16, 185, 129, 0.2);
+          color: #10b981;
+        }
+      }
+    }
+
+    .debt-details-card {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+
+      .debt-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+
+        .debt-card-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #f59e0b;
+          font-size: 15px;
+          font-weight: 700;
+        }
+
+        .debt-badge-status {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: rgba(245, 158, 11, 0.2);
+          color: #f59e0b;
+          border: 1px solid rgba(245, 158, 11, 0.35);
+
+          &.badge-paid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.35);
+          }
+        }
+      }
+
+      .debt-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+
+        .debt-info-item {
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+
+          &--full {
+            grid-column: 1 / -1;
+          }
+
+          .debt-info-label {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+
+          .debt-info-value {
+            font-size: 13.5px;
+            color: var(--text-primary);
+
+            &.debt-sum-val {
+              color: #f59e0b;
+              font-size: 16px;
+              font-weight: 800;
+            }
+          }
+
+          .debt-info-notes {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+          }
+        }
+      }
+
+      .debt-card-actions {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(245, 158, 11, 0.15);
+        display: flex;
+        justify-content: flex-end;
+      }
+    }
+
+    .tab-btn--debt {
+      &.active {
+        color: #f59e0b !important;
+        border-bottom-color: #f59e0b !important;
+      }
+    }
+
+    .chip--debt {
+      .debt-text {
+        color: #f59e0b !important;
+      }
+    }
+
+    .breakdown-debt {
+      color: #f59e0b;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .paid-sub-amount {`;
+
+if (doReplace(targetStyles, replaceStyles)) {
+  console.log('Styles updated');
+} else {
+  console.error('Failed to update styles');
+}
+
+// 9. activeTab type
+const targetTabType = `activeTab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' = 'ALL';`;
+const replaceTabType = `activeTab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' | 'DEBT' = 'ALL';`;
+if (doReplace(targetTabType, replaceTabType)) {
+  console.log('activeTab type updated');
+} else {
+  console.error('Failed to update activeTab type');
+}
+
+// 10. setTab and filteredOrders
+const targetSetTab = `  setTab(tab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID'): void {
+    this.activeTab = tab;
+    this.pageIndex = 0;
+    if (tab === 'PAID') {
+      this.loadHistoryOrders();
+    }
+  }
+
+  get filteredOrders(): Order[] {
+    if (this.activeTab === 'PAID') {
+      return this.historyOrders.filter(order => {
+        // Date filter
+        if (this.dateFilter !== 'ALL') {
+          const orderDate = this.getOrderDate(order);
+          if (!orderDate) return false;
+          const now = new Date();
+
+          if (this.dateFilter === 'TODAY') {
+            const isToday = orderDate.getFullYear() === now.getFullYear() &&
+                            orderDate.getMonth() === now.getMonth() &&
+                            orderDate.getDate() === now.getDate();
+            if (!isToday) return false;
+          } else if (this.dateFilter === 'YESTERDAY') {
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const isYesterday = orderDate.getFullYear() === yesterday.getFullYear() &&
+                                orderDate.getMonth() === yesterday.getMonth() &&
+                                orderDate.getDate() === yesterday.getDate();
+            if (!isYesterday) return false;
+          } else if (this.dateFilter === 'THIS_WEEK') {
+            const oneWeekAgo = new Date(now);
+            oneWeekAgo.setDate(now.getDate() - 7);
+            if (orderDate < oneWeekAgo) return false;
+          } else if (this.dateFilter === 'THIS_MONTH') {
+            const isThisMonth = orderDate.getFullYear() === now.getFullYear() &&
+                                orderDate.getMonth() === now.getMonth();
+            if (!isThisMonth) return false;
+          }
+        }
+
+        // Payment method filter
+        if (this.paymentMethodFilter !== 'ALL') {
+          if ((order.paymentMethod || '').toUpperCase() !== this.paymentMethodFilter) {
+            return false;
+          }
+        }
+
+        // Table filter
+        if (this.selectedTableFilter !== 'ALL') {
+          if (order.tableId !== this.selectedTableFilter) {
+            return false;
+          }
+        }
+
+        // Search filter
+        if (this.searchQuery.trim()) {
+          const q = this.searchQuery.toLowerCase();
+          const numMatch = order.orderNumber?.toLowerCase().includes(q);
+          const tblMatch = (order.tableName || order.tableNumber)?.toLowerCase().includes(q);
+          const waiterMatch = order.waiterName?.toLowerCase().includes(q);
+          const cashierMatch = order.cashierName?.toLowerCase().includes(q);
+          return numMatch || tblMatch || waiterMatch || cashierMatch;
+        }
+
+        return true;
+      });
+    }`;
+
+const replaceSetTab = `  setTab(tab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' | 'DEBT'): void {
+    this.activeTab = tab;
+    this.pageIndex = 0;
+    if (tab === 'PAID' || tab === 'DEBT') {
+      this.loadHistoryOrders();
+    }
+  }
+
+  get filteredOrders(): Order[] {
+    if (this.activeTab === 'PAID' || this.activeTab === 'DEBT') {
+      return this.historyOrders.filter(order => {
+        // Debt tab filter
+        if (this.activeTab === 'DEBT') {
+          const isDebt = (order.paymentMethod || '').toUpperCase() === 'DEBT' || !!order.debtStatus;
+          if (!isDebt) return false;
+        }
+
+        // Date filter
+        if (this.dateFilter !== 'ALL') {
+          const orderDate = this.getOrderDate(order);
+          if (!orderDate) return false;
+          const now = new Date();
+
+          if (this.dateFilter === 'TODAY') {
+            const isToday = orderDate.getFullYear() === now.getFullYear() &&
+                            orderDate.getMonth() === now.getMonth() &&
+                            orderDate.getDate() === now.getDate();
+            if (!isToday) return false;
+          } else if (this.dateFilter === 'YESTERDAY') {
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const isYesterday = orderDate.getFullYear() === yesterday.getFullYear() &&
+                                orderDate.getMonth() === yesterday.getMonth() &&
+                                orderDate.getDate() === yesterday.getDate();
+            if (!isYesterday) return false;
+          } else if (this.dateFilter === 'THIS_WEEK') {
+            const oneWeekAgo = new Date(now);
+            oneWeekAgo.setDate(now.getDate() - 7);
+            if (orderDate < oneWeekAgo) return false;
+          } else if (this.dateFilter === 'THIS_MONTH') {
+            const isThisMonth = orderDate.getFullYear() === now.getFullYear() &&
+                                orderDate.getMonth() === now.getMonth();
+            if (!isThisMonth) return false;
+          }
+        }
+
+        // Payment method filter (if on PAID tab)
+        if (this.activeTab !== 'DEBT' && this.paymentMethodFilter !== 'ALL') {
+          if ((order.paymentMethod || '').toUpperCase() !== this.paymentMethodFilter) {
+            return false;
+          }
+        }
+
+        // Table filter
+        if (this.selectedTableFilter !== 'ALL') {
+          if (order.tableId !== this.selectedTableFilter) {
+            return false;
+          }
+        }
+
+        // Search filter
+        if (this.searchQuery.trim()) {
+          const q = this.searchQuery.toLowerCase();
+          const numMatch = order.orderNumber?.toLowerCase().includes(q);
+          const tblMatch = (order.tableName || order.tableNumber)?.toLowerCase().includes(q);
+          const waiterMatch = order.waiterName?.toLowerCase().includes(q);
+          const cashierMatch = order.cashierName?.toLowerCase().includes(q);
+          const customerMatch = order.customerName?.toLowerCase().includes(q) || order.customerPhone?.includes(q);
+          const notesMatch = order.notes?.toLowerCase().includes(q) || order.debtNotes?.toLowerCase().includes(q);
+          return numMatch || tblMatch || waiterMatch || cashierMatch || customerMatch || notesMatch;
+        }
+
+        return true;
+      });
+    }`;
+
+if (doReplace(targetSetTab, replaceSetTab)) {
+  console.log('setTab and filteredOrders updated');
+} else {
+  console.error('Failed to update setTab');
+}
+
+// 11. Sum getters and settleDebt method
+const targetGetters = `  get historyOrdersPaidSum(): number {
+    if (this.activeTab !== 'PAID') return 0;
+    return this.filteredOrders.reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get historyOrdersCashSum(): number {
+    if (this.activeTab !== 'PAID') return 0;
+    return this.filteredOrders
+      .filter(o => (o.paymentMethod || 'CASH').toUpperCase() === 'CASH')
+      .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get historyOrdersCardSum(): number {
+    if (this.activeTab !== 'PAID') return 0;
+    return this.filteredOrders
+      .filter(o => (o.paymentMethod || '').toUpperCase() === 'CARD')
+      .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }`;
+
+const replaceGetters = `  get historyOrdersPaidSum(): number {
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
+    return this.filteredOrders.reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get historyOrdersCashSum(): number {
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
+    return this.filteredOrders
+      .filter(o => (o.paymentMethod || 'CASH').toUpperCase() === 'CASH')
+      .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get historyOrdersCardSum(): number {
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
+    return this.filteredOrders
+      .filter(o => (o.paymentMethod || '').toUpperCase() === 'CARD')
+      .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get historyOrdersDebtSum(): number {
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
+    return this.filteredOrders
+      .filter(o => (o.paymentMethod || '').toUpperCase() === 'DEBT')
+      .reduce((sum, o) => sum + (o.paidAmount != null ? o.paidAmount : (o.total || o.subtotal || 0)), 0);
+  }
+
+  get debtOrdersCount(): number {
+    return this.historyOrders.filter(o => (o.paymentMethod || '').toUpperCase() === 'DEBT' || o.debtStatus === 'OPEN').length;
+  }
+
+  settleDebt(order: Order, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const customer = order.customerName || 'Ushbu mijoz';
+    const amount = (order.paidAmount || order.total || 0).toLocaleString();
+    if (!confirm(\`"\${customer}"ning \${amount} so'mlik qarzi to'landimi?\\nQarz holati "TO'LANGAN" deb belgilanadi.\`)) {
+      return;
+    }
+    this.orderService.settleOrderDebt(order.id).subscribe({
+      next: () => {
+        this.notify.success('Qarz muvaffaqiyatli to‘langan deb belgilandi!');
+        order.debtStatus = 'PAID';
+        order.debtRemainingAmount = 0;
+        if (this.selectedOrder && this.selectedOrder.id === order.id) {
+          this.selectedOrder.debtStatus = 'PAID';
+          this.selectedOrder.debtRemainingAmount = 0;
+        }
+        this.loadHistoryOrders();
+      },
+      error: (err) => {
+        this.notify.error('Xatolik: ' + (err.error?.message || err.message));
+      }
+    });
+  }`;
+
+if (doReplace(targetGetters, replaceGetters)) {
+  console.log('Getters and settleDebt updated');
+} else {
+  console.error('Failed to update getters');
+}
+
+fs.writeFileSync(path, content, 'utf8');
+console.log('All updates successfully written to', path);

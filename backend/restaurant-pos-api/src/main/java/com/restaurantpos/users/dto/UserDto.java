@@ -91,6 +91,8 @@ public class UserDto {
 
         private String currentPassword;
 
+        private String currentPin;
+
         private String newPassword;
 
         private String newPin;

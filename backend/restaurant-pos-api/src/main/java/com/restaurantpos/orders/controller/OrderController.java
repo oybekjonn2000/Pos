@@ -188,4 +188,14 @@ public class OrderController {
                 orderService.getCancellationReceipts(id, user.getTenantId(), user);
         return ResponseEntity.ok(ApiResponse.success(receipts));
     }
+
+    @PostMapping("/{id}/settle-debt")
+    @PreAuthorize("hasAnyAuthority('PROCESS_PAYMENT', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_CASHIER')")
+    @Operation(summary = "Settle/pay open debt for an order")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> settleDebt(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.settleOrderDebt(id, user.getTenantId(), user);
+        return ResponseEntity.ok(ApiResponse.success(order, "Qarz muvaffaqiyatli to'landi deb belgilandi"));
+    }
 }

@@ -136,6 +136,12 @@ public class PaymentService {
                     customer.setLastOrderAt(Instant.now());
                     customer = customerRepository.save(customer);
                 } else {
+                    if (normalizedPhone != null && !normalizedPhone.isBlank()) {
+                        customer.setPhone(normalizedPhone);
+                    }
+                    if (request.getCustomerName() != null && !request.getCustomerName().trim().isBlank()) {
+                        customer.setFullName(request.getCustomerName().trim());
+                    }
                     customer.setTotalOrders(customer.getTotalOrders() + 1);
                     customer.setTotalSpent((customer.getTotalSpent() != null ? customer.getTotalSpent() : BigDecimal.ZERO).add(payment.getAmount()));
                     customer.setLastOrderAt(Instant.now());
@@ -149,6 +155,9 @@ public class PaymentService {
                     debtNote += " | " + request.getNotes().trim();
                 }
                 payment.setNotes(debtNote);
+                if (order.getNotes() == null || order.getNotes().isBlank()) {
+                    order.setNotes(debtNote);
+                }
             } else {
                 payment.setCashAmount(request.getCashAmount() != null ? request.getCashAmount() : BigDecimal.ZERO);
                 payment.setCardAmount(request.getCardAmount() != null ? request.getCardAmount() : BigDecimal.ZERO);

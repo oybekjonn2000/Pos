@@ -1,5 +1,5 @@
-import { Component, computed, Input, Output, EventEmitter, inject } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, computed, Input, Output, EventEmitter, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { ConnectionService } from '../../core/services/connection.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
@@ -11,7 +11,7 @@ import { TranslationService } from '../../core/services/translation.service';
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [CommonModule, DatePipe, AppIconComponent, LanguageSelectorComponent],
+  imports: [CommonModule, AppIconComponent, LanguageSelectorComponent],
   template: `
     <header class="topbar" [class.collapsed]="sidebarCollapsed">
       <div class="topbar__left">
@@ -36,7 +36,7 @@ import { TranslationService } from '../../core/services/translation.service';
       <div class="topbar__right">
         <!-- Current time (Hidden on mobile) -->
         <div class="topbar__time">
-          {{ currentTime | date:'HH:mm:ss' }}
+          {{ currentTimeStr() }}
         </div>
 
         <!-- Connection status -->
@@ -408,13 +408,22 @@ import { TranslationService } from '../../core/services/translation.service';
     }
   `]
 })
-export class TopbarComponent {
+export class TopbarComponent implements OnInit, OnDestroy {
   @Input() sidebarCollapsed = false;
   @Output() openLanSettings = new EventEmitter<void>();
   @Output() toggleMobileMenu = new EventEmitter<void>();
   @Output() openProfile = new EventEmitter<void>();
 
-  currentTime = new Date();
+  readonly currentTime = signal(new Date());
+  readonly currentTimeStr = computed(() => {
+    const d = this.currentTime();
+    const pad = (n: number) => (n < 10 ? '0' + n : String(n));
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  });
+
+  private timerId?: any;
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
 
   lan = inject(LanStatusService);
   theme = inject(ThemeService);
@@ -422,8 +431,23 @@ export class TopbarComponent {
   constructor(public i18n: TranslationService, 
     public auth: AuthService,
     public connection: ConnectionService
-  ) {
-    setInterval(() => this.currentTime = new Date(), 1000);
+  ) {}
+
+  ngOnInit(): void {
+    this.ngZone.runOutsideAngular(() => {
+      this.timerId = setInterval(() => {
+        this.ngZone.run(() => {
+          this.currentTime.set(new Date());
+          this.cdr.markForCheck();
+        });
+      }, 500);
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.timerId) {
+      clearInterval(this.timerId);
+    }
   }
 
   getStatusLabel(): string {
