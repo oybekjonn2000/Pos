@@ -103,6 +103,15 @@ public class WebSocketNotificationService {
         log.debug("WS: table updated -> {}", destination);
     }
 
+    /** Aktiv buyurtma boshqa stol/zalga ko'chirildi */
+    public void notifyOrderTableMoved(UUID tenantId, Object movePayload) {
+        WebSocketEvent event = new WebSocketEvent("ORDER_TABLE_MOVED", movePayload);
+        messagingTemplate.convertAndSend("/topic/tables/" + tenantId, event);
+        messagingTemplate.convertAndSend("/topic/orders/" + tenantId, event);
+        messagingTemplate.convertAndSend("/topic/kitchen/" + tenantId, event);
+        log.info("WS: order table moved for tenant {} -> {}", tenantId, movePayload);
+    }
+
     // -------------------------------------------------------
 
     public record WebSocketEvent(String type, Object payload) {

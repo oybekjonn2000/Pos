@@ -10,11 +10,12 @@ import { AuthService } from '../core/services/auth.service';
 import { WebsocketService } from '../core/services/websocket.service';
 import { AppIconComponent } from '../shared/components/icon/icon.component';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
+import { MoveTableModalComponent } from '../shared/components/move-table-modal/move-table-modal.component';
 
 @Component({
   selector: 'app-tables',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe, MoveTableModalComponent],
   styleUrls: ['./tables.component.scss'],
   template: `
     <div class="tables-page fade-in">
@@ -382,6 +383,68 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
         </div>
       }
 
+      <!-- Occupied Table Action Modal -->
+      @if (showTableActionModal() && selectedOccupiedTable()) {
+        <div class="modal-backdrop" (click)="closeTableActionModal()">
+          <div class="modal-card table-action-card" (click)="$event.stopPropagation()">
+            <div class="t-action-header">
+              <div class="t-action-title">
+                <span class="t-badge-num">#{{ selectedOccupiedTable()?.tableNumber }}</span>
+                <h3 class="t-title-text">{{ selectedOccupiedTable()?.name }}</h3>
+                <span class="pill--occupied">BAND</span>
+              </div>
+              <button class="modal-close" (click)="closeTableActionModal()"><app-icon name="close" [size]="18"></app-icon></button>
+            </div>
+
+            <div class="t-action-body">
+              <div class="t-stat-row">
+                <span>Joylashuv:</span>
+                <strong>{{ selectedOccupiedTable()?.zoneName || selectedZone()?.name || 'Zal' }}</strong>
+              </div>
+              <div class="t-stat-row">
+                <span>Ofitsiant:</span>
+                <strong>{{ selectedOccupiedTable()?.waiterName || 'Ali' }}</strong>
+              </div>
+              <div class="t-stat-row">
+                <span>Mahsulotlar:</span>
+                <strong>{{ selectedOccupiedTable()?.itemCount || 0 }} ta mahsulot</strong>
+              </div>
+              <div class="t-stat-row">
+                <span>Jami hisob:</span>
+                <strong class="text-amount">{{ formatPrice(selectedOccupiedTable()?.totalAmount || 0) }}</strong>
+              </div>
+            </div>
+
+            <div class="t-action-buttons">
+              <button type="button" class="action-btn action-btn--pos" (click)="goToPosForTable(selectedOccupiedTable()!)">
+                <app-icon name="products" [size]="16"></app-icon>
+                <span>Buyurtmani ochish</span>
+              </button>
+
+              <button type="button" class="action-btn action-btn--bill" (click)="goToCheckoutForTable(selectedOccupiedTable()!)">
+                <app-icon name="check" [size]="16"></app-icon>
+                <span>Hisobni yopish</span>
+              </button>
+
+              @if (canMoveTable(selectedOccupiedTable())) {
+                <button type="button" class="action-btn action-btn--move" (click)="openMoveModalForTable(selectedOccupiedTable()!)">
+                  <app-icon name="arrow-right" [size]="16"></app-icon>
+                  <span>Stolni ko‘chirish</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Move Table Modal -->
+      <app-move-table-modal
+        [isOpen]="showMoveModal()"
+        [order]="activeOrderForMove()"
+        (closed)="closeMoveModal()"
+        (moved)="onOrderMoved($event)">
+      </app-move-table-modal>
+
       <!-- Add Table Modal -->
       @if (showAddModal() && canManageTables()) {
         <div class="modal-backdrop">
@@ -488,6 +551,11 @@ import { TranslatePipe } from '../shared/pipes/translate.pipe';
   `
 })
 export class TablesComponent implements OnInit, OnDestroy {
+  // Occupied table action modal & Move table modal
+  showTableActionModal = signal(false);
+  selectedOccupiedTable = signal<RestaurantTable | null>(null);
+  showMoveModal = signal(false);
+  activeOrderForMove = signal<any>(null);
   @ViewChild('viewport') viewportEl?: ElementRef<HTMLDivElement>;
 
   tables = signal<RestaurantTable[]>([]);
@@ -671,6 +739,75 @@ export class TablesComponent implements OnInit, OnDestroy {
     if (n.includes('podval') || n.includes('padval') || n.includes('lounge')) return 'products';
     if (n.includes('vip')) return 'crown';
     return 'map-pin';
+  }
+
+  canMoveTable(table?: RestaurantTable | null): boolean {
+    if (!table) return false;
+    if (this.auth.isAdmin() || this.auth.hasRole('MANAGER') || this.auth.hasRole('CASHIER')) {
+      return true;
+    }
+    if (this.auth.isWaiter()) {
+      return table.myTable !== false;
+    }
+    return this.auth.hasPermission('EDIT_ORDER') || this.auth.hasPermission('MANAGE_TABLES');
+  }
+
+  closeTableActionModal(): void {
+    this.showTableActionModal.set(false);
+    this.selectedOccupiedTable.set(null);
+  }
+
+  goToPosForTable(table: RestaurantTable): void {
+    this.closeTableActionModal();
+    this.router.navigate(['/pos'], {
+      queryParams: {
+        tableId: table.id,
+        zoneId: table.zoneId,
+        tableNumber: table.tableNumber,
+        tableName: table.name,
+        orderId: table.currentOrderId
+      }
+    });
+  }
+
+  goToCheckoutForTable(table: RestaurantTable): void {
+    this.closeTableActionModal();
+    this.router.navigate(['/pos'], {
+      queryParams: {
+        tableId: table.id,
+        zoneId: table.zoneId,
+        tableNumber: table.tableNumber,
+        tableName: table.name,
+        orderId: table.currentOrderId,
+        checkout: 'true'
+      }
+    });
+  }
+
+  openMoveModalForTable(table: RestaurantTable): void {
+    this.showTableActionModal.set(false);
+    this.activeOrderForMove.set({
+      id: table.currentOrderId,
+      orderNumber: table.activeOrderNumber || 'ORD',
+      tableId: table.id,
+      tableName: table.name,
+      tableNumber: table.tableNumber,
+      zoneId: table.zoneId,
+      zoneName: table.zoneName || this.selectedZone()?.name || '',
+      totalAmount: table.totalAmount || 0,
+      waiterName: table.waiterName || ''
+    });
+    this.showMoveModal.set(true);
+  }
+
+  closeMoveModal(): void {
+    this.showMoveModal.set(false);
+    this.activeOrderForMove.set(null);
+  }
+
+  onOrderMoved(movedOrder: any): void {
+    this.closeMoveModal();
+    this.loadTables();
   }
 
   canManageTables(): boolean {

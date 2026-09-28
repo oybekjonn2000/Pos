@@ -13,6 +13,7 @@ import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../core/services/translation.service';
 import { AuthService } from '../../core/services/auth.service';
+import { MoveTableModalComponent } from '../../shared/components/move-table-modal/move-table-modal.component';
 import { getProductImageUrl, handleImageError } from '../../core/utils/product-image.util';
 
 export interface PosCartItem {
@@ -36,7 +37,7 @@ export interface PosCartItem {
 @Component({
   selector: 'app-pos',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe, MoveTableModalComponent],
   template: `
     <div class="pos-screen fade-in">
       <!-- Left: Menu & Categories -->
@@ -57,6 +58,11 @@ export interface PosCartItem {
                   }
                 </div>
                 <button class="btn-change-table" (click)="onLeaveTable()">{{ 'common.edit' | translate }}</button>
+                @if (canMoveCurrentTable()) {
+                  <button type="button" class="btn-change-table btn-move-table" (click)="openMoveModal()" title="Stolni ko‘chirish">
+                    <app-icon name="arrow-right" [size]="13"></app-icon> Stolni ko‘chirish
+                  </button>
+                }
               } @else {
                 <button class="btn-select-table" (click)="router.navigate(['/tables'])">
                   Stol tanlang <app-icon name="arrow-right" [size]="14"></app-icon>
@@ -466,6 +472,13 @@ export interface PosCartItem {
           </div>
         </div>
       }
+      <!-- Move Table Modal -->
+      <app-move-table-modal
+        [isOpen]="showMoveModal()"
+        [order]="orderForMove()"
+        (closed)="closeMoveModal()"
+        (moved)="onTableMoved($event)">
+      </app-move-table-modal>
     </div>
   `,
   styles: [`
@@ -1879,6 +1892,95 @@ export class PosComponent implements OnInit {
     if (!kId) return this.categories();
     return this.categories().filter(c => c.kitchenId === kId);
   });
+
+  // Move Table state
+  showMoveModal = signal(false);
+
+  canMoveCurrentTable = computed(() => {
+    const table = this.selectedTable();
+    const orderId = this.currentOrderId();
+    if (!table || !orderId) return false;
+    if (this.auth.isAdmin() || this.auth.hasRole('MANAGER') || this.auth.hasRole('CASHIER')) {
+      return true;
+    }
+    if (this.auth.isWaiter()) {
+      return table.myTable !== false;
+    }
+    return this.auth.hasPermission('EDIT_ORDER') || this.auth.hasPermission('MANAGE_TABLES');
+  });
+
+  orderForMove = computed(() => {
+    const order = this.activeOrder();
+    const table = this.selectedTable();
+    if (order) return order;
+    if (table && this.currentOrderId()) {
+      return {
+        id: this.currentOrderId(),
+        orderNumber: table.activeOrderNumber || 'ORD',
+        tableId: table.id,
+        tableName: table.name,
+        tableNumber: table.tableNumber,
+        zoneId: table.zoneId,
+        zoneName: table.zoneName,
+        totalAmount: this.total(),
+        waiterName: table.waiterName
+      };
+    }
+    return null;
+  });
+
+  openMoveModal(): void {
+    this.showMoveModal.set(true);
+  }
+
+  closeMoveModal(): void {
+    this.showMoveModal.set(false);
+  }
+
+  onTableMoved(movedOrder: any): void {
+    this.closeMoveModal();
+    if (movedOrder) {
+      if (movedOrder.tableId) {
+        this.tableService.getTableById(movedOrder.tableId).subscribe({
+          next: (tRes: any) => {
+            if (tRes.data) {
+              this.selectedTable.set(tRes.data);
+            }
+          },
+          error: () => {
+            this.selectedTable.update(t => t ? {
+              ...t,
+              id: movedOrder.tableId,
+              name: movedOrder.tableName || t.name,
+              tableNumber: movedOrder.tableNumber || t.tableNumber,
+              zoneId: movedOrder.zoneId || t.zoneId,
+              zoneName: movedOrder.zoneName || t.zoneName
+            } : null);
+          }
+        });
+      }
+      if (this.activeOrder()) {
+        this.activeOrder.update(o => o ? {
+          ...o,
+          tableId: movedOrder.tableId,
+          tableName: movedOrder.tableName,
+          tableNumber: movedOrder.tableNumber,
+          zoneId: movedOrder.zoneId,
+          zoneName: movedOrder.zoneName
+        } : null);
+      }
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: {
+          tableId: movedOrder.tableId,
+          zoneId: movedOrder.zoneId,
+          tableNumber: movedOrder.tableNumber,
+          tableName: movedOrder.tableName
+        },
+        queryParamsHandling: 'merge'
+      });
+    }
+  }
 
   selectedTable = signal<RestaurantTable | null>(null);
   currentOrderId = signal<string | null>(null);

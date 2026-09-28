@@ -74,6 +74,7 @@ public class OrderService {
     private final com.restaurantpos.printers.service.PrintRoutingService printRoutingService;
     private final com.restaurantpos.billing.service.SubscriptionLimitService subscriptionLimitService;
     private final com.restaurantpos.debt.repository.DebtRepository debtRepository;
+    private final com.restaurantpos.settings.service.AuditLogService auditLogService;
 
     private static final AtomicInteger ORDER_COUNTER = new AtomicInteger(100);
     private static final AtomicInteger CANCEL_COUNTER = new AtomicInteger(100);
@@ -1428,5 +1429,153 @@ public class OrderService {
         OrderDto.Response resp = toResponse(saved);
         wsNotification.notifyOrderStatusChanged(tenantId, resp);
         return resp;
+    }
+
+    @Transactional
+    public OrderDto.Response moveOrderTable(UUID orderId, UUID tenantId, com.restaurantpos.auth.security.UserPrincipal user, OrderDto.MoveTableRequest request) {
+        if (request == null || request.getTargetTableId() == null) {
+            throw PosException.badRequest("Ko'chirish uchun yangi stol tanlanishi shart.");
+        }
+
+        // 1. Lock Order
+        Order order = orderRepository.findByIdWithLock(orderId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Buyurtma topilmadi: " + orderId));
+
+        // 2. Validate Ownership & Active Status
+        validateOrderOwnership(order, user);
+
+        if (order.getStatus() == Order.OrderStatus.PAID || 
+            order.getStatus() == Order.OrderStatus.CLOSED || 
+            order.getStatus() == Order.OrderStatus.CANCELLED || 
+            order.getStatus() == Order.OrderStatus.REFUNDED) {
+            throw PosException.badRequest("Bu buyurtmani ko‘chirish mumkin emas. Faqat aktiv buyurtmalar ko‘chirilishi mumkin.");
+        }
+
+        UUID targetTableId = request.getTargetTableId();
+        UUID currentTableId = order.getTable() != null ? order.getTable().getId() : null;
+
+        if (currentTableId != null && currentTableId.equals(targetTableId)) {
+            throw PosException.badRequest("Tanlangan stol buyurtmaning hozirgi stoli bilan bir xil.");
+        }
+
+        // 3 & 4. Lock tables deterministically to prevent deadlock
+        RestaurantTable currentTable = null;
+        RestaurantTable targetTable = null;
+
+        if (currentTableId != null) {
+            if (currentTableId.compareTo(targetTableId) < 0) {
+                currentTable = tableRepository.findByIdWithLock(currentTableId, tenantId).orElse(null);
+                targetTable = tableRepository.findByIdWithLock(targetTableId, tenantId)
+                        .orElseThrow(() -> PosException.notFound("Ko'chirish uchun tanlangan stol topilmadi."));
+            } else {
+                targetTable = tableRepository.findByIdWithLock(targetTableId, tenantId)
+                        .orElseThrow(() -> PosException.notFound("Ko'chirish uchun tanlangan stol topilmadi."));
+                currentTable = tableRepository.findByIdWithLock(currentTableId, tenantId).orElse(null);
+            }
+        } else {
+            targetTable = tableRepository.findByIdWithLock(targetTableId, tenantId)
+                    .orElseThrow(() -> PosException.notFound("Ko'chirish uchun tanlangan stol topilmadi."));
+        }
+
+        // 5. Validate Target Table
+        if (targetTable.getDeletedAt() != null || !targetTable.isActive()) {
+            throw PosException.badRequest("Tanlangan stol faol emas yoki o'chirilgan.");
+        }
+        if (targetTable.getStatus() != RestaurantTable.TableStatus.FREE) {
+            throw PosException.badRequest("Tanlangan stol hozirgina band qilindi. Iltimos, boshqa bo'sh stolni tanlang.");
+        }
+        Optional<Order> activeOnTarget = orderRepository.findByTableIdAndStatusInAndDeletedAtIsNull(
+                targetTable.getId(), 
+                List.of(Order.OrderStatus.OPEN, Order.OrderStatus.IN_PROGRESS, Order.OrderStatus.READY)
+        );
+        if (activeOnTarget.isPresent() && !activeOnTarget.get().getId().equals(order.getId())) {
+            throw PosException.badRequest("Tanlangan stolda allaqachon aktiv buyurtma mavjud.");
+        }
+
+        // Save old snapshots for event & audit
+        UUID oldTableId = currentTable != null ? currentTable.getId() : null;
+        String oldTableName = currentTable != null ? (currentTable.getName() != null && !currentTable.getName().isBlank() ? currentTable.getName() : "Stol " + currentTable.getTableNumber()) : "Stolsiz";
+        com.restaurantpos.tables.entity.TableZone oldZone = order.getZone() != null ? order.getZone() : (currentTable != null ? currentTable.getZone() : null);
+        UUID oldZoneId = oldZone != null ? oldZone.getId() : null;
+        String oldZoneName = oldZone != null ? oldZone.getName() : "Noma'lum zal";
+
+        com.restaurantpos.tables.entity.TableZone targetZone = targetTable.getZone();
+        UUID newZoneId = targetZone != null ? targetZone.getId() : null;
+        String newZoneName = targetZone != null ? targetZone.getName() : "Noma'lum zal";
+        String newTableName = targetTable.getName() != null && !targetTable.getName().isBlank() ? targetTable.getName() : "Stol " + targetTable.getTableNumber();
+
+        // 6 & 7. Update order bindings (Items, amounts, waiter, etc. DO NOT CHANGE)
+        order.setTable(targetTable);
+        if (targetZone != null) {
+            order.setZone(targetZone);
+        }
+
+        // 8. Free the current table
+        if (currentTable != null) {
+            currentTable.setStatus(RestaurantTable.TableStatus.FREE);
+            currentTable.setCurrentOrderId(null);
+            currentTable.setWaiter(null);
+            currentTable = tableRepository.save(currentTable);
+        }
+
+        // 9 & 10. Occupy target table and preserve existing waiter
+        targetTable.setStatus(RestaurantTable.TableStatus.OCCUPIED);
+        targetTable.setCurrentOrderId(order.getId());
+        targetTable.setWaiter(order.getWaiter());
+        targetTable = tableRepository.save(targetTable);
+
+        // 11. Audit and Order note
+        String reason = request.getReason() != null && !request.getReason().trim().isBlank() ? request.getReason().trim() : "Mijoz so'rovi";
+        String moveLog = "[" + java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(java.time.ZoneId.of("Asia/Tashkent")).format(Instant.now()) + " Ko'chirildi] " +
+                oldZoneName + " / " + oldTableName + " -> " + newZoneName + " / " + newTableName + " (Sabab: " + reason + ")";
+        if (order.getNotes() == null || order.getNotes().isBlank()) {
+            order.setNotes(moveLog);
+        } else {
+            order.setNotes(order.getNotes() + "\n" + moveLog);
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        auditLogService.logChange(
+                tenantId,
+                user != null ? user.getUserId() : null,
+                "MOVE_TABLE",
+                "ORDER",
+                savedOrder.getId(),
+                oldZoneName + " / " + oldTableName,
+                newZoneName + " / " + newTableName,
+                reason
+        );
+
+        // 12. WebSocket notifications for all screens
+        Map<String, Object> movePayload = new HashMap<>();
+        movePayload.put("orderId", savedOrder.getId().toString());
+        movePayload.put("orderNumber", savedOrder.getOrderNumber() != null ? savedOrder.getOrderNumber() : "");
+        movePayload.put("oldPlaceId", oldZoneId != null ? oldZoneId.toString() : "");
+        movePayload.put("oldPlaceName", oldZoneName);
+        movePayload.put("oldTableId", oldTableId != null ? oldTableId.toString() : "");
+        movePayload.put("oldTableName", oldTableName);
+        movePayload.put("newPlaceId", newZoneId != null ? newZoneId.toString() : "");
+        movePayload.put("newPlaceName", newZoneName);
+        movePayload.put("newTableId", targetTable.getId().toString());
+        movePayload.put("newTableName", newTableName);
+        movePayload.put("waiterId", savedOrder.getWaiter() != null ? savedOrder.getWaiter().getId().toString() : "");
+        movePayload.put("waiterName", savedOrder.getWaiter() != null ? (savedOrder.getWaiter().getFirstName() + " " + (savedOrder.getWaiter().getLastName() != null ? savedOrder.getWaiter().getLastName() : "")).trim() : "");
+
+        wsNotification.notifyOrderTableMoved(tenantId, movePayload);
+
+        if (currentTable != null) {
+            wsNotification.notifyTableUpdated(tenantId, toTableResponse(currentTable, null));
+            wsNotification.notifyTableStatusChanged(tenantId, currentTable.getId(), "FREE");
+        }
+        wsNotification.notifyTableUpdated(tenantId, toTableResponse(targetTable, savedOrder));
+        wsNotification.notifyTableStatusChanged(tenantId, targetTable.getId(), "OCCUPIED");
+        wsNotification.notifyOrderStatusChanged(tenantId, toResponse(savedOrder));
+
+        log.info("[ORDER_TABLE_MOVED] Order {} moved from {} / {} to {} / {}. Waiter: {}",
+                savedOrder.getId(), oldZoneName, oldTableName, newZoneName, newTableName,
+                savedOrder.getWaiter() != null ? savedOrder.getWaiter().getUsername() : "NONE");
+
+        return toResponse(savedOrder);
     }
 }

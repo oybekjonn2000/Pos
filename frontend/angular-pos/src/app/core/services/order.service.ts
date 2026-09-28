@@ -210,4 +210,8 @@ export class OrderService {
   settleOrderDebt(orderId: string): Observable<ApiResponse<Order>> {
     return this.http.post<ApiResponse<Order>>(`${this.API}/${orderId}/settle-debt`, {});
   }
+
+  moveTable(orderId: string, request: { targetTableId: string; reason?: string }): Observable<ApiResponse<Order>> {
+    return this.http.post<ApiResponse<Order>>(`${this.API}/${orderId}/move-table`, request);
+  }
 }

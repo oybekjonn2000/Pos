@@ -109,6 +109,17 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Hisob muvaffaqiyatli yopildi. Stol bo'shatildi."));
     }
 
+    @PostMapping("/{id}/move-table")
+    @PreAuthorize("hasAnyAuthority('EDIT_ORDER', 'MANAGE_TABLES', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_WAITER', 'ROLE_CASHIER')")
+    @Operation(summary = "Aktiv buyurtmani boshqa zal/stolga ko'chirish")
+    public ResponseEntity<ApiResponse<OrderDto.Response>> moveTable(
+            @PathVariable UUID id,
+            @Valid @RequestBody OrderDto.MoveTableRequest request,
+            @AuthenticationPrincipal UserPrincipal user) {
+        OrderDto.Response order = orderService.moveOrderTable(id, user.getTenantId(), user, request);
+        return ResponseEntity.ok(ApiResponse.success(order, "Buyurtma yangi stolga muvaffaqiyatli ko'chirildi"));
+    }
+
     @GetMapping("/{id}/batches")
     @Operation(summary = "Get all kitchen batches (rounds) for an order")
     public ResponseEntity<ApiResponse<List<com.restaurantpos.kitchen.dto.KitchenBatchDto.Response>>> getOrderBatches(

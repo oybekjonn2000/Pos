@@ -12,11 +12,12 @@ import { NotificationService } from '../../core/services/notification.service';
 import { AppIconComponent } from '../../shared/components/icon/icon.component';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { TranslationService } from '../../core/services/translation.service';
+import { MoveTableModalComponent } from '../../shared/components/move-table-modal/move-table-modal.component';
 
 @Component({
   selector: 'app-orders-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatPaginatorModule, AppIconComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, MatPaginatorModule, AppIconComponent, TranslatePipe, MoveTableModalComponent],
   template: `
     <div class="orders-page fade-in">
       <!-- Top Bar -->
@@ -681,6 +682,13 @@ import { TranslationService } from '../../core/services/translation.service';
                 (click)="showDetailModal = false; openReceiptModal(selectedOrder)">
                 <app-icon name="receipt" [size]="14"></app-icon> Chekni ko'rish / Chop etish
               </button>
+              <button
+                *ngIf="canMoveOrder(selectedOrder)"
+                class="pos-btn pos-btn--warning"
+                title="Stolni ko‘chirish"
+                (click)="openMoveModal(selectedOrder)">
+                <app-icon name="arrow-right" [size]="14"></app-icon> Stolni ko‘chirish
+              </button>
               <button class="pos-btn pos-btn--secondary" (click)="closeModals()">Yopish</button>
               <!-- Hisobni yopish (agar hali yopilmagan bo'lsa) -->
               <button
@@ -1165,8 +1173,13 @@ import { TranslationService } from '../../core/services/translation.service';
             </button>
           </div>
         </div>
-      </div>
-
+      <!-- Move Table Modal -->
+      <app-move-table-modal
+        [isOpen]="showMoveModal"
+        [order]="orderForMove"
+        (closed)="closeMoveModal()"
+        (moved)="onOrderMoved($event)">
+      </app-move-table-modal>
     </div>
   `,
   styles: [`
@@ -2938,6 +2951,41 @@ import { TranslationService } from '../../core/services/translation.service';
 })
 export class OrdersListComponent implements OnInit {
   public i18n = inject(TranslationService);
+
+  // Move Table state
+  showMoveModal = false;
+  orderForMove: any = null;
+
+  canMoveOrder(order?: any): boolean {
+    if (!order) return false;
+    if (order.status === 'PAID' || order.status === 'CLOSED' || order.status === 'CANCELLED') {
+      return false;
+    }
+    if (this.auth.isAdmin() || this.auth.hasRole('MANAGER') || this.auth.hasRole('CASHIER')) {
+      return true;
+    }
+    if (this.auth.isWaiter()) {
+      const user = this.auth.user();
+      return !order.waiterId || order.waiterId === user?.id || order.waiterName === user?.fullName;
+    }
+    return this.auth.hasPermission('EDIT_ORDER') || this.auth.hasPermission('MANAGE_TABLES');
+  }
+
+  openMoveModal(order: any): void {
+    this.orderForMove = order;
+    this.showMoveModal = true;
+  }
+
+  closeMoveModal(): void {
+    this.showMoveModal = false;
+    this.orderForMove = null;
+  }
+
+  onOrderMoved(result: any): void {
+    this.closeMoveModal();
+    this.showDetailModal = false;
+    this.loadOrders();
+  }
   orders: Order[] = [];
   historyOrders: Order[] = [];
   tablesList: RestaurantTable[] = [];

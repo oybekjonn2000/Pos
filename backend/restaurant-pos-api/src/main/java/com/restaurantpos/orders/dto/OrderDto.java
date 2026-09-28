@@ -194,4 +194,13 @@ public class OrderDto {
         @NotNull(message = "Status is required")
         private String status;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MoveTableRequest {
+        @NotNull(message = "Target table ID is required")
+        private UUID targetTableId;
+        private String reason;
+    }
 }
