@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject, HostListener }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+
 import { KitchenService, KitchenStation, KitchenOrderBatch, KitchenOrderBatchItem } from '../core/services/kitchen.service';
 import { WebsocketService } from '../core/services/websocket.service';
 import { NotificationService } from '../core/services/notification.service';
@@ -58,7 +58,7 @@ export interface KitchenTableCard {
 @Component({
   selector: 'app-kitchen',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatPaginatorModule, RouterLink, AppIconComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterLink, AppIconComponent, TranslatePipe],
   template: `
     <ng-container *ngIf="featureService.canAccessKds(); else proRequiredView">
       <div class="kds-container fade-in" [class.kds-container--fullscreen]="isKdsFullscreen">
@@ -301,7 +301,7 @@ export interface KitchenTableCard {
       <!-- Table Cards Grid -->
       <div *ngIf="filteredCards.length > 0" class="kds-grid">
         <div
-          *ngFor="let card of pagedCards"
+          *ngFor="let card of filteredCards"
           class="kds-card"
           [class.kds-card--addon]="card.hasNewItems && card.batches.length > 1"
           [class.kds-card--served]="card.overallStatus === 'SERVED'"
@@ -416,16 +416,7 @@ export interface KitchenTableCard {
         </div>
       </div>
 
-      <!-- Material Paginator -->
-      <mat-paginator
-        *ngIf="filteredCards.length > 0"
-        [length]="filteredCards.length"
-        [pageSize]="pageSize"
-        [pageIndex]="pageIndex"
-        [pageSizeOptions]="pageSizeOptions"
-        [showFirstLastButtons]="true"
-        (page)="onPageChange($event)">
-      </mat-paginator>
+
     </div>
     </ng-container>
 
