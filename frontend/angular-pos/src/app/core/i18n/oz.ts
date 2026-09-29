@@ -220,6 +220,7 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     allCategories: "Барчаси",
     cart: "Жорий Буюртма",
     emptyCart: "Саватча бўш. Маҳсулот танланг.",
+    cartEmpty: "Саватча бўш",
     addToCart: "Қўшиш",
     kitchenNotes: "Ошпаз учун изоҳ...",
     finishBill: "Ҳисобни ёпиш",

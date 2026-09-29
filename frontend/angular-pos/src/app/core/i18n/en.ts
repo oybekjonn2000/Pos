@@ -220,6 +220,7 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     allCategories: "All Categories",
     cart: "Current Order",
     emptyCart: "Cart is empty. Select products from the menu.",
+    cartEmpty: "Cart is empty",
     addToCart: "Add",
     kitchenNotes: "Note for cook...",
     finishBill: "Settle Bill",

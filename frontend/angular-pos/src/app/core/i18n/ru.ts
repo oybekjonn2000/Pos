@@ -220,6 +220,7 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     allCategories: "Все категории",
     cart: "Текущий Заказ",
     emptyCart: "Корзина пуста. Выберите продукт.",
+    cartEmpty: "Корзина пуста",
     addToCart: "Добавить",
     kitchenNotes: "Комментарий повару...",
     finishBill: "Закрыть счет",

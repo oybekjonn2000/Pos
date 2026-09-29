@@ -220,6 +220,7 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     allCategories: "Barchasi",
     cart: "Joriy Buyurtma",
     emptyCart: "Savatcha bo'sh. Mahsulot tanlang.",
+    cartEmpty: "Savatcha bo'sh",
     addToCart: "Qo'shish",
     kitchenNotes: "Oshpaz uchun izoh...",
     finishBill: "Hisobni yopish",

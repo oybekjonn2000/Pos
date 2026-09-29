@@ -485,22 +485,26 @@ export interface PosCartItem {
     :host {
       display: flex;
       flex-direction: column;
-      flex: 1;
-      min-height: 0;
+      flex: 1 1 auto;
+      min-height: 100%;
       height: 100%;
+      max-height: 100%;
+      width: 100%;
       overflow: hidden;
     }
     .pos-screen {
       display: grid;
       grid-template-columns: 1fr 420px;
-      flex: 1;
+      grid-template-rows: 100%;
+      flex: 1 1 auto;
       height: 100%;
-      min-height: 0;
+      min-height: 100%;
       max-height: 100%;
+      width: 100%;
       background: var(--bg-main);
       overflow: hidden;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
+      border: none;
+      border-radius: 0;
     }
     .pos-menu {
       display: flex;
@@ -664,7 +668,8 @@ export interface PosCartItem {
       }
     }
     .products-container {
-      flex: 1;
+      flex: 1 1 auto;
+      min-height: 0;
       padding: 20px;
       overflow-y: auto;
     }
@@ -794,8 +799,9 @@ export interface PosCartItem {
       background: var(--bg-card);
       height: 100%;
       max-height: 100%;
-      min-height: 0;
+      min-height: 100%;
       overflow: hidden;
+      border-left: 1px solid var(--border);
     }
     .cart-header {
       flex-shrink: 0;
@@ -857,8 +863,13 @@ export interface PosCartItem {
       }
     }
     .cart-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      padding: 60px 20px;
+      padding: 40px 20px;
       color: var(--text-muted);
       &__icon { font-size: 40px; margin-bottom: 12px; }
     }
@@ -1149,6 +1160,7 @@ export interface PosCartItem {
     }
     .cart-summary {
       flex-shrink: 0; /* CRITICAL: Never gets pushed off screen */
+      margin-top: auto;
       padding: 14px 18px;
       border-top: 1px solid var(--border);
       background: var(--bg-card);
@@ -1178,18 +1190,20 @@ export interface PosCartItem {
     }
     .btn-kitchen, .btn-close-bill {
       flex: 1;
-      padding: 11px 8px;
+      padding: 10px 6px;
       border: none;
       border-radius: var(--radius-md);
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
       transition: all var(--transition);
-      white-space: nowrap;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.25;
 
       &:disabled {
         opacity: 0.5;

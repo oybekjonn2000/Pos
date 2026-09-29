@@ -444,6 +444,19 @@ html, body {
   flex-direction: column;
 }
 
+/* When taking order in POS, occupy full height and remove outer padding/scrollbars */
+.pos-page:has(.pos-screen),
+.pos-page--in-pos {
+  padding: 0 !important;
+  overflow: hidden !important;
+  height: calc(100vh - var(--topbar-height)) !important;
+  max-height: calc(100vh - var(--topbar-height)) !important;
+  min-height: calc(100vh - var(--topbar-height)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+}
+
 /* Tablet Layout (768px - 1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
   :root {
@@ -455,7 +468,7 @@ html, body {
     margin-left: var(--sidebar-collapsed-width, 68px) !important;
   }
 
-  .pos-page {
+  .pos-page:not(.pos-page--in-pos):not(:has(.pos-screen)) {
     padding: 14px 16px;
   }
 }
@@ -470,15 +483,8 @@ html, body {
     margin-left: 0 !important;
   }
 
-  .pos-page {
+  .pos-page:not(.pos-page--in-pos):not(:has(.pos-screen)) {
     padding: 10px 10px calc(72px + var(--safe-bottom)) 10px;
-  }
-
-  /* When taking order in POS, pos-screen handles its own bottom spacing */
-  .pos-page:has(.pos-screen),
-  .pos-page--in-pos {
-    padding: 0 !important;
-    overflow: hidden !important;
   }
 }
 
@@ -488,14 +494,14 @@ html, body {
     --topbar-height: 48px;
   }
 
-  .pos-page {
+  .pos-page:not(.pos-page--in-pos):not(:has(.pos-screen)) {
     padding: 8px 6px calc(68px + var(--safe-bottom)) 6px;
   }
 }
 
 /* Large POS Monitor (>= 1536px / 1920x1080) */
 @media (min-width: 1536px) {
-  .pos-page {
+  .pos-page:not(.pos-page--in-pos):not(:has(.pos-screen)) {
     padding: 24px 32px;
   }
 }
