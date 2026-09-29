@@ -1,0 +1,856 @@
+<div class="mgmt-page fade-in">
+  <!-- Top Navigation & Header -->
+  <header class="mgmt-header">
+    <div class="mgmt-header__left">
+      <div class="mgmt-header__icon">
+        <app-icon name="settings" [size]="26"></app-icon>
+      </div>
+      <div>
+        <h1 class="mgmt-header__title">Restoran Konfiguratsiyasi va Boshqaruv</h1>
+        <p class="mgmt-header__subtitle">Zallar, stollar, menyu, oshxonalar, xodimlar va printerlar boshqaruv markazi</p>
+      </div>
+    </div>
+
+    <div class="mgmt-header__right">
+      <button class="mgmt-btn mgmt-btn--ghost" (click)="loadAllData()" title="Yangilash">
+        <app-icon name="refresh" [size]="16"></app-icon>
+        <span>Yangilash</span>
+      </button>
+      <a routerLink="/tables" class="mgmt-btn mgmt-btn--outline" title="Operatsion stollar xaritasiga o'tish">
+        <app-icon name="tables" [size]="16"></app-icon>
+        <span>Stollar xaritasi</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Horizontal Sub-Navigation Tabs -->
+  <nav class="mgmt-tabs">
+    <button class="mgmt-tab-btn" [class.active]="activeTab() === 'overview'" (click)="setTab('overview')">
+      <app-icon name="dashboard" [size]="16"></app-icon>
+      <span>Boshqaruv markazi</span>
+    </button>
+    <button class="mgmt-tab-btn" [class.active]="activeTab() === 'places'" (click)="setTab('places')">
+      <app-icon name="hall" [size]="16"></app-icon>
+      <span>Zallar va joylar</span>
+      <span class="tab-badge">{{ zones().length }}</span>
+    </button>
+    <button class="mgmt-tab-btn" [class.active]="activeTab() === 'tables'" (click)="setTab('tables')">
+      <app-icon name="tables" [size]="16"></app-icon>
+      <span>Stollar</span>
+      <span class="tab-badge">{{ tables().length }}</span>
+    </button>
+    <button class="mgmt-tab-btn" [class.active]="activeTab() === 'products'" (click)="setTab('products')">
+      <app-icon name="products" [size]="16"></app-icon>
+      <span>Mahsulot va kategoriyalar</span>
+    </button>
+    <button class="mgmt-tab-btn" [class.active]="activeTab() === 'kitchens'" (click)="setTab('kitchens')">
+      <app-icon name="cooking-pot" [size]="16"></app-icon>
+      <span>Oshxonalar</span>
+      <span class="tab-badge">{{ kitchens().length }}</span>
+    </button>
+    <button class="mgmt-tab-btn" [class.active]="activeTab() === 'printers'" (click)="setTab('printers')">
+      <app-icon name="printer" [size]="16"></app-icon>
+      <span>Printerlar</span>
+      <span class="tab-badge">{{ printers().length }}</span>
+    </button>
+    <a routerLink="/employees" class="mgmt-tab-btn">
+      <app-icon name="users" [size]="16"></app-icon>
+      <span>Xodimlar</span>
+      <app-icon name="arrow-up-right" [size]="12" class="opacity-50"></app-icon>
+    </a>
+    <a routerLink="/restaurant/billing" class="mgmt-tab-btn">
+      <app-icon name="credit-card" [size]="16"></app-icon>
+      <span>Obuna & Tariflar</span>
+      <app-icon name="arrow-up-right" [size]="12" class="opacity-50"></app-icon>
+    </a>
+    <a routerLink="/settings" class="mgmt-tab-btn">
+      <app-icon name="settings" [size]="16"></app-icon>
+      <span>Tizim sozlamalari</span>
+      <app-icon name="arrow-up-right" [size]="12" class="opacity-50"></app-icon>
+    </a>
+  </nav>
+
+  <!-- ============================================================== -->
+  <!-- TAB 1: OVERVIEW DASHBOARD (CARDS GRID)                         -->
+  <!-- ============================================================== -->
+  @if (activeTab() === 'overview') {
+    <div class="overview-section">
+      <div class="overview-grid">
+        <!-- 1. Zallar va joylar Card -->
+        <div class="hub-card" (click)="setTab('places')">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="hall" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">{{ zones().length }} ta zal</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Zallar va joylar</h2>
+            <p class="hub-card__desc">Restorandagi zallar (Asosiy zal, Yozgi ayvon, VIP, Podval), xizmat foizlari va maydon o'lchamlari</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Stollar Card -->
+        <div class="hub-card" (click)="setTab('tables')">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="tables" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">{{ tables().length }} ta stol</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Stollar</h2>
+            <p class="hub-card__desc">Stollar ro'yxati, sig'imi, shakli (to'rtburchak, doira, divan) va konstruktordagi joylashuvi</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Mahsulotlar & Kategoriyalar Card -->
+        <div class="hub-card" (click)="setTab('products')">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="products" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">{{ categories().length }} ta kategoriya</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Mahsulotlar va Kategoriyalar</h2>
+            <p class="hub-card__desc">Taomlar menyusi, narxlar, kategoriyalar va <strong>Oshxona → Kategoriya → Mahsulot</strong> ierarxiyasi</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. Oshxonalar Card -->
+        <div class="hub-card" (click)="setTab('kitchens')">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="cooking-pot" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">{{ kitchens().length }} ta stansiya</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Oshxonalar (Departamentlar)</h2>
+            <p class="hub-card__desc">Oshxona bo'limlari (Issiq taomlar, Bar, Mangal, Pitsaxona), KDS stansiyalari va oshpazlar</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. Xodimlar Card -->
+        <div class="hub-card" [routerLink]="['/employees']">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="users" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">Xodimlar bazasi</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Xodimlar</h2>
+            <p class="hub-card__desc">Ofitsiantlar, oshpazlar, kassirlar va administratorlar hisoblari, PIN-kodlar va ruxsatlar</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6. Printerlar Card -->
+        <div class="hub-card" (click)="setTab('printers')">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="printer" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">{{ printers().length }} ta sozlangan</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Printerlar</h2>
+            <p class="hub-card__desc">Windows tizim printerlarini aniqlash, chek va oshxona printerlarini yo'naltirish, qog'oz o'lchami</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 7. Obuna va Tariflar Card -->
+        <div class="hub-card" [routerLink]="['/restaurant/billing']">
+          <div class="hub-card__top">
+            <div class="hub-card__icon-wrap">
+              <app-icon name="credit-card" [size]="28"></app-icon>
+            </div>
+            <span class="hub-card__pill">Tarif & To'lov</span>
+          </div>
+          <div class="hub-card__body">
+            <h2 class="hub-card__title">Obuna va Tariflar</h2>
+            <p class="hub-card__desc">Restoran obuna tarifini tanlash, uzaytirish, to'lov cheklarini yuklash va so'rovlar tarixi</p>
+          </div>
+          <div class="hub-card__footer">
+            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
+              <span>Boshqarish</span>
+              <app-icon name="arrow-right" [size]="14"></app-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- TAB 2: ZALLAR VA JOYLAR (PLACES)                               -->
+  <!-- ============================================================== -->
+  @if (activeTab() === 'places') {
+    <div class="section-container">
+      <div class="section-toolbar">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Zallar va joylar</h2>
+          <p class="section-subtitle">Restoranning barcha zallari ro'yxati va konstruktor sozlamalari</p>
+        </div>
+        <button class="mgmt-btn mgmt-btn--primary" (click)="openCreateZone()">
+          <app-icon name="plus" [size]="16"></app-icon>
+          <span>Yangi zal/joy</span>
+        </button>
+      </div>
+
+      <!-- Zone Form (Create / Edit) -->
+      @if (showZoneForm()) {
+        <div class="form-card fade-in">
+          <div class="form-card__header">
+            <h3>{{ editingZone() ? 'Zalni tahrirlash' : 'Yangi zal qo‘shish' }}</h3>
+            <button class="btn-close-form" (click)="cancelZoneForm()"><app-icon name="close" [size]="16"></app-icon></button>
+          </div>
+
+          <div class="form-card__body">
+            <div class="form-grid">
+              <div class="form-group form-group--span2">
+                <label>Zal nomi *</label>
+                <input type="text" class="pos-input" [(ngModel)]="zoneForm.name" placeholder="Masalan: Asosiy zal, Yozgi ayvon, VIP zal" autofocus />
+              </div>
+
+              <div class="form-group form-group--span2">
+                <label>Tavsif</label>
+                <input type="text" class="pos-input" [(ngModel)]="zoneForm.description" placeholder="Zal haqida qisqacha ma'lumot (ixtiyoriy)" />
+              </div>
+
+              <div class="form-group">
+                <label>Xizmat ko‘rsatish foizi (%)</label>
+                <input type="number" class="pos-input" [(ngModel)]="zoneForm.percentage" placeholder="0" min="0" max="100" />
+                <span class="field-help">Ushbu zal stollaridagi buyurtmalarga qo'shiladigan foiz</span>
+              </div>
+
+              <div class="form-group">
+                <label>Canvas kengligi (px)</label>
+                <input type="number" class="pos-input" [(ngModel)]="zoneForm.canvasWidth" min="800" step="100" />
+                <span class="field-help">Konstruktor maydoni kengligi (standart: 1200)</span>
+              </div>
+
+              <div class="form-group">
+                <label>Canvas balandligi (px)</label>
+                <input type="number" class="pos-input" [(ngModel)]="zoneForm.canvasHeight" min="600" step="100" />
+                <span class="field-help">Konstruktor maydoni balandligi (standart: 800)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card__footer">
+            <button class="mgmt-btn mgmt-btn--ghost" (click)="cancelZoneForm()">Bekor qilish</button>
+            <div class="form-card__actions-right">
+              <button class="mgmt-btn mgmt-btn--secondary" (click)="saveZone(false)">
+                <app-icon name="save" [size]="15"></app-icon>
+                <span>Saqlash</span>
+              </button>
+              <button class="mgmt-btn mgmt-btn--primary" (click)="saveZone(true)">
+                <app-icon name="layout" [size]="15"></app-icon>
+                <span>Saqlash va xaritani sozlash</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Zones List Cards -->
+      <div class="zones-grid">
+        @for (z of zones(); track z.id) {
+          <div class="zone-box">
+            <div class="zone-box__header">
+              <div class="zone-box__icon">
+                <app-icon name="hall" [size]="22"></app-icon>
+              </div>
+              <div class="zone-box__title-wrap">
+                <h3 class="zone-box__name">{{ z.name }}</h3>
+                @if (z.percentage && z.percentage > 0) {
+                  <span class="zone-box__fee-pill">+{{ z.percentage }}% xizmat haqi</span>
+                }
+              </div>
+            </div>
+
+            @if (z.description) {
+              <p class="zone-box__desc">{{ z.description }}</p>
+            }
+
+            <div class="zone-box__stats">
+              <div class="zone-stat">
+                <span class="zone-stat__num">{{ countTablesInZone(z.id) }}</span>
+                <span class="zone-stat__label">Jami stol</span>
+              </div>
+              <div class="zone-stat zone-stat--occupied">
+                <span class="zone-stat__num">{{ countOccupiedInZone(z.id) }}</span>
+                <span class="zone-stat__label">Band</span>
+              </div>
+              <div class="zone-stat zone-stat--free">
+                <span class="zone-stat__num">{{ countFreeInZone(z.id) }}</span>
+                <span class="zone-stat__label">Bo'sh</span>
+              </div>
+            </div>
+
+            <div class="zone-box__actions">
+              <button class="mgmt-btn mgmt-btn--primary mgmt-btn--sm" (click)="openZoneConstructor(z.id)" title="Xaritani ochish va stollarni joylashtirish">
+                <app-icon name="layout" [size]="14"></app-icon>
+                <span>Xarita konstruktori</span>
+              </button>
+              <button class="mgmt-btn mgmt-btn--outline mgmt-btn--sm" (click)="editZone(z)" title="Tahrirlash">
+                <app-icon name="edit" [size]="14"></app-icon>
+                <span>Tahrirlash</span>
+              </button>
+              <button class="mgmt-btn mgmt-btn--danger mgmt-btn--sm" (click)="deleteZone(z)" title="O'chirish">
+                <app-icon name="trash" [size]="14"></app-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- TAB 3: STOLLAR (TABLES)                                        -->
+  <!-- ============================================================== -->
+  @if (activeTab() === 'tables') {
+    <div class="section-container">
+      <div class="section-toolbar">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Stollar</h2>
+          <p class="section-subtitle">Barcha zallardagi stollarni yaratish, tahrirlash va filtrlash</p>
+        </div>
+        <button class="mgmt-btn mgmt-btn--primary" (click)="openCreateTable()">
+          <app-icon name="plus" [size]="16"></app-icon>
+          <span>Yangi stol qo‘shish</span>
+        </button>
+      </div>
+
+      <!-- Filters Bar -->
+      <div class="filters-bar">
+        <!-- Zal Filter -->
+        <div class="filter-item">
+          <label>Zal:</label>
+          <select class="pos-select" [ngModel]="tableFilterZoneId()" (ngModelChange)="tableFilterZoneId.set($event)">
+            <option value="ALL">Barcha zallar ({{ tables().length }})</option>
+            @for (z of zones(); track z.id) {
+              <option [value]="z.id">{{ z.name }} ({{ countTablesInZone(z.id) }})</option>
+            }
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="filter-item">
+          <label>Holat:</label>
+          <select class="pos-select" [ngModel]="tableFilterStatus()" (ngModelChange)="tableFilterStatus.set($event)">
+            <option value="ALL">Barcha holatlar</option>
+            <option value="FREE">Bo'sh</option>
+            <option value="OCCUPIED">Band</option>
+            <option value="RESERVED">Band qilingan</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="filter-item search-item">
+          <label>Qidiruv:</label>
+          <div class="search-wrap">
+            <app-icon name="search" [size]="15" class="search-wrap__icon"></app-icon>
+            <input type="text" class="pos-input" [ngModel]="tableSearchQuery()" (ngModelChange)="tableSearchQuery.set($event)" placeholder="Stol nomi yoki raqami..." />
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Form (Create / Edit) -->
+      @if (showTableForm()) {
+        <div class="form-card fade-in">
+          <div class="form-card__header">
+            <h3>{{ editingTable() ? 'Stolni tahrirlash' : 'Yangi stol yaratish' }}</h3>
+            <button class="btn-close-form" (click)="cancelTableForm()"><app-icon name="close" [size]="16"></app-icon></button>
+          </div>
+
+          <div class="form-card__body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Stol raqami *</label>
+                <input type="text" class="pos-input" [(ngModel)]="tableForm.tableNumber" placeholder="Masalan: 1, 12, A1" autofocus />
+              </div>
+
+              <div class="form-group">
+                <label>Stol nomi (ixtiyoriy)</label>
+                <input type="text" class="pos-input" [(ngModel)]="tableForm.name" placeholder="Masalan: Stol 1, Deraza oldi" />
+              </div>
+
+              <div class="form-group">
+                <label>Joylashadigan zal *</label>
+                <select class="pos-select" [(ngModel)]="tableForm.zoneId">
+                  @for (z of zones(); track z.id) {
+                    <option [value]="z.id">{{ z.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Sig‘imi (o‘rin soni)</label>
+                <input type="number" class="pos-input" [(ngModel)]="tableForm.capacity" min="1" max="50" />
+              </div>
+
+              <div class="form-group">
+                <label>Stol shakli / turi</label>
+                <select class="pos-select" [(ngModel)]="tableForm.tableType">
+                  <option value="rectangle">To‘rtburchak (Rectangle)</option>
+                  <option value="circle">Aylana / Doira (Circle)</option>
+                  <option value="booth">Divan / Kupe (Booth)</option>
+                  <option value="bar">Bar stoli (Bar)</option>
+                  <option value="sofa">Katta divan (Sofa)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card__footer">
+            <button class="mgmt-btn mgmt-btn--ghost" (click)="cancelTableForm()">Bekor qilish</button>
+            <button class="mgmt-btn mgmt-btn--primary" (click)="saveTable()">
+              <app-icon name="save" [size]="15"></app-icon>
+              <span>Saqlash</span>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Tables Table View -->
+      <div class="table-responsive">
+        <table class="mgmt-data-table">
+          <thead>
+            <tr>
+              <th>Stol</th>
+              <th>Zal</th>
+              <th>Sig‘im</th>
+              <th>Shakl / Tur</th>
+              <th>Holat</th>
+              <th>Amallar</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (filteredTables().length === 0) {
+              <tr>
+                <td colspan="6" class="empty-cell">
+                  <p>Stollar topilmadi</p>
+                </td>
+              </tr>
+            } @else {
+              @for (t of filteredTables(); track t.id) {
+                <tr>
+                  <td>
+                    <div class="table-name-cell">
+                      <span class="table-number-pill">#{{ t.tableNumber }}</span>
+                      <strong>{{ t.name }}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="zone-name-badge">{{ t.zoneName || 'Zal' }}</span>
+                  </td>
+                  <td>{{ t.capacity }} kishi</td>
+                  <td>
+                    <span class="shape-tag">{{ t.tableType || 'rectangle' }}</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class.free]="t.status === 'FREE'" [class.occupied]="t.status === 'OCCUPIED'" [class.reserved]="t.status === 'RESERVED'">
+                      {{ t.status === 'FREE' ? 'Bo‘sh' : (t.status === 'OCCUPIED' ? 'Band' : t.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons-group">
+                      <button class="tbl-action-btn" (click)="editTable(t)" title="Tahrirlash">
+                        <app-icon name="edit" [size]="14"></app-icon>
+                      </button>
+                      @if (t.zoneId) {
+                        <button class="tbl-action-btn" (click)="openZoneConstructor(t.zoneId)" title="Xaritada joylashuvini ko‘rish">
+                          <app-icon name="layout" [size]="14"></app-icon>
+                        </button>
+                      }
+                      <button class="tbl-action-btn tbl-action-btn--danger" (click)="deleteTable(t)" title="O‘chirish" [disabled]="t.status !== 'FREE'">
+                        <app-icon name="trash" [size]="14"></app-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- TAB 4: MAHSULOTLAR VA KATEGORIYALAR                            -->
+  <!-- ============================================================== -->
+  @if (activeTab() === 'products') {
+    <div class="section-container">
+      <div class="section-toolbar">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Mahsulotlar va Kategoriyalar</h2>
+          <p class="section-subtitle">
+            Ierarxiya: <strong>Oshxona → Kategoriya → Mahsulot</strong>. Har bir kategoriya qat'iy bitta oshxonaga biriktiriladi.
+          </p>
+        </div>
+        <div class="toolbar-actions-group">
+          <button class="mgmt-btn mgmt-btn--outline" (click)="openCreateCategory()">
+            <app-icon name="plus" [size]="15"></app-icon>
+            <span>Yangi kategoriya</span>
+          </button>
+          <a routerLink="/categories" class="mgmt-btn mgmt-btn--secondary">
+            <span>Barcha kategoriyalar</span>
+          </a>
+          <a routerLink="/products" class="mgmt-btn mgmt-btn--primary">
+            <span>Mahsulotlar boshqaruvi</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Category Form Modal -->
+      @if (showCategoryForm()) {
+        <div class="form-card fade-in">
+          <div class="form-card__header">
+            <h3>Yangi kategoriya qo‘shish</h3>
+            <button class="btn-close-form" (click)="showCategoryForm.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
+          </div>
+          <div class="form-card__body">
+            <div class="form-grid">
+              <div class="form-group form-group--span2">
+                <label>Kategoriya nomi *</label>
+                <input type="text" class="pos-input" [(ngModel)]="categoryForm.name" placeholder="Masalan: Pitsalar, Ichimliklar, Salatlar" autofocus />
+              </div>
+
+              <div class="form-group form-group--span2">
+                <label>Tegishli oshxona stansiyasi *</label>
+                <select class="pos-select" [(ngModel)]="categoryForm.kitchenId">
+                  @for (k of kitchens(); track k.id) {
+                    <option [value]="k.id">{{ k.name }} ({{ k.code }})</option>
+                  }
+                </select>
+                <span class="field-help">Buyurtma qilinganda ushbu kategoriyadagi taomlar qaysi oshxonaga chiqishi belgilanadi</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-card__footer">
+            <button class="mgmt-btn mgmt-btn--ghost" (click)="showCategoryForm.set(false)">Bekor qilish</button>
+            <button class="mgmt-btn mgmt-btn--primary" (click)="saveCategory()">Saqlash</button>
+          </div>
+        </div>
+      }
+
+      <!-- Categories & Kitchens Hierarchy Cards -->
+      <div class="categories-overview-grid">
+        @for (k of kitchens(); track k.id) {
+          <div class="kitchen-card-summary">
+            <div class="kitchen-card-header">
+              <div class="kitchen-title-box">
+                <app-icon name="cooking-pot" [size]="18"></app-icon>
+                <strong>{{ k.name }}</strong>
+                <span class="code-pill">{{ k.code }}</span>
+              </div>
+            </div>
+            <div class="kitchen-cats-list">
+              <span class="cats-label">Kategoriyalar:</span>
+              <div class="cats-tags-wrap">
+                @for (cat of categories(); track cat.id) {
+                  @if (cat.kitchenId === k.id) {
+                    <span class="cat-pill-item">{{ cat.name }}</span>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Products Summary Table -->
+      <div class="products-quick-table-card">
+        <div class="card-table-header">
+          <h3>Mahsulotlar ro'yxati (Namunalar)</h3>
+          <a routerLink="/products" class="link-btn">To'liq ro'yxatni ochish →</a>
+        </div>
+        <div class="table-responsive">
+          <table class="mgmt-data-table">
+            <thead>
+              <tr>
+                <th>Mahsulot</th>
+                <th>Kategoriya</th>
+                <th>Oshxona</th>
+                <th>Narx</th>
+                <th>Holat</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of products().slice(0, 15); track p.id) {
+                <tr>
+                  <td><strong>{{ p.name }}</strong></td>
+                  <td>{{ p.categoryName || '-' }}</td>
+                  <td>{{ p.kitchenName || '-' }}</td>
+                  <td><strong>{{ formatPrice(p.salePrice || p.price) }}</strong></td>
+                  <td>
+                    <span class="status-pill" [class.free]="p.active" [class.occupied]="!p.active">
+                      {{ p.active ? 'Faol' : 'Nofaol' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- TAB 5: OSHXONALAR (KITCHENS)                                   -->
+  <!-- ============================================================== -->
+  @if (activeTab() === 'kitchens') {
+    <div class="section-container">
+      <div class="section-toolbar">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Oshxonalar va Stansiyalar</h2>
+          <p class="section-subtitle">Oshxona departamentlari, KDS ekranlari va oshpazlar tayinlanishi</p>
+        </div>
+        <div class="toolbar-actions-group">
+          <button class="mgmt-btn mgmt-btn--primary" (click)="openCreateKitchen()">
+            <app-icon name="plus" [size]="16"></app-icon>
+            <span>Yangi oshxona stansiyasi</span>
+          </button>
+          <a routerLink="/kitchens" class="mgmt-btn mgmt-btn--secondary">
+            <span>To‘liq boshqaruv sahifasi</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Kitchen Form -->
+      @if (showKitchenForm()) {
+        <div class="form-card fade-in">
+          <div class="form-card__header">
+            <h3>Yangi oshxona stansiyasi yaratish</h3>
+            <button class="btn-close-form" (click)="showKitchenForm.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
+          </div>
+          <div class="form-card__body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Oshxona nomi *</label>
+                <input type="text" class="pos-input" [(ngModel)]="kitchenForm.name" placeholder="Masalan: Pitsaxona, Mangal, Bar" autofocus />
+              </div>
+              <div class="form-group">
+                <label>Qisqa kod *</label>
+                <input type="text" class="pos-input" [(ngModel)]="kitchenForm.code" placeholder="Masalan: PIZZA, GRILL, BAR" />
+              </div>
+              <div class="form-group form-group--span2">
+                <label>Tavsif</label>
+                <input type="text" class="pos-input" [(ngModel)]="kitchenForm.description" placeholder="Bo'lim vazifasi haqida qisqacha ma'lumot" />
+              </div>
+            </div>
+          </div>
+          <div class="form-card__footer">
+            <button class="mgmt-btn mgmt-btn--ghost" (click)="showKitchenForm.set(false)">Bekor qilish</button>
+            <button class="mgmt-btn mgmt-btn--primary" (click)="saveKitchen()">Saqlash</button>
+          </div>
+        </div>
+      }
+
+      <div class="kitchens-cards-grid">
+        @for (k of kitchens(); track k.id) {
+          <div class="kitchen-station-card">
+            <div class="station-card-top">
+              <div class="station-icon-chip">
+                <app-icon name="cooking-pot" [size]="20"></app-icon>
+              </div>
+              <div class="station-titles">
+                <h3>{{ k.name }}</h3>
+                <span class="station-code-badge">{{ k.code }}</span>
+              </div>
+            </div>
+
+            @if (k.description) {
+              <p class="station-card-desc">{{ k.description }}</p>
+            }
+
+            <div class="station-meta-info">
+              <span class="status-indicator-tag" [class.active]="k.active">
+                {{ k.active ? 'Faol stansiya' : 'Nofaol' }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- TAB 6: PRINTERLAR (PRINTERS)                                   -->
+  <!-- ============================================================== -->
+  @if (activeTab() === 'printers') {
+    <div class="section-container">
+      <div class="section-toolbar">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Printerlar</h2>
+          <p class="section-subtitle">Windows tizim printerlarini aniqlash, kassa va oshxona printerlarini sozlash</p>
+        </div>
+        <button class="mgmt-btn mgmt-btn--primary" (click)="openCreatePrinter()">
+          <app-icon name="plus" [size]="16"></app-icon>
+          <span>Printer qo‘shish</span>
+        </button>
+      </div>
+
+      <!-- Add Printer Form -->
+      @if (showPrinterForm()) {
+        <div class="form-card fade-in">
+          <div class="form-card__header">
+            <h3>Printer sozlamalarini kiritish</h3>
+            <button class="btn-close-form" (click)="showPrinterForm.set(false)"><app-icon name="close" [size]="16"></app-icon></button>
+          </div>
+          <div class="form-card__body">
+            <div class="form-grid">
+              <div class="form-group form-group--span2">
+                <label>Windows'dagi tizim printeri *</label>
+                <select class="pos-select" [(ngModel)]="printerForm.systemPrinterName">
+                  @if (availableSystemPrinters().length === 0) {
+                    <option value="">Printerlar qidirilmoqda yoki aniqlanmadi</option>
+                  }
+                  @for (p of availableSystemPrinters(); track p.systemPrinterName) {
+                    <option [value]="p.systemPrinterName">{{ p.displayName || p.systemPrinterName }}</option>
+                  }
+                </select>
+                <span class="field-help">IP yoki port qo'lda kiritish talab etilmaydi — tizim drayveri orqali ishlaydi</span>
+              </div>
+
+              <div class="form-group">
+                <label>Ko'rinadigan nomi</label>
+                <input type="text" class="pos-input" [(ngModel)]="printerForm.name" placeholder="Masalan: Kassa Chek Printeri" />
+              </div>
+
+              <div class="form-group">
+                <label>Vazifasi (Purpose) *</label>
+                <select class="pos-select" [(ngModel)]="printerForm.purpose">
+                  <option value="CASHIER">Kassa (Hisob va fiskal cheklar)</option>
+                  <option value="KITCHEN">Oshxona (Buyurtma partiyalari / KDS)</option>
+                </select>
+              </div>
+
+              @if (printerForm.purpose === 'KITCHEN') {
+                <div class="form-group">
+                  <label>Oshxona stansiyasi *</label>
+                  <select class="pos-select" [(ngModel)]="printerForm.kitchenId">
+                    <option value="">Tanlang...</option>
+                    @for (k of kitchens(); track k.id) {
+                      <option [value]="k.id">{{ k.name }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <div class="form-group">
+                <label>Qog‘oz kengligi</label>
+                <select class="pos-select" [(ngModel)]="printerForm.paperWidth">
+                  <option [value]="80">80 mm (Standart POS)</option>
+                  <option [value]="58">58 mm (Ixcham)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="form-card__footer">
+            <button class="mgmt-btn mgmt-btn--ghost" (click)="showPrinterForm.set(false)">Bekor qilish</button>
+            <button class="mgmt-btn mgmt-btn--primary" (click)="savePrinter()">Saqlash</button>
+          </div>
+        </div>
+      }
+
+      <!-- Printers Table -->
+      <div class="table-responsive">
+        <table class="mgmt-data-table">
+          <thead>
+            <tr>
+              <th>Printer nomi</th>
+              <th>Tizim printeri</th>
+              <th>Vazifasi</th>
+              <th>Oshxona bo'limi</th>
+              <th>Kenglik</th>
+              <th>Holat</th>
+              <th>Amallar</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (printers().length === 0) {
+              <tr>
+                <td colspan="7" class="empty-cell">
+                  <p>Hozircha printerlar qo‘shilmagan</p>
+                </td>
+              </tr>
+            } @else {
+              @for (pr of printers(); track pr.id) {
+                <tr>
+                  <td><strong>{{ pr.name }}</strong></td>
+                  <td><code>{{ pr.windowsPrinterName || pr.systemPrinterName }}</code></td>
+                  <td>
+                    <span class="purpose-pill" [class.kitchen]="pr.purpose === 'KITCHEN'" [class.cashier]="pr.purpose === 'CASHIER'">
+                      {{ pr.purpose === 'KITCHEN' ? 'Oshxona' : 'Kassa' }}
+                    </span>
+                  </td>
+                  <td>{{ pr.assignedKitchenName || '-' }}</td>
+                  <td>{{ pr.paperWidth }} mm</td>
+                  <td>
+                    <span class="status-pill" [class.free]="pr.status === 'ONLINE'" [class.occupied]="pr.status !== 'ONLINE'">
+                      {{ pr.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-buttons-group">
+                      <button class="tbl-action-btn" (click)="testPrint(pr)" title="Test chek chiqarish">
+                        <app-icon name="printer" [size]="14"></app-icon>
+                        <span style="font-size: 11px; margin-left: 4px;">Test</span>
+                      </button>
+                      <button class="tbl-action-btn tbl-action-btn--danger" (click)="deletePrinter(pr)" title="O‘chirish">
+                        <app-icon name="trash" [size]="14"></app-icon>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

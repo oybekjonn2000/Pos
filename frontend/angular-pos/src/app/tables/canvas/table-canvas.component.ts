@@ -383,7 +383,13 @@ const MIN_H = 40;
         <div class="cmodal-body">
           <div class="prop-group">
             <label>{{ 'tables.tableNumber' | translate }} *</label>
-            <input type="text" class="prop-input" [(ngModel)]="addForm.tableNumber" placeholder="1, 2, A1..."/>
+            <input type="text" class="prop-input" [(ngModel)]="addForm.tableNumber" (ngModelChange)="onAddTableNumberChange($event)" placeholder="1, 2, A1..."/>
+            @if (isDuplicateTableNumber()) {
+              <div class="field-error-msg" style="color: #ef4444; font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+                <app-icon name="alert-triangle" [size]="14"></app-icon>
+                <span>Bu raqamli stol allaqachon mavjud! Tavsiya: <strong>#{{ nextTableNumber() }}</strong></span>
+              </div>
+            }
           </div>
           <div class="prop-group">
             <label>{{ 'tables.tableName' | translate }}</label>
@@ -396,7 +402,7 @@ const MIN_H = 40;
         </div>
         <div class="cmodal-footer">
           <button class="btn-canvas btn-canvas--secondary" (click)="showAddModal.set(false)">{{ 'common.cancel' | translate }}</button>
-          <button class="btn-canvas btn-canvas--primary" (click)="confirmAddTable()" [disabled]="!addForm.tableNumber">
+          <button class="btn-canvas btn-canvas--primary" (click)="confirmAddTable()" [disabled]="!addForm.tableNumber.trim() || isDuplicateTableNumber()">
             {{ 'common.add' | translate }}
           </button>
         </div>
@@ -457,6 +463,7 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
   zones = signal<TableZone[]>([]);
   zone = computed(() => this.zones().find(z => z.id === this.zoneId()) ?? null);
   tables = signal<CanvasTable[]>([]);
+  allExistingTables = signal<RestaurantTable[]>([]);
   zoom = signal(1.0);
   showGrid = signal(true);
   showAddModal = signal(false);
@@ -508,11 +515,13 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     forkJoin({
       zones: this.tableService.getZones(),
-      tables: this.tableService.getTables(this.zoneId() || undefined)
+      allTables: this.tableService.getTables(),
+      zoneTables: this.tableService.getTables(this.zoneId() || undefined)
     }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: ({ zones, tables }) => {
+      next: ({ zones, allTables, zoneTables }) => {
         const zoneList = zones.data ?? [];
         this.zones.set(zoneList);
+        this.allExistingTables.set(allTables.data ?? []);
 
         // If no zoneId set but zones exist, pick first
         if (!this.zoneId() && zoneList.length > 0) {
@@ -524,7 +533,7 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
         this.canvasForm.width  = this.zone()?.canvasWidth  ?? 1200;
         this.canvasForm.height = this.zone()?.canvasHeight ?? 800;
 
-        this.tables.set((tables.data ?? []).map(t => ({ ...t, _dirty: false, _selected: false })));
+        this.tables.set((zoneTables.data ?? []).map(t => ({ ...t, _dirty: false, _selected: false })));
         this.loading.set(false);
         setTimeout(() => this.fitToView(), 50);
       },
@@ -534,6 +543,11 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
 
   loadTablesForZone(zoneId: string) {
     this.loading.set(true);
+    this.tableService.getTables().pipe(takeUntil(this.destroy$)).subscribe({
+      next: allRes => {
+        this.allExistingTables.set(allRes.data ?? []);
+      }
+    });
     this.tableService.getTables(zoneId).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.tables.set((res.data ?? []).map(t => ({ ...t, _dirty: false, _selected: false })));
@@ -779,6 +793,7 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
       next: res => {
         const t: CanvasTable = { ...res.data!, _dirty: false, _selected: true };
         this.tables.update(ts => [...ts.map(x => ({ ...x, _selected: false })), t]);
+        this.allExistingTables.update(list => [...list, res.data!]);
         this.showAddModal.set(false);
         this.notif.success('Stol qo\'shildi');
       },
@@ -787,8 +802,27 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
   }
 
   nextTableNumber(): string {
-    const nums = this.tables().map(t => parseInt(t.tableNumber)).filter(n => !isNaN(n));
-    return nums.length > 0 ? String(Math.max(...nums) + 1) : '1';
+    const allNums = this.allExistingTables()
+      .map(t => parseInt(t.tableNumber, 10))
+      .filter(n => !isNaN(n));
+    const currentNums = this.tables()
+      .map(t => parseInt(t.tableNumber, 10))
+      .filter(n => !isNaN(n));
+    const combined = [...allNums, ...currentNums];
+    if (combined.length === 0) return '1';
+    return String(Math.max(...combined) + 1);
+  }
+
+  isDuplicateTableNumber(): boolean {
+    const num = this.addForm.tableNumber?.trim();
+    if (!num) return false;
+    return this.allExistingTables().some(t => t.tableNumber.trim().toLowerCase() === num.toLowerCase());
+  }
+
+  onAddTableNumberChange(val: string) {
+    if (!this.addForm.name || this.addForm.name.startsWith('Stol ')) {
+      this.addForm.name = 'Stol ' + (val ? val.trim() : '');
+    }
   }
 
   // ─── Edit form sync ─────────────────────────────────────────────────────────
@@ -930,6 +964,7 @@ export class TableCanvasComponent implements OnInit, OnDestroy {
     this.tableService.deleteTable(t.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.tables.update(ts => ts.filter(x => x.id !== t.id));
+        this.allExistingTables.update(list => list.filter(x => x.id !== t.id));
         this.confirmDelete.set(null);
         this.notif.success('Stol o\'chirildi');
       },

@@ -106,9 +106,14 @@ public class GlobalExceptionHandler {
                     .status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error("Bu PIN kod boshqa xodimga tegishli. Boshqa PIN kod tanlang.", "DUPLICATE_PIN"));
         }
-        String message = "Data integrity error. Record may already exist.";
+        if (msg.contains("uq_tables_tenant_number") || msg.contains("restaurant_tables")) {
+            return ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error("Bu raqamli stol allaqachon mavjud. Iltimos, boshqa stol raqami tanlang.", "DUPLICATE_TABLE_NUMBER"));
+        }
+        String message = "Ma'lumotlar bazasida ziddiyat: bu yozuv allaqachon mavjud bo'lishi mumkin.";
         if (ex.getMessage() != null && ex.getMessage().contains("unique")) {
-            message = "Duplicate entry detected.";
+            message = "Bunday ma'lumot allaqachon tizimda mavjud.";
         }
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)

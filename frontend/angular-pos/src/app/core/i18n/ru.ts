@@ -73,7 +73,8 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     inventory: "Склад & Запасы",
     reports: "Отчеты",
     settings: "Настройки",
-    billing: "Подписка & Оплата",
+    billing: "Подписка и Тарифы",
+    management: "Управление",
     superAdmin: "Супер Админ",
     superAdmins: "Суперадминистраторы",
     editProfile: "Редактировать профиль",
@@ -248,7 +249,10 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     notes: "Примечание:",
     dishCount: "блюд",
     proPerk: "Требуется тариф PRO",
-    noActiveBatches: "Пока нет заказов"
+    noActiveBatches: "Пока нет заказов",
+    fullscreen: "Полный экран",
+    exitFullscreen: "Обычный экран",
+    fullscreenScaleHint: "-30% масштаб"
   },
 
   products: {
@@ -360,6 +364,7 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     kitchenSettings: "Настройки Кухни",
     receiptSettings: "Кассовый Чек",
     payments: "Способы Оплаты",
+    subscription: "Подписка и Тарифы",
     taxesService: "Обслуживание & Налоги",
     orderWorkflow: "Рабочий Процесс Заказов",
     kdsSettings: "Экран Кухни (KDS)",
@@ -516,5 +521,16 @@ export const RU_TRANSLATIONS: Record<string, any> = {
     connectionLost: "Связь с сервером потеряна!",
     connectionRestored: "Связь с сервером восстановлена!",
     receiptPrinted: "Чек распечатан"
+  },
+
+  management: {
+    title: "Центр Управления",
+    subtitle: "Конфигурация ресторана и настройки всех отделов",
+    places: "Залы и зоны",
+    tables: "Столы",
+    products: "Продукты и категории",
+    kitchens: "Кухни",
+    employees: "Сотрудники",
+    printers: "Принтеры"
   }
 };

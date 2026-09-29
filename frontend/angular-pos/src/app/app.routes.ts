@@ -269,10 +269,37 @@ export const routes: Routes = [
         pathMatch: 'full'
       },
       {
+        path: 'settings/billing',
+        redirectTo: 'restaurant/billing',
+        pathMatch: 'full'
+      },
+      {
+        path: 'settings/subscription',
+        redirectTo: 'restaurant/billing',
+        pathMatch: 'full'
+      },
+      {
         path: 'devices',
         loadComponent: () => import('./devices/devices.component').then(m => m.DevicesComponent),
         canActivate: [permissionGuard],
         data: { permission: 'MANAGE_DEVICES', disallowRoles: ['WAITER'], title: 'Qurilmalar' }
+      },
+      {
+        path: 'restaurant/management',
+        loadComponent: () => import('./restaurant/management/restaurant-management.component').then(m => m.RestaurantManagementComponent),
+        canActivate: [adminGuard],
+        data: { title: 'Boshqaruv va Konfiguratsiya' }
+      },
+      {
+        path: 'restaurant/management/:tab',
+        loadComponent: () => import('./restaurant/management/restaurant-management.component').then(m => m.RestaurantManagementComponent),
+        canActivate: [adminGuard],
+        data: { title: 'Boshqaruv va Konfiguratsiya' }
+      },
+      {
+        path: 'management',
+        redirectTo: 'restaurant/management',
+        pathMatch: 'full'
       },
       {
         path: 'shifts',

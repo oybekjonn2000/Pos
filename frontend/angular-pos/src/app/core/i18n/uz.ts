@@ -73,7 +73,8 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     inventory: "Ombor & Zaxira",
     reports: "Hisobotlar",
     settings: "Sozlamalar",
-    billing: "Obuna & To'lov",
+    billing: "Obuna & Tariflar",
+    management: "Boshqaruv",
     superAdmin: "Super Admin",
     superAdmins: "Superadminlar",
     editProfile: "Profilni tahrirlash",
@@ -248,7 +249,10 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     notes: "Izoh:",
     dishCount: "ta taom",
     proPerk: "PRO Tarif talab etiladi",
-    noActiveBatches: "Hozircha buyurtmalar yo'q"
+    noActiveBatches: "Hozircha buyurtmalar yo'q",
+    fullscreen: "To'liq ekran",
+    exitFullscreen: "Ekranni tiklash",
+    fullscreenScaleHint: "30% ixcham"
   },
 
   products: {
@@ -360,6 +364,7 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     kitchenSettings: "Oshxonalar Sozlamasi",
     receiptSettings: "Kassa Cheki",
     payments: "To'lov Usullari",
+    subscription: "Obuna & Tariflar",
     taxesService: "Xizmat Haqi & Soliq",
     orderWorkflow: "Buyurtmalar Tartibi",
     kdsSettings: "Oshxona Ekrani (KDS)",
@@ -516,5 +521,16 @@ export const UZ_TRANSLATIONS: Record<string, any> = {
     connectionLost: "Server bilan aloqa uzildi!",
     connectionRestored: "Server bilan aloqa tiklandi!",
     receiptPrinted: "Chek chop etildi"
+  },
+
+  management: {
+    title: "Boshqaruv Markazi",
+    subtitle: "Restoran konfiguratsiyasi va barcha bo'limlar sozlamalari",
+    places: "Zallar va joylar",
+    tables: "Stollar",
+    products: "Mahsulotlar va Kategoriyalar",
+    kitchens: "Oshxonalar",
+    employees: "Xodimlar",
+    printers: "Printerlar"
   }
 };

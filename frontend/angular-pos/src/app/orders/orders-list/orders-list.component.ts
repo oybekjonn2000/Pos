@@ -39,6 +39,28 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
             />
           </div>
 
+          <!-- View Mode Switcher: Table vs Cards -->
+          <div class="view-mode-toggle" title="Ko'rinishni o'zgartirish">
+            <button
+              type="button"
+              class="view-toggle-btn"
+              [class.active]="viewMode === 'table'"
+              (click)="setViewMode('table')"
+              title="Ro'yxat / Jadval ko'rinishi">
+              <app-icon name="list" [size]="15"></app-icon>
+              <span>Ro'yxat</span>
+            </button>
+            <button
+              type="button"
+              class="view-toggle-btn"
+              [class.active]="viewMode === 'cards'"
+              (click)="setViewMode('cards')"
+              title="Kartalar ko'rinishi">
+              <app-icon name="grid" [size]="15"></app-icon>
+              <span>Kartalar</span>
+            </button>
+          </div>
+
           <button class="pos-btn pos-btn--secondary" (click)="loadOrders()" [disabled]="loading">
             <app-icon name="refresh" [size]="16" [class.spinning]="loading"></app-icon>
             <span>{{ 'common.refresh' | translate }}</span>
@@ -99,13 +121,19 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
 
         <div class="revenue-badges-group">
           <!-- Active orders sum if on active tab -->
-          <div class="revenue-pill active-pill" *ngIf="activeTab !== 'PAID' && activeOrdersTotalSum > 0">
+          <div class="revenue-pill active-pill" *ngIf="activeTab !== 'PAID' && activeTab !== 'DEBT' && activeOrdersTotalSum > 0">
             <span>{{ 'dashboard.activeOrders' | translate }}:</span>
             <strong>{{ activeOrdersTotalSum | number:'1.0-0' }} so'm</strong>
           </div>
 
+          <!-- Total Debt pill if on DEBT tab -->
+          <div class="revenue-pill debt-pill" *ngIf="activeTab === 'DEBT' && historyOrdersDebtSum > 0">
+            <span>Jami qarz:</span>
+            <strong>{{ historyOrdersDebtSum | number:'1.0-0' }} so'm</strong>
+          </div>
+
           <!-- Filtered period revenue if on PAID tab and not TODAY -->
-          <div class="revenue-pill period-pill" *ngIf="activeTab === 'PAID' && dateFilter !== 'TODAY' && historyOrdersTotalSum > 0">
+          <div class="revenue-pill period-pill" *ngIf="activeTab === 'PAID' && (customDateFilter || dateFilter !== 'TODAY') && historyOrdersTotalSum > 0">
             <span>{{ getDateFilterLabel() }} tushum:</span>
             <strong>{{ historyOrdersTotalSum | number:'1.0-0' }} so'm</strong>
           </div>
@@ -118,26 +146,40 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
         </div>
       </div>
 
-      <!-- History Filter Bar (Only shown on PAID / Tarix tab) -->
-      <div *ngIf="activeTab === 'PAID'" class="history-filter-bar">
+      <!-- History & Debt Filter Bar -->
+      <div *ngIf="activeTab === 'PAID' || activeTab === 'DEBT'" class="history-filter-bar">
         <div class="filter-group">
           <span class="filter-label"><app-icon name="clock" [size]="14"></app-icon> Sana:</span>
           <div class="pill-group">
-            <button class="pill-btn" [class.active]="dateFilter === 'ALL'" (click)="dateFilter = 'ALL'; pageIndex = 0">Barchasi</button>
-            <button class="pill-btn" [class.active]="dateFilter === 'TODAY'" (click)="dateFilter = 'TODAY'; pageIndex = 0">Bugun</button>
-            <button class="pill-btn" [class.active]="dateFilter === 'YESTERDAY'" (click)="dateFilter = 'YESTERDAY'; pageIndex = 0">Kecha</button>
-            <button class="pill-btn" [class.active]="dateFilter === 'THIS_WEEK'" (click)="dateFilter = 'THIS_WEEK'; pageIndex = 0">Shu hafta</button>
-            <button class="pill-btn" [class.active]="dateFilter === 'THIS_MONTH'" (click)="dateFilter = 'THIS_MONTH'; pageIndex = 0">Shu oy</button>
+            <button class="pill-btn" [class.active]="!customDateFilter && dateFilter === 'ALL'" (click)="selectDateFilter('ALL')">Barchasi</button>
+            <button class="pill-btn" [class.active]="!customDateFilter && dateFilter === 'TODAY'" (click)="selectDateFilter('TODAY')">Bugun</button>
+            <button class="pill-btn" [class.active]="!customDateFilter && dateFilter === 'YESTERDAY'" (click)="selectDateFilter('YESTERDAY')">Kecha</button>
+            <button class="pill-btn" [class.active]="!customDateFilter && dateFilter === 'THIS_WEEK'" (click)="selectDateFilter('THIS_WEEK')">Shu hafta</button>
+            <button class="pill-btn" [class.active]="!customDateFilter && dateFilter === 'THIS_MONTH'" (click)="selectDateFilter('THIS_MONTH')">Shu oy</button>
+            <div class="date-input-wrapper">
+              <input type="date" class="filter-date-input" [class.has-val]="!!customDateFilter" [(ngModel)]="customDateFilter" (ngModelChange)="onCustomDateChange()" title="Maxsus sana tanlash" />
+            </div>
           </div>
         </div>
 
-        <div class="filter-group">
+        <!-- Payment Method Filter (for Tarix / PAID tab) -->
+        <div class="filter-group" *ngIf="activeTab === 'PAID'">
           <span class="filter-label"><app-icon name="credit-card" [size]="14"></app-icon> To'lov turi:</span>
           <div class="pill-group">
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'ALL'" (click)="paymentMethodFilter = 'ALL'; pageIndex = 0">Barchasi</button>
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'CASH'" (click)="paymentMethodFilter = 'CASH'; pageIndex = 0"><app-icon name="cash" [size]="14"></app-icon> Naqd</button>
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'CARD'" (click)="paymentMethodFilter = 'CARD'; pageIndex = 0"><app-icon name="credit-card" [size]="14"></app-icon> Karta</button>
             <button class="pill-btn" [class.active]="paymentMethodFilter === 'DEBT'" (click)="paymentMethodFilter = 'DEBT'; pageIndex = 0"><app-icon name="file-text" [size]="14"></app-icon> Qarz</button>
+          </div>
+        </div>
+
+        <!-- Debt Status Filter (for Qarzlar / DEBT tab) -->
+        <div class="filter-group" *ngIf="activeTab === 'DEBT'">
+          <span class="filter-label"><app-icon name="file-text" [size]="14"></app-icon> Qarz holati:</span>
+          <div class="pill-group">
+            <button class="pill-btn" [class.active]="debtStatusFilter === 'ALL'" (click)="debtStatusFilter = 'ALL'; pageIndex = 0">Barchasi</button>
+            <button class="pill-btn" [class.active]="debtStatusFilter === 'OPEN'" (click)="debtStatusFilter = 'OPEN'; pageIndex = 0"><app-icon name="clock" [size]="13"></app-icon> Ochiq qarzlar</button>
+            <button class="pill-btn" [class.active]="debtStatusFilter === 'PAID'" (click)="debtStatusFilter = 'PAID'; pageIndex = 0"><app-icon name="check" [size]="13"></app-icon> To'langan</button>
           </div>
         </div>
 
@@ -163,10 +205,10 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
           <p>Belgilangan filtr bo'yicha hech qanday buyurtma mavjud emas.</p>
         </div>
 
-        <div *ngIf="filteredOrders.length > 0" class="table-responsive">
+        <div *ngIf="filteredOrders.length > 0 && viewMode === 'table'" class="table-responsive">
           <table class="pos-table">
             <thead>
-              <tr *ngIf="activeTab !== 'PAID'">
+              <tr *ngIf="activeTab !== 'PAID' && activeTab !== 'DEBT'">
                 <th>№ (Chek)</th>
                 <th>Joy / Stol</th>
                 <th>Ofitsiant</th>
@@ -177,7 +219,7 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
                 <th>Vaqti</th>
                 <th style="text-align: right;">Amallar</th>
               </tr>
-              <tr *ngIf="activeTab === 'PAID'">
+              <tr *ngIf="activeTab === 'PAID' || activeTab === 'DEBT'">
                 <th>Chek #</th>
                 <th>Joy / Stol</th>
                 <th>Yopilgan sana & vaqt</th>
@@ -191,7 +233,7 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
             </thead>
             <tbody>
               <!-- Active Orders Rows -->
-              <ng-container *ngIf="activeTab !== 'PAID'">
+              <ng-container *ngIf="activeTab !== 'PAID' && activeTab !== 'DEBT'">
                 <tr *ngFor="let order of pagedOrders" class="order-row">
                   <td class="order-num-col">
                     <strong>#{{ order.orderNumber }}</strong>
@@ -278,8 +320,8 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
                 </tr>
               </ng-container>
 
-              <!-- Paid History Orders Rows -->
-              <ng-container *ngIf="activeTab === 'PAID'">
+              <!-- Paid History & Debt Orders Rows -->
+              <ng-container *ngIf="activeTab === 'PAID' || activeTab === 'DEBT'">
                 <tr *ngFor="let order of pagedOrders" class="order-row order-row--history">
                   <td class="order-num-col">
                     <strong class="history-order-num">#{{ order.orderNumber }}</strong>
@@ -319,8 +361,8 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
                         {{ order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz (Nasiya)' : 'Naqd') }}
                       </span>
                       <div class="debt-customer-mini" *ngIf="order.paymentMethod === 'DEBT' || order.debtStatus">
-                        <span class="debt-c-name" *ngIf="order.customerName">
-                          <app-icon name="user" [size]="11"></app-icon> <strong>{{ order.customerName }}</strong>
+                        <span class="debt-c-name">
+                          <app-icon name="user" [size]="11"></app-icon> <strong>{{ getOrderCustomerName(order) }}</strong>
                         </span>
                         <span class="debt-c-phone" *ngIf="getOrderDebtPhone(order) !== '—'">
                           <app-icon name="phone" [size]="10"></app-icon> {{ getOrderDebtPhone(order) }}
@@ -383,7 +425,7 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
             <!-- Table Footer Totals -->
             <tfoot *ngIf="filteredOrders.length > 0">
               <!-- Active Orders Footer Row -->
-              <tr *ngIf="activeTab !== 'PAID'" class="tfoot-row">
+              <tr *ngIf="activeTab !== 'PAID' && activeTab !== 'DEBT'" class="tfoot-row">
                 <td colspan="4" class="tfoot-label">
                   <span class="tfoot-badge">JAMI FAOL:</span>
                   <strong>{{ filteredOrders.length }} ta buyurtma</strong>
@@ -398,9 +440,9 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
               </tr>
 
               <!-- History Orders Footer Row -->
-              <tr *ngIf="activeTab === 'PAID'" class="tfoot-row tfoot-row--history">
+              <tr *ngIf="activeTab === 'PAID' || activeTab === 'DEBT'" class="tfoot-row tfoot-row--history">
                 <td colspan="4" class="tfoot-label">
-                  <span class="tfoot-badge tfoot-badge--green">JAMI TUSHUM:</span>
+                  <span class="tfoot-badge" [class.tfoot-badge--green]="activeTab === 'PAID'" [class.tfoot-badge--debt]="activeTab === 'DEBT'">{{ activeTab === 'DEBT' ? 'JAMI QARZ:' : 'JAMI TUSHUM:' }}</span>
                   <strong>{{ filteredOrders.length }} ta buyurtma</strong>
                   <span class="tfoot-sub">({{ getDateFilterLabel() }})</span>
                 </td>
@@ -427,15 +469,162 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
           </table>
         </div>
 
-        <!-- Bottom Summary Bar (Both Active & Paid) -->
+        <!-- Card Grid View (Buyurtmalarni kartochka ko'rinishida oson topish) -->
+        <div *ngIf="filteredOrders.length > 0 && viewMode === 'cards'" class="orders-cards-grid">
+          <div *ngFor="let order of pagedOrders" 
+               class="order-card"
+               [class.order-card--closed]="order.status === 'CLOSED'"
+               [class.order-card--active]="order.status === 'OPEN'"
+               [class.order-card--kitchen]="order.status === 'IN_KITCHEN'"
+               [class.order-card--ready]="order.status === 'READY'"
+               [class.order-card--paid]="order.status === 'PAID'"
+               [class.order-card--debt]="order.paymentMethod === 'DEBT' && order.debtStatus !== 'PAID'">
+
+            <!-- Card Top Header: Table & Status -->
+            <div class="card-head">
+              <div class="card-head-left">
+                <span class="card-zone-tag" *ngIf="order.zoneName">
+                  <app-icon name="map-pin" [size]="12"></app-icon> {{ order.zoneName }}
+                </span>
+                <h3 class="card-table-title">
+                  {{ order.tableName || order.tableNumber || ('Joy #' + order.orderNumber) }}
+                </h3>
+                <span *ngIf="getPlacePercentage(order) > 0" class="card-zone-pct">
+                  +{{ getPlacePercentage(order) }}% xizmat
+                </span>
+              </div>
+
+              <div class="card-head-right">
+                <span class="status-pill" [ngClass]="getStatusClass(order.status)">
+                  {{ getStatusLabel(order.status) }}
+                </span>
+                <span class="card-ord-num">#{{ order.orderNumber }}</span>
+              </div>
+            </div>
+
+            <!-- Card Meta Row: Waiter, Time, Payment -->
+            <div class="card-meta-chips">
+              <div class="meta-chip" title="Ofitsiant">
+                <app-icon name="user" [size]="13"></app-icon>
+                <span>{{ order.waiterName || '—' }}</span>
+              </div>
+              <div class="meta-chip" title="Vaqti">
+                <app-icon name="clock" [size]="13"></app-icon>
+                <span>{{ formatTime(order.closedAt || order.openedAt || order.createdAt) }}</span>
+              </div>
+              <div class="meta-chip payment-chip" [ngClass]="getPaymentStatusClass(order)">
+                <app-icon name="credit-card" [size]="13"></app-icon>
+                <span>{{ activeTab === 'PAID' ? (order.paymentMethod === 'CARD' ? 'Karta' : (order.paymentMethod === 'DEBT' ? 'Qarz' : 'Naqd')) : getPaymentStatusLabel(order) }}</span>
+              </div>
+            </div>
+
+            <!-- Debt Info Strip (If Debt) -->
+            <div *ngIf="order.paymentMethod === 'DEBT' || order.debtStatus" class="card-debt-strip" [class.card-debt-strip--settled]="order.debtStatus === 'PAID'">
+              <div class="debt-chip-header">
+                <div class="debt-chip-name" [title]="getOrderCustomerName(order)">
+                  <app-icon name="user" [size]="12"></app-icon>
+                  <strong>{{ getOrderCustomerName(order) }}</strong>
+                </div>
+                <span class="debt-status-pill" [class.paid]="order.debtStatus === 'PAID'">
+                  {{ order.debtStatus === 'PAID' ? "To'langan" : "Ochiq qarz" }}
+                </span>
+              </div>
+              <div class="debt-chip-due" *ngIf="order.debtDueDate">
+                <app-icon name="calendar" [size]="11"></app-icon> Muddat: {{ order.debtDueDate }}
+              </div>
+              <div class="debt-chip-phone" *ngIf="getOrderDebtPhone(order) !== '—'">
+                <app-icon name="phone" [size]="11"></app-icon> {{ getOrderDebtPhone(order) }}
+              </div>
+              <div class="debt-chip-notes" *ngIf="getOrderDebtNotes(order)" [title]="getOrderDebtNotes(order)">
+                <app-icon name="file-text" [size]="11"></app-icon> {{ getOrderDebtNotes(order) }}
+              </div>
+            </div>
+
+            <!-- Dishes List Preview (Items) -->
+            <div class="card-dishes-box" *ngIf="order.items && order.items.length > 0">
+              <div class="dishes-box-head">
+                <span class="dishes-count-tag"><app-icon name="cooking-pot" [size]="13"></app-icon> {{ order.items.length }} xil taom</span>
+                <span class="dishes-hint">Tarkibi</span>
+              </div>
+              <div class="dishes-items-list">
+                <div *ngFor="let item of order.items.slice(0, 3)" class="dish-item-row" [class.dish-item-row--voided]="item.voided">
+                  <span class="dish-qty">{{ item.quantity }}×</span>
+                  <span class="dish-name" [title]="item.productName">{{ item.productName }}</span>
+                  <span class="dish-sum">{{ (item.subtotal || (item.unitPrice || 0) * item.quantity) | number:'1.0-0' }}</span>
+                </div>
+                <div *ngIf="order.items.length > 3" class="dish-overflow-row">
+                  + yana {{ order.items.length - 3 }} ta taom...
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Bottom: Total & Actions -->
+            <div class="card-foot">
+              <div class="card-sum-wrap">
+                <span class="card-sum-lbl">Jami summa</span>
+                <strong class="card-sum-val" [class.paid-val]="order.status === 'PAID'">
+                  {{ (order.total || order.subtotal || 0) | number:'1.0-0' }} <small>so'm</small>
+                </strong>
+                <span class="card-paid-info" *ngIf="order.paidAmount && order.paidAmount !== (order.total || order.subtotal)">
+                  To'langan: {{ order.paidAmount | number:'1.0-0' }} so'm
+                </span>
+              </div>
+
+              <div class="card-actions-group">
+                <!-- Ko'rish -->
+                <button
+                  type="button"
+                  class="pos-btn pos-btn--secondary pos-btn--sm"
+                  title="Tafsilotlar"
+                  (click)="openDetailModal(order)">
+                  <app-icon name="eye" [size]="14"></app-icon> Ko'rish
+                </button>
+
+                <!-- To'lov qilish (Active tab) -->
+                <button
+                  *ngIf="activeTab !== 'PAID' && canProcessPayment() && order.paymentStatus !== 'PAID' && order.status !== 'PAID' && order.status !== 'CANCELLED'"
+                  type="button"
+                  class="pos-btn pos-btn--sm"
+                  [ngClass]="order.status === 'CLOSED' ? 'btn-payment-active' : 'btn-payment-readonly'"
+                  [disabled]="order.status !== 'CLOSED'"
+                  [title]="order.status === 'CLOSED' ? 'To‘lovni qabul qilish' : 'Hisob hali yopilmagan! Avval hisobni yoping'"
+                  (click)="onPaymentButtonClick(order)">
+                  <app-icon name="credit-card" [size]="14"></app-icon> To'lov
+                </button>
+
+                <!-- Qarzni yopish (History & Debt tab) -->
+                <button
+                  *ngIf="(activeTab === 'PAID' || activeTab === 'DEBT') && (order.paymentMethod === 'DEBT' || order.debtStatus === 'OPEN') && order.debtStatus !== 'PAID'"
+                  type="button"
+                  class="pos-btn pos-btn--warning pos-btn--sm"
+                  title="Qarz to'langan deb belgilash"
+                  (click)="settleDebt(order, $event)">
+                  <app-icon name="check" [size]="13"></app-icon> Qarzni yopish
+                </button>
+
+                <!-- Chek -->
+                <button
+                  type="button"
+                  class="pos-btn pos-btn--secondary pos-btn--sm"
+                  title="Chek chiqarish"
+                  (click)="openReceiptModal(order)">
+                  <app-icon name="receipt" [size]="14"></app-icon> Chek
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Bottom Summary Bar (Active, Paid & Debt) -->
         <div class="orders-summary-bar" *ngIf="filteredOrders.length > 0">
           <div class="summary-left">
             <div class="summary-stat-chip">
-              <span class="chip-label">{{ activeTab === 'PAID' ? 'Yopilgan buyurtmalar:' : 'Faol buyurtmalar:' }}</span>
+              <span class="chip-label">{{ activeTab === 'DEBT' ? 'Qarz buyurtmalari:' : (activeTab === 'PAID' ? 'Yopilgan buyurtmalar:' : 'Faol buyurtmalar:') }}</span>
               <strong class="chip-value">{{ filteredOrders.length }} ta</strong>
             </div>
 
-            <div class="summary-stat-chip" *ngIf="activeTab !== 'PAID'">
+            <div class="summary-stat-chip" *ngIf="activeTab !== 'PAID' && activeTab !== 'DEBT'">
               <span class="chip-label"><app-icon name="products" [size]="14"></app-icon> Taomlar soni:</span>
               <strong class="chip-value">{{ activeOrdersTotalItemsCount }} xil</strong>
             </div>
@@ -459,10 +648,10 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
           <div class="summary-right">
             <div class="summary-total-box" [class.summary-total-box--green]="activeTab === 'PAID'">
               <span class="total-caption">
-                {{ activeTab === 'PAID' ? 'JAMI TUSHUM SUMMASI:' : 'JAMI FAOL SUMMA:' }}
+                {{ activeTab === 'DEBT' ? 'JAMI QARZ SUMMASI:' : (activeTab === 'PAID' ? 'JAMI TUSHUM SUMMASI:' : 'JAMI FAOL SUMMA:') }}
               </span>
               <span class="total-number">
-                {{ (activeTab === 'PAID' ? historyOrdersTotalSum : activeOrdersTotalSum) | number:'1.0-0' }} so'm
+                {{ (activeTab === 'PAID' || activeTab === 'DEBT' ? historyOrdersTotalSum : activeOrdersTotalSum) | number:'1.0-0' }} so'm
               </span>
               <span class="total-paid-sub" *ngIf="activeTab === 'PAID' && historyOrdersPaidSum !== historyOrdersTotalSum">
                 (To'langan: {{ historyOrdersPaidSum | number:'1.0-0' }} so'm)
@@ -524,7 +713,7 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
               <div class="debt-info-grid">
                 <div class="debt-info-item">
                   <span class="debt-info-label"><app-icon name="user" [size]="13"></app-icon> Mijoz (Qarzdor):</span>
-                  <strong class="debt-info-value">{{ selectedOrder.customerName || '—' }}</strong>
+                  <strong class="debt-info-value">{{ getOrderCustomerName(selectedOrder) }}</strong>
                 </div>
                 <div class="debt-info-item">
                   <span class="debt-info-label"><app-icon name="phone" [size]="13"></app-icon> Telefon raqami:</span>
@@ -1238,6 +1427,43 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
       }
     }
 
+    /* View Mode Toggle Switcher */
+    .view-mode-toggle {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm, 8px);
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .view-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.18s ease;
+
+      &:hover:not(.active) {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+      }
+
+      &.active {
+        background: var(--primary, #6366f1);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+      }
+    }
+
     /* Filter Strip */
     .filter-strip {
       display: flex;
@@ -1310,6 +1536,17 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
         border-color: rgba(99, 102, 241, 0.35);
         color: #818cf8;
       }
+
+      &.debt-pill {
+        background: rgba(245, 158, 11, 0.15);
+        border-color: rgba(245, 158, 11, 0.35);
+        color: #f59e0b;
+      }
+    }
+
+    .tfoot-badge--debt {
+      background: rgba(245, 158, 11, 0.15) !important;
+      color: #f59e0b !important;
     }
 
     /* Table Footer (tfoot) */
@@ -1537,6 +1774,29 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
       &.active {
         background: var(--primary);
         color: white;
+      }
+    }
+
+    .date-input-wrapper {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 2px;
+    }
+
+    .filter-date-input {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-primary);
+      padding: 3px 8px;
+      font-size: 11.5px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+
+      &:focus, &.has-val {
+        border-color: var(--primary);
       }
     }
 
@@ -1862,6 +2122,358 @@ import { MoveTableModalComponent } from '../../shared/components/move-table-moda
       border-radius: 4px;
       font-weight: 600;
       font-size: 13px;
+    }
+
+    /* Orders Cards Grid View */
+    .orders-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-card);
+    }
+
+    .order-card {
+      background: var(--bg-secondary, #1e2230);
+      border: 1px solid var(--border, #2d3348);
+      border-radius: var(--radius-md, 12px);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+      &:hover {
+        border-color: rgba(99, 102, 241, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      }
+
+      &--closed {
+        border-left: 4px solid #f59e0b;
+        background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, var(--bg-secondary) 100%);
+      }
+
+      &--kitchen {
+        border-left: 4px solid #8b5cf6;
+        background: linear-gradient(180deg, rgba(139, 92, 246, 0.04) 0%, var(--bg-secondary) 100%);
+      }
+
+      &--ready {
+        border-left: 4px solid #10b981;
+        background: linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, var(--bg-secondary) 100%);
+      }
+
+      &--paid {
+        border-left: 4px solid #10b981;
+        opacity: 0.95;
+      }
+
+      &--debt {
+        border-left: 4px solid #ef4444;
+        background: linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, var(--bg-secondary) 100%);
+      }
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .card-head-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .card-zone-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-table-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin: 0;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-zone-pct {
+      font-size: 10px;
+      font-weight: 700;
+      color: #10b981;
+      background: rgba(16, 185, 129, 0.14);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .card-head-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .card-ord-num {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .card-meta-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .card-debt-strip {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11.5px;
+      color: #fde68a;
+
+      .debt-chip-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+
+      .debt-chip-name {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #f59e0b;
+        font-weight: 700;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .debt-status-pill {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 1.5px 6px;
+        border-radius: 4px;
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+        white-space: nowrap;
+        flex-shrink: 0;
+
+        &.paid {
+          background: rgba(16, 185, 129, 0.2);
+          color: #10b981;
+        }
+      }
+
+      .debt-chip-due, .debt-chip-phone, .debt-chip-notes {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: var(--text-secondary);
+      }
+
+      .debt-chip-phone {
+        font-family: var(--font-mono, monospace);
+      }
+
+      .debt-chip-due {
+        color: #f87171;
+        font-weight: 600;
+      }
+
+      .debt-chip-notes {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      &.card-debt-strip--settled {
+        background: rgba(16, 185, 129, 0.06);
+        border-color: rgba(16, 185, 129, 0.22);
+        color: #a7f3d0;
+
+        .debt-chip-name {
+          color: #10b981;
+        }
+        .debt-chip-due {
+          color: var(--text-muted);
+        }
+      }
+    }
+
+    .card-dishes-box {
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .dishes-box-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .dishes-count-tag {
+      color: var(--primary-light, #818cf8);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+    }
+
+    .dishes-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .dish-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      gap: 8px;
+      color: var(--text-secondary);
+
+      &--voided {
+        text-decoration: line-through;
+        opacity: 0.5;
+      }
+    }
+
+    .dish-qty {
+      font-weight: 700;
+      color: var(--primary-light, #a5b4fc);
+      min-width: 20px;
+    }
+
+    .dish-name {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-primary);
+    }
+
+    .dish-sum {
+      font-weight: 600;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .dish-overflow-row {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding-top: 2px;
+    }
+
+    .card-foot {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .card-sum-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-sum-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .card-sum-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: -0.02em;
+
+      &.paid-val {
+        color: #34d399;
+      }
+
+      small {
+        font-size: 12px;
+        font-weight: 500;
+        opacity: 0.85;
+      }
+    }
+
+    .card-paid-info {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+
+    .card-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .orders-cards-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+      .view-toggle-btn span {
+        display: none;
+      }
     }
 
     .items-count-badge {
@@ -2992,15 +3604,25 @@ export class OrdersListComponent implements OnInit {
   loading = false;
   searchQuery = '';
   activeTab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' | 'DEBT' = 'ALL';
+  viewMode: 'table' | 'cards' = (localStorage.getItem('orders_view_mode') as 'table' | 'cards') || 'table';
+
+  setViewMode(mode: 'table' | 'cards'): void {
+    this.viewMode = mode;
+    try {
+      localStorage.setItem('orders_view_mode', mode);
+    } catch {}
+  }
 
   // Pagination
   pageIndex = 0;
   pageSize = 10;
   pageSizeOptions = [10, 25, 50, 100];
 
-  // History filters
+  // History & Debt filters
   dateFilter: 'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' = 'TODAY';
+  customDateFilter = '';
   paymentMethodFilter: 'ALL' | 'CASH' | 'CARD' | 'DEBT' = 'ALL';
+  debtStatusFilter: 'ALL' | 'OPEN' | 'PAID' = 'ALL';
   selectedTableFilter: string = 'ALL';
 
   // Modals
@@ -3118,9 +3740,30 @@ export class OrdersListComponent implements OnInit {
   setTab(tab: 'ALL' | 'CLOSED' | 'ACTIVE' | 'KITCHEN' | 'READY' | 'PAID' | 'DEBT'): void {
     this.activeTab = tab;
     this.pageIndex = 0;
+    if (tab === 'DEBT') {
+      this.dateFilter = 'ALL';
+      this.customDateFilter = '';
+      this.debtStatusFilter = 'ALL';
+    } else if (tab === 'PAID') {
+      this.dateFilter = 'TODAY';
+      this.customDateFilter = '';
+    }
     if (tab === 'PAID' || tab === 'DEBT') {
       this.loadHistoryOrders();
     }
+  }
+
+  selectDateFilter(filter: 'ALL' | 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH'): void {
+    this.dateFilter = filter;
+    this.customDateFilter = '';
+    this.pageIndex = 0;
+  }
+
+  onCustomDateChange(): void {
+    if (this.customDateFilter) {
+      this.dateFilter = 'ALL';
+    }
+    this.pageIndex = 0;
   }
 
   get filteredOrders(): Order[] {
@@ -3130,10 +3773,24 @@ export class OrdersListComponent implements OnInit {
         if (this.activeTab === 'DEBT') {
           const isDebt = (order.paymentMethod || '').toUpperCase() === 'DEBT' || !!order.debtStatus;
           if (!isDebt) return false;
+
+          if (this.debtStatusFilter === 'OPEN') {
+            if (order.debtStatus === 'PAID') return false;
+          } else if (this.debtStatusFilter === 'PAID') {
+            if (order.debtStatus !== 'PAID') return false;
+          }
         }
 
         // Date filter
-        if (this.dateFilter !== 'ALL') {
+        if (this.customDateFilter) {
+          const orderDate = this.getOrderDate(order);
+          if (!orderDate) return false;
+          const yr = orderDate.getFullYear();
+          const mo = String(orderDate.getMonth() + 1).padStart(2, '0');
+          const dy = String(orderDate.getDate()).padStart(2, '0');
+          const orderDateStr = `${yr}-${mo}-${dy}`;
+          if (orderDateStr !== this.customDateFilter) return false;
+        } else if (this.dateFilter !== 'ALL') {
           const orderDate = this.getOrderDate(order);
           if (!orderDate) return false;
           const now = new Date();
@@ -3153,6 +3810,7 @@ export class OrdersListComponent implements OnInit {
           } else if (this.dateFilter === 'THIS_WEEK') {
             const oneWeekAgo = new Date(now);
             oneWeekAgo.setDate(now.getDate() - 7);
+            oneWeekAgo.setHours(0, 0, 0, 0);
             if (orderDate < oneWeekAgo) return false;
           } else if (this.dateFilter === 'THIS_MONTH') {
             const isThisMonth = orderDate.getFullYear() === now.getFullYear() &&
@@ -3258,13 +3916,20 @@ export class OrdersListComponent implements OnInit {
     const dStr = order.closedAt || order.paidAt || order.openedAt || order.createdAt;
     if (!dStr) return null;
     try {
-      return new Date(dStr);
+      const normalized = typeof dStr === 'string' && dStr.includes(' ') && !dStr.includes('T')
+        ? dStr.replace(' ', 'T')
+        : dStr;
+      const d = new Date(normalized);
+      return isNaN(d.getTime()) ? null : d;
     } catch {
       return null;
     }
   }
 
   getDateFilterLabel(): string {
+    if (this.customDateFilter) {
+      return this.customDateFilter;
+    }
     switch (this.dateFilter) {
       case 'TODAY': return 'Bugungi';
       case 'YESTERDAY': return 'Kechagi';
@@ -3276,17 +3941,17 @@ export class OrdersListComponent implements OnInit {
   }
 
   get activeOrdersTotalSum(): number {
-    if (this.activeTab === 'PAID') return 0;
+    if (this.activeTab === 'PAID' || this.activeTab === 'DEBT') return 0;
     return this.filteredOrders.reduce((sum, o) => sum + (o.total || o.subtotal || 0), 0);
   }
 
   get activeOrdersTotalItemsCount(): number {
-    if (this.activeTab === 'PAID') return 0;
+    if (this.activeTab === 'PAID' || this.activeTab === 'DEBT') return 0;
     return this.filteredOrders.reduce((sum, o) => sum + (o.items ? o.items.length : 0), 0);
   }
 
   get historyOrdersTotalSum(): number {
-    if (this.activeTab !== 'PAID') return 0;
+    if (this.activeTab !== 'PAID' && this.activeTab !== 'DEBT') return 0;
     return this.filteredOrders.reduce((sum, o) => sum + (o.total || o.subtotal || 0), 0);
   }
 
@@ -3452,6 +4117,20 @@ export class OrdersListComponent implements OnInit {
         error: (err) => console.warn('Could not refresh order details:', err)
       });
     }
+  }
+
+  getOrderCustomerName(order: Order | null | undefined): string {
+    if (!order) return "Noma'lum mijoz";
+    if (order.customerName && order.customerName.trim()) {
+      return order.customerName.trim();
+    }
+    const notes = (order as any)?.notes || '';
+    if (notes.startsWith('Qarz (Nasiya):')) {
+      const parts = notes.replace('Qarz (Nasiya):', '').split('|');
+      const parsed = parts[0]?.trim();
+      if (parsed) return parsed;
+    }
+    return "Noma'lum mijoz";
   }
 
   getOrderDebtPhone(order: Order | null | undefined): string {

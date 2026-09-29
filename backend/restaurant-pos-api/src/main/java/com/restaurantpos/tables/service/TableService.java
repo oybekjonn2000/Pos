@@ -489,18 +489,26 @@ public class TableService {
             throw PosException.badRequest("Stol joylashuvi (zona: Zal, Ko'cha, Ayvon, Podval...) tanlanishi shart!");
         }
 
+        String trimmedNumber = request.getTableNumber() != null ? request.getTableNumber().trim() : "";
+        if (trimmedNumber.isBlank()) {
+            throw PosException.badRequest("Stol raqami kiritilishi shart!");
+        }
+        if (tableRepository.findByTenantIdAndTableNumberAndDeletedAtIsNull(tenantId, trimmedNumber).isPresent()) {
+            throw PosException.conflict("Bu raqamli stol allaqachon mavjud (#" + trimmedNumber + "). Iltimos, boshqa raqam tanlang.");
+        }
+
         RestaurantTable table = new RestaurantTable();
         table.setTenant(tenant);
         table.setZone(zone);
-        table.setTableNumber(request.getTableNumber());
-        table.setName(request.getName() != null ? request.getName() : "Stol " + request.getTableNumber());
-        table.setCapacity(request.getCapacity());
+        table.setTableNumber(trimmedNumber);
+        table.setName(request.getName() != null && !request.getName().trim().isBlank() ? request.getName().trim() : "Stol " + trimmedNumber);
+        table.setCapacity(request.getCapacity() > 0 ? request.getCapacity() : 4);
         table.setShape(request.getShape() != null ? request.getShape() : "rectangle");
         table.setTableType(request.getTableType() != null ? request.getTableType() : "rectangle");
         table.setPosX(request.getPosX());
         table.setPosY(request.getPosY());
-        table.setWidth(request.getWidth());
-        table.setHeight(request.getHeight());
+        table.setWidth(request.getWidth() > 0 ? request.getWidth() : 100);
+        table.setHeight(request.getHeight() > 0 ? request.getHeight() : 80);
         table.setRotation(request.getRotation());
         table.setStatus(RestaurantTable.TableStatus.FREE);
         table.setActive(true);
@@ -519,8 +527,17 @@ public class TableService {
                     .orElseThrow(() -> PosException.badRequest("Tanlangan stol zonasi topilmadi"));
             table.setZone(zone);
         }
-        if (request.getTableNumber() != null && !request.getTableNumber().isBlank()) {
-            table.setTableNumber(request.getTableNumber());
+        if (request.getTableNumber() != null && !request.getTableNumber().trim().isBlank()) {
+            String newNumber = request.getTableNumber().trim();
+            if (!newNumber.equalsIgnoreCase(table.getTableNumber())) {
+                tableRepository.findByTenantIdAndTableNumberAndDeletedAtIsNull(tenantId, newNumber)
+                        .ifPresent(existing -> {
+                            if (!existing.getId().equals(id)) {
+                                throw PosException.conflict("Bu raqamli stol allaqachon mavjud (#" + newNumber + ").");
+                            }
+                        });
+            }
+            table.setTableNumber(newNumber);
         }
         if (request.getName() != null && !request.getName().isBlank()) {
             table.setName(request.getName());

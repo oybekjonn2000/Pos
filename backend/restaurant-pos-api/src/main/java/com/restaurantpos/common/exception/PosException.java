@@ -38,6 +38,10 @@ public class PosException extends RuntimeException {
         return new PosException(message, errorCode, HttpStatus.BAD_REQUEST);
     }
 
+    public static PosException conflict(String message) {
+        return new PosException(message, "CONFLICT", HttpStatus.CONFLICT);
+    }
+
     public static PosException conflict(String message, String errorCode) {
         return new PosException(message, errorCode, HttpStatus.CONFLICT);
     }

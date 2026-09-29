@@ -73,7 +73,8 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     inventory: "Омбор & Захира",
     reports: "Ҳисоботлар",
     settings: "Созламалар",
-    billing: "Обуна & Тўлов",
+    billing: "Обуна & Тарифлар",
+    management: "Бошқарув",
     superAdmin: "Супер Админ",
     superAdmins: "Суперадминлар",
     editProfile: "Профилни таҳрирлаш",
@@ -248,7 +249,10 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     notes: "Изоҳ:",
     dishCount: "та таом",
     proPerk: "PRO Тариф талаб этилади",
-    noActiveBatches: "Ҳозирча буюртмалар йўқ"
+    noActiveBatches: "Ҳозирча буюртмалар йўқ",
+    fullscreen: "Тўлиқ экран",
+    exitFullscreen: "Экранни тиклаш",
+    fullscreenScaleHint: "30% ихчам"
   },
 
   products: {
@@ -360,6 +364,7 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     kitchenSettings: "Ошхоналар Созламаси",
     receiptSettings: "Касса Чеки",
     payments: "Тўлов Усуллари",
+    subscription: "Обуна & Тарифлар",
     taxesService: "Хизмат Ҳақи & Солиқ",
     orderWorkflow: "Буюртмалар Тартиби",
     kdsSettings: "Ошхона Экрани (KDS)",
@@ -516,5 +521,16 @@ export const OZ_TRANSLATIONS: Record<string, any> = {
     connectionLost: "Сервер билан алоқа узилди!",
     connectionRestored: "Сервер билан алоқа тикланди!",
     receiptPrinted: "Чек чоп этилди"
+  },
+
+  management: {
+    title: "Бошқарув Маркази",
+    subtitle: "Ресторан конфигурацияси ва барча бўлимлар созламалари",
+    places: "Заллар ва жойлар",
+    tables: "Столлар",
+    products: "Маҳсулотлар ва Категориялар",
+    kitchens: "Ошхоналар",
+    employees: "Ходимлар",
+    printers: "Принтерлар"
   }
 };

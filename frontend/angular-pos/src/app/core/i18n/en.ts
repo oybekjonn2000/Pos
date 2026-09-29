@@ -74,6 +74,7 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     reports: "Reports",
     settings: "Settings",
     billing: "Subscription & Billing",
+    management: "Management",
     superAdmin: "Super Admin",
     superAdmins: "Super Admins",
     editProfile: "Edit Profile",
@@ -248,7 +249,10 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     notes: "Notes:",
     dishCount: "dishes",
     proPerk: "PRO Plan required",
-    noActiveBatches: "No tickets in queue"
+    noActiveBatches: "No tickets in queue",
+    fullscreen: "Fullscreen",
+    exitFullscreen: "Exit Fullscreen",
+    fullscreenScaleHint: "-30% Scale"
   },
 
   products: {
@@ -360,6 +364,7 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     kitchenSettings: "Kitchen Stations",
     receiptSettings: "Receipt Customization",
     payments: "Payment Methods",
+    subscription: "Subscription & Plans",
     taxesService: "Service Charge & Tax",
     orderWorkflow: "Order Workflow",
     kdsSettings: "Kitchen Display (KDS)",
@@ -516,5 +521,16 @@ export const EN_TRANSLATIONS: Record<string, any> = {
     connectionLost: "Server connection lost!",
     connectionRestored: "Server connection restored!",
     receiptPrinted: "Receipt printed"
+  },
+
+  management: {
+    title: "Management Hub",
+    subtitle: "Restaurant configuration and all department settings",
+    places: "Halls & Places",
+    tables: "Tables",
+    products: "Products & Categories",
+    kitchens: "Kitchens",
+    employees: "Employees",
+    printers: "Printers"
   }
 };

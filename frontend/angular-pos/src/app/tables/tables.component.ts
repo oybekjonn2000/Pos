@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { TableService, RestaurantTable, TableZone, CreateTableRequest } from '../core/services/table.service';
 import { NotificationService } from '../core/services/notification.service';
 import { AuthService } from '../core/services/auth.service';
@@ -15,7 +15,7 @@ import { MoveTableModalComponent } from '../shared/components/move-table-modal/m
 @Component({
   selector: 'app-tables',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe, MoveTableModalComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AppIconComponent, TranslatePipe, MoveTableModalComponent],
   styleUrls: ['./tables.component.scss'],
   template: `
     <div class="tables-page fade-in">
@@ -34,18 +34,6 @@ import { MoveTableModalComponent } from '../shared/components/move-table-modal/m
               <button class="btn btn--secondary" (click)="loadAll()" title="Yangilash">
                 <app-icon name="refresh" [size]="16"></app-icon> {{ 'common.refresh' | translate }}
               </button>
-
-              @if (canManageTables()) {
-                <button class="btn btn--canvas" (click)="openCanvas()" title="Konstruktor">
-                  <app-icon name="layout" [size]="16"></app-icon> {{ 'tables.canvasLayout' | translate }}
-                </button>
-                <button class="btn btn--secondary" (click)="openAddZoneModal()" title="Yangi joy qo‘shish">
-                  <app-icon name="hall" [size]="16"></app-icon> + {{ 'tables.addZone' | translate }}
-                </button>
-                <button class="btn btn--primary" (click)="openAddModal()" title="Yangi stol qo‘shish">
-                  <app-icon name="plus" [size]="16"></app-icon> {{ 'tables.newTable' | translate }}
-                </button>
-              }
             </div>
           </div>
 
@@ -83,9 +71,9 @@ import { MoveTableModalComponent } from '../shared/components/move-table-modal/m
               <h3>Zallar mavjud emas</h3>
               <p>Restoranda hali birorta zal yoki joy yaratilmagan.</p>
               @if (canManageTables()) {
-                <button class="btn btn--primary mt-4" (click)="openAddZoneModal()">
-                  <app-icon name="plus" [size]="16"></app-icon> Yangi zal yaratish
-                </button>
+                <a routerLink="/restaurant/management" [queryParams]="{tab: 'places'}" class="btn btn--primary mt-4">
+                  <app-icon name="settings" [size]="16"></app-icon> Boshqaruv markazida zal yaratish
+                </a>
               }
             </div>
           } @else {
@@ -214,13 +202,6 @@ import { MoveTableModalComponent } from '../shared/components/move-table-modal/m
                   </button>
                 </div>
               }
-
-              @if (canManageTables()) {
-                <button class="btn-edit-layout" (click)="openConstructorForZone(selectedZone()!.id)" title="Konstruktorda stollarni joylashtirish va tahrirlash">
-                  <app-icon name="edit" [size]="14"></app-icon>
-                  <span>Konstruktor</span>
-                </button>
-              }
             </div>
           </div>
 
@@ -242,11 +223,11 @@ import { MoveTableModalComponent } from '../shared/components/move-table-modal/m
                   <div class="canvas-empty-state">
                     <app-icon name="tables" [size]="48"></app-icon>
                     <h3>Ushbu zalda stollar mavjud emas</h3>
-                    <p>Stollarni joylashtirish uchun konstruktordan foydalaning.</p>
+                    <p>Stollarni joylashtirish uchun boshqaruv markazidan foydalaning.</p>
                     @if (canManageTables()) {
-                      <button class="btn btn--primary" (click)="openConstructorForZone(selectedZone()!.id)">
-                        <app-icon name="layout" [size]="16"></app-icon> Konstruktorni ochish
-                      </button>
+                      <a routerLink="/restaurant/management" [queryParams]="{tab: 'tables'}" class="btn btn--primary">
+                        <app-icon name="settings" [size]="16"></app-icon> Boshqaruv markazida stol qo‘shish
+                      </a>
                     }
                   </div>
                 } @else {
@@ -444,109 +425,6 @@ import { MoveTableModalComponent } from '../shared/components/move-table-modal/m
         (closed)="closeMoveModal()"
         (moved)="onOrderMoved($event)">
       </app-move-table-modal>
-
-      <!-- Add Table Modal -->
-      @if (showAddModal() && canManageTables()) {
-        <div class="modal-backdrop">
-          <div class="modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <div>
-                <h3 class="modal-title">{{ 'tables.newTable' | translate }}</h3>
-                <p class="modal-sub">Stol ma'lumotlari va uning joylashuvini belgilang</p>
-              </div>
-              <button class="modal-close" (click)="closeModal()"><app-icon name="close" [size]="18"></app-icon></button>
-            </div>
-            <div class="modal-body">
-              <div class="form-group">
-                <label>Stol Joylashuvi (Zona) *</label>
-                <div class="zone-select-row">
-                  <select [(ngModel)]="newTable.zoneId" class="pos-input pos-select">
-                    <option value="" disabled>-- Joylashuvni tanlang --</option>
-                    @for (zone of zones(); track zone.id) {
-                      <option [value]="zone.id">{{ zone.name }}</option>
-                    }
-                  </select>
-                  <button type="button" class="btn-add-zone" (click)="toggleCustomZone()">
-                    {{ showCustomZone() ? 'Bekor qilish' : '+ Yangi joy' }}
-                  </button>
-                </div>
-                
-                @if (showCustomZone()) {
-                  <div class="custom-zone-input-wrap">
-                    <input type="text" [(ngModel)]="customZoneName" placeholder="Masalan: Ayvon, Podval, Bog'..." class="pos-input" />
-                    <button type="button" class="btn btn--primary" (click)="addNewZone()" [disabled]="!customZoneName.trim()">
-                      Qo'shish
-                    </button>
-                  </div>
-                }
-              </div>
-
-              <div class="form-group">
-                <label>Stol Raqami *</label>
-                <input type="text" [(ngModel)]="newTable.tableNumber" placeholder="Masalan: 11 yoki K-1, AY-1" class="pos-input" />
-              </div>
-
-              <div class="form-group">
-                <label>Stol Nomi</label>
-                <input type="text" [(ngModel)]="newTable.name" placeholder="Masalan: Stol 11 yoki Ayvon 1" class="pos-input" />
-              </div>
-
-              <div class="form-group">
-                <label>Sig'imi (Odamlar soni)</label>
-                <input type="number" [(ngModel)]="newTable.capacity" min="1" max="50" class="pos-input" />
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn btn--secondary" (click)="closeModal()">{{ 'common.cancel' | translate }}</button>
-              <button class="btn btn--primary" 
-                      (click)="saveNewTable()" 
-                      [disabled]="!newTable.tableNumber || (!newTable.zoneId && !newTable.zoneName)">
-                <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
-              </button>
-            </div>
-          </div>
-        </div>
-      }
-
-      <!-- Zone Add/Edit Modal -->
-      @if (showZoneModal() && canManageTables()) {
-        <div class="modal-backdrop">
-          <div class="modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <div>
-                <h3 class="modal-title">{{ editingZoneId ? 'Joyni tahrirlash' : 'Yangi joy qo‘shish' }}</h3>
-                <p class="modal-sub">Zal yoki joylashuv parametrlarini belgilang</p>
-              </div>
-              <button class="modal-close" (click)="closeZoneModal()"><app-icon name="close" [size]="18"></app-icon></button>
-            </div>
-
-            <div class="modal-body">
-              <div class="form-group">
-                <label>Joy nomi *</label>
-                <input type="text" [(ngModel)]="zoneForm.name" placeholder="Masalan: Asosiy zal, VIP zal, Terassa" class="pos-input" />
-              </div>
-
-              <div class="form-group">
-                <label>Xizmat haqi foizi (%)</label>
-                <input type="number" [(ngModel)]="zoneForm.percentage" min="0" max="100" class="pos-input" />
-              </div>
-
-              <div class="form-group">
-                <label>Izoh</label>
-                <input type="text" [(ngModel)]="zoneForm.description" placeholder="Qisqacha tavsif" class="pos-input" />
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn btn--secondary" (click)="closeZoneModal()">{{ 'common.cancel' | translate }}</button>
-              <button class="btn btn--primary" (click)="saveZone()" [disabled]="!zoneForm.name.trim()">
-                <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
-              </button>
-            </div>
-          </div>
-        </div>
-      }
     </div>
   `
 })

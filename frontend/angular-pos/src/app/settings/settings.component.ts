@@ -14,6 +14,9 @@ import { ThemeService } from '../core/services/theme.service';
 import { UserService } from '../core/services/user.service';
 import { TableService, RestaurantTable, TableZone } from '../core/services/table.service';
 
+import { ActivatedRoute } from '@angular/router';
+import { RestaurantBillingComponent } from '../restaurant/billing/restaurant-billing.component';
+
 type SettingsCategory = 
   | 'RESTAURANT'
   | 'GENERAL'
@@ -25,6 +28,7 @@ type SettingsCategory =
   | 'PRINTERS'
   | 'RECEIPT'
   | 'PAYMENTS'
+  | 'SUBSCRIPTION'
   | 'TAX_SERVICE'
   | 'ORDERS'
   | 'KITCHEN_DISPLAY'
@@ -37,7 +41,7 @@ type SettingsCategory =
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, AppIconComponent, TranslatePipe, RestaurantBillingComponent],
   template: `
     <div class="settings-container fade-in">
       <!-- HEADER -->
@@ -51,13 +55,15 @@ type SettingsCategory =
             <span class="status-dot"></span>
             <span>{{ sysInfo()?.backendStatus?.includes('ONLINE') ? ('settings.systemStatusOnline' | translate) : ('settings.systemStatusWaiting' | translate) }}</span>
           </div>
-          <button class="pos-btn pos-btn-primary" (click)="saveActiveCategory()" [disabled]="saving()">
-            @if (saving()) {
-              <span class="spinner"></span> {{ 'common.loading' | translate }}
-            } @else {
-              <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
-            }
-          </button>
+          @if (activeCategory() !== 'SUBSCRIPTION' && activeCategory() !== 'SYSTEM_INFO' && activeCategory() !== 'RESET') {
+            <button class="pos-btn pos-btn-primary" (click)="saveActiveCategory()" [disabled]="saving()">
+              @if (saving()) {
+                <span class="spinner"></span> {{ 'common.loading' | translate }}
+              } @else {
+                <app-icon name="save" [size]="16"></app-icon> {{ 'common.save' | translate }}
+              }
+            </button>
+          }
         </div>
       </header>
 
@@ -118,6 +124,11 @@ type SettingsCategory =
           <button class="nav-item" [class.active]="activeCategory() === 'PAYMENTS'" (click)="setCategory('PAYMENTS')">
             <span class="nav-icon"><app-icon name="credit-card" [size]="18"></app-icon></span>
             <span class="nav-label">{{ 'settings.payments' | translate }}</span>
+          </button>
+          <button class="nav-item highlight-sub" [class.active]="activeCategory() === 'SUBSCRIPTION'" (click)="setCategory('SUBSCRIPTION')">
+            <span class="nav-icon"><app-icon name="credit-card" [size]="18"></app-icon></span>
+            <span class="nav-label">{{ 'settings.subscription' | translate }}</span>
+            <span class="nav-badge sub-badge">PRO</span>
           </button>
           <button class="nav-item" [class.active]="activeCategory() === 'TAX_SERVICE'" (click)="setCategory('TAX_SERVICE')">
             <span class="nav-icon"><app-icon name="bar-chart" [size]="18"></app-icon></span>
@@ -909,6 +920,13 @@ type SettingsCategory =
                     </div>
                   </div>
                 </div>
+              </div>
+            }
+
+            <!-- 9b. SUBSCRIPTION & BILLING -->
+            @if (activeCategory() === 'SUBSCRIPTION') {
+              <div class="category-card subscription-card-wrapper">
+                <app-restaurant-billing></app-restaurant-billing>
               </div>
             }
 
@@ -2016,6 +2034,16 @@ type SettingsCategory =
         background: rgba(99, 102, 241, 0.2);
         color: var(--primary-light);
       }
+      &.sub-badge {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+      }
+    }
+
+    .subscription-card-wrapper {
+      padding: 0;
+      background: transparent;
+      border: none;
     }
 
     /* RIGHT CONTENT */
@@ -3105,7 +3133,13 @@ export class SettingsComponent implements OnInit {
     this.themeService.setTheme(theme);
   }
 
+  private route = inject(ActivatedRoute);
+
   ngOnInit(): void {
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab && (tab.toUpperCase() === 'SUBSCRIPTION' || tab.toLowerCase() === 'billing')) {
+      this.setCategory('SUBSCRIPTION');
+    }
     this.loadAllData();
   }
 

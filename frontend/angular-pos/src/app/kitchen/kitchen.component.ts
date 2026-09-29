@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -61,7 +61,7 @@ export interface KitchenTableCard {
   imports: [CommonModule, FormsModule, MatPaginatorModule, RouterLink, AppIconComponent, TranslatePipe],
   template: `
     <ng-container *ngIf="featureService.canAccessKds(); else proRequiredView">
-      <div class="kds-container fade-in">
+      <div class="kds-container fade-in" [class.kds-container--fullscreen]="isKdsFullscreen">
       <!-- Top Bar -->
       <div class="kds-header">
         <div class="kds-title-area">
@@ -83,7 +83,7 @@ export interface KitchenTableCard {
               </span>
             </div>
           </div>
-          <p class="kds-subtitle">
+          <p class="kds-subtitle" *ngIf="!isKdsFullscreen">
             <span *ngIf="selectedKitchen">Stansiya: <strong>{{ selectedKitchen.name }} ({{ selectedKitchen.code }})</strong> • </span>
             Har bir stol buyurtmalari yagona kartochka ichida jamlanadi va yangi qo'shilgan buyurtmalar avtomatik qo'shiladi
           </p>
@@ -122,6 +122,19 @@ export interface KitchenTableCard {
               {{ 'status.SERVED' | translate }} ({{ countCardsByStatus('SERVED') }})
             </button>
           </div>
+
+          <!-- Fullscreen Toggle Button -->
+          <button
+            type="button"
+            class="btn-kds-fullscreen"
+            [class.active]="isKdsFullscreen"
+            (click)="toggleKdsFullscreen()"
+            [title]="isKdsFullscreen ? (('kitchen.exitFullscreen' | translate) + ' (Esc)') : (('kitchen.fullscreen' | translate) + ' (30% kichiklashtirish)')">
+            <app-icon [name]="isKdsFullscreen ? 'minimize' : 'maximize'" [size]="18"></app-icon>
+            <span class="fs-btn-label">{{ (isKdsFullscreen ? 'kitchen.exitFullscreen' : 'kitchen.fullscreen') | translate }}</span>
+            <span class="fs-btn-badge" *ngIf="!isKdsFullscreen">-30%</span>
+            <span class="fs-btn-esc" *ngIf="isKdsFullscreen">Esc</span>
+          </button>
         </div>
       </div>
 
@@ -1947,6 +1960,136 @@ export interface KitchenTableCard {
         }
       }
     }
+
+    /* =========================================================
+     * FULLSCREEN KDS MODE (30% SCALE-DOWN AS REQUESTED)
+     * ========================================================= */
+    .btn-kds-fullscreen {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.25));
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      border-radius: var(--radius-sm, 8px);
+      color: #818cf8;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      user-select: none;
+
+      &:hover {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(79, 70, 229, 0.45));
+        border-color: #6366f1;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        border-color: #a5b4fc;
+        color: #ffffff;
+        box-shadow: 0 0 16px rgba(99, 102, 241, 0.5);
+
+        &:hover {
+          background: linear-gradient(135deg, #4338ca, #3730a3);
+        }
+      }
+
+      .fs-btn-badge {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 1px 6px;
+        border-radius: 10px;
+      }
+
+      .fs-btn-esc {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-family: var(--font-mono, monospace);
+      }
+    }
+
+    .kds-container--fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 999999 !important;
+      background: var(--bg-primary, #0b1120) !important;
+      padding: 12px 18px 24px 18px !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      box-sizing: border-box !important;
+
+      .kds-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        padding: 10px 16px;
+        margin-bottom: 12px;
+        background: rgba(15, 23, 42, 0.94);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        border-radius: var(--radius-md, 12px);
+      }
+
+      .kds-subtitle {
+        display: none !important;
+      }
+
+      .stations-bar {
+        padding: 6px 14px;
+        margin-bottom: 8px;
+      }
+
+      .time-filter-bar {
+        padding: 6px 14px;
+        margin-bottom: 10px;
+      }
+
+      .current-station-banner {
+        display: none !important;
+      }
+
+      /* 30% reduction (0.7 scale) on the cards grid across all screens */
+      .kds-grid {
+        zoom: 0.7 !important;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+        gap: 14px !important;
+        width: 100% !important;
+        padding-bottom: 24px;
+      }
+
+      @supports not (zoom: 0.7) {
+        .kds-grid {
+          transform: scale(0.7);
+          transform-origin: top left;
+          width: 142.857%;
+        }
+      }
+    }
   `]
 })
 export class KitchenComponent implements OnInit, OnDestroy {
@@ -1956,6 +2099,10 @@ export class KitchenComponent implements OnInit, OnDestroy {
   batches: KitchenOrderBatch[] = [];
   loading = false;
   currentFilter: 'ALL' | 'NEW' | 'ACCEPTED' | 'READY' | 'SERVED' = 'ALL';
+
+  // Fullscreen State (30% scale-down view)
+  isKdsFullscreen = false;
+  private savedPageSize = 12;
 
   // Time & Date Filter
   timePreset: 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'ALL' | 'CUSTOM' = 'TODAY';
@@ -2056,12 +2203,79 @@ export class KitchenComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.isKdsFullscreen) {
+      this.exitBrowserFullscreen();
+    }
     this.unsubscribeAllStations();
     if (this.timerTick) {
       clearInterval(this.timerTick);
       this.timerTick = null;
     }
     this.isKdsStarted = false;
+  }
+
+  toggleKdsFullscreen(): void {
+    this.isKdsFullscreen = !this.isKdsFullscreen;
+    if (this.isKdsFullscreen) {
+      this.savedPageSize = this.pageSize;
+      this.pageSize = 48; // Maximize visible cards on screen
+      this.pageIndex = 0;
+      this.requestBrowserFullscreen();
+    } else {
+      this.pageSize = this.savedPageSize;
+      this.pageIndex = 0;
+      this.exitBrowserFullscreen();
+    }
+    this.cdr.markForCheck();
+  }
+
+  @HostListener('document:fullscreenchange')
+  onFullscreenChange(): void {
+    const isNativeFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+    if (!isNativeFs && this.isKdsFullscreen) {
+      this.isKdsFullscreen = false;
+      this.pageSize = this.savedPageSize;
+      this.cdr.markForCheck();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapePress(): void {
+    if (this.isKdsFullscreen) {
+      this.toggleKdsFullscreen();
+    }
+  }
+
+  private requestBrowserFullscreen(): void {
+    try {
+      const docEl = document.documentElement as any;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } catch (e) {
+      // Silently ignore if browser restricts fullscreen without user permission
+    }
+  }
+
+  private exitBrowserFullscreen(): void {
+    try {
+      const doc = document as any;
+      if (doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement) {
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen().catch(() => {});
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        } else if (doc.msExitFullscreen) {
+          doc.msExitFullscreen();
+        }
+      }
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   loadKitchenStations(): void {

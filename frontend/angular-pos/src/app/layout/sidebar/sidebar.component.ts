@@ -17,6 +17,7 @@ interface NavItem {
   disallowRoles?: string[];
   badge?: number;
   proOnly?: boolean;
+  sectionHeader?: string;
 }
 
 @Component({
@@ -48,6 +49,11 @@ interface NavItem {
       <!-- Navigation Items -->
       <div class="sidebar__nav">
         @for (item of visibleNavItems(); track item.route) {
+          @if (item.sectionHeader && (!collapsed() || mobileOpen)) {
+            <div class="sidebar__section-title">{{ item.sectionHeader }}</div>
+          } @else if (item.sectionHeader && collapsed() && !mobileOpen) {
+            <div class="sidebar__section-divider"></div>
+          }
           <a [routerLink]="item.route"
              routerLinkActive="active"
              class="sidebar__item"
@@ -184,6 +190,23 @@ interface NavItem {
         display: flex;
         flex-direction: column;
         gap: 2px;
+      }
+
+      &__section-title {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        padding: 14px 14px 4px 14px;
+        opacity: 0.75;
+      }
+
+      &__section-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 8px 12px;
+        opacity: 0.6;
       }
 
       &__item {
@@ -441,20 +464,18 @@ export class SidebarComponent {
   ];
 
   readonly restaurantNavItems: NavItem[] = [
-    { icon: 'dashboard', label: 'Boshqaruv paneli', key: 'nav.dashboard', route: '/dashboard', permission: 'VIEW_DASHBOARD' },
-    { icon: 'tables', label: 'Joylar va Stollar', key: 'nav.tables', route: '/tables' },
+    // === OPERATSIYA ===
+    { icon: 'dashboard', label: 'Boshqaruv paneli', key: 'nav.dashboard', route: '/dashboard', permission: 'VIEW_DASHBOARD', sectionHeader: 'Operatsiya' },
+    { icon: 'tables', label: 'Stollar xaritasi', key: 'nav.tables', route: '/tables' },
     { icon: 'orders', label: 'Buyurtmalar', key: 'nav.orders', route: '/orders' },
     { icon: 'chef', label: 'Oshxona (KDS)', key: 'nav.kitchen', route: '/kitchen', permission: 'KITCHEN_VIEW', proOnly: true },
-    { icon: 'smartphone', label: 'Mobil Ofitsiant', key: 'nav.mobileWaiter', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
-    { icon: 'products', label: 'Mahsulotlar', key: 'nav.products', route: '/products', permission: 'MANAGE_PRODUCTS' },
-    { icon: 'folder', label: 'Kategoriyalar', key: 'nav.categories', route: '/categories', permission: 'MANAGE_CATEGORIES' },
-    { icon: 'cooking-pot', label: 'Oshxonalar', key: 'nav.kitchenManagement', route: '/kitchens', permission: 'MANAGE_SETTINGS', disallowRoles: ['KITCHEN', 'WAITER'] },
-    // { icon: 'products', label: 'Ombor', route: '/inventory', permission: 'VIEW_STOCK' }, // Hozircha disable qilindi
-    { icon: 'users', label: 'Mijozlar', key: 'nav.customers', route: '/customers', adminOnly: true },
-    { icon: 'user', label: 'Xodimlar', key: 'nav.employees', route: '/employees', permission: 'MANAGE_USERS' },
     { icon: 'trending-up', label: 'Hisobotlar', key: 'nav.reports', route: '/reports', permission: 'VIEW_REPORTS' },
-    { icon: 'credit-card', label: 'Tarif & Billing', key: 'nav.billing', route: '/restaurant/billing', adminOnly: true },
-    { icon: 'settings', label: 'Sozlamalar', key: 'nav.settings', route: '/settings', permission: 'MANAGE_SETTINGS' }
+    { icon: 'smartphone', label: 'Mobil Ofitsiant', key: 'nav.mobileWaiter', route: '/devices', permission: 'MANAGE_DEVICES', proOnly: true },
+
+    // === BOSHQARUV / KONFIGURATSIYA ===
+    { icon: 'settings', label: 'Boshqaruv', key: 'nav.management', route: '/restaurant/management', adminOnly: true, sectionHeader: 'Boshqaruv' },
+    { icon: 'user', label: 'Xodimlar', key: 'nav.employees', route: '/employees', permission: 'MANAGE_USERS', adminOnly: true },
+    { icon: 'settings', label: 'Sozlamalar', key: 'nav.settings', route: '/settings', permission: 'MANAGE_SETTINGS', adminOnly: true }
   ];
 
   constructor(public auth: AuthService) {}
