@@ -40,7 +40,11 @@ class WaiterPosApp {
     this.cancelQty = 1;
     this.cancelReason = 'Mijoz rad etdi';
 
-    
+    this.moveSourceTable = null;
+    this.selectedTargetTableId = null;
+    this.moveTargetZoneId = null;
+    this.moveReason = 'Mijoz iltimosi';
+
     this.lang = localStorage.getItem('pos_language') || 'uz';
     this.init();
   }
@@ -54,7 +58,6 @@ class WaiterPosApp {
     }
   }
 
-  
   t(key) {
     const dict = {
       uz: {
@@ -94,7 +97,23 @@ class WaiterPosApp {
         proBlockedChangeServerBtn: "Boshqa serverga ulanish",
         proBlockedActivePlan: "Standart (Mobil APK cheklangan)",
         proBlockedSuccessToast: "PRO tarif tasdiqlandi! Xush kelibsiz.",
-        proBlockedStillWarning: "Restoranda hali ham Standart tarif faol. Iltimos, admin tarifni PRO ga yangilashini kuting."
+        proBlockedStillWarning: "Restoranda hali ham Standart tarif faol. Iltimos, admin tarifni PRO ga yangilashini kuting.",
+        moveTable: "Stolni ko‘chirish",
+        moveTableSub: "Aktiv buyurtmani boshqa bo‘sh stolga ko‘chirish",
+        currentPlace: "Hozirgi joy:",
+        currentTable: "Hozirgi joy / stol:",
+        selectZone: "Yangi zalni tanlang:",
+        selectTargetTable: "Yangi bo‘sh stolni tanlang:",
+        onlyFreeHint: "Faqat BO‘SH stollar",
+        noFreeTables: "Ushbu zalda bo‘sh stollar mavjud emas.",
+        moveReason: "Ko‘chirish sababi (ixtiyoriy):",
+        confirmMove: "Ko‘chirishni tasdiqlash",
+        movingBtn: "Ko‘chirilmoqda...",
+        moveSuccess: "Buyurtma yangi stolga muvaffaqiyatli ko‘chirildi!",
+        guestRequest: "Mijoz iltimosi",
+        betterPlace: "Qulayroq joy",
+        mergeTables: "Stol birlashtirish",
+        otherReason: "Boshqa"
       },
       oz: {
         connectTitle: "POS серверга уланиш",
@@ -133,7 +152,23 @@ class WaiterPosApp {
         proBlockedChangeServerBtn: "Бошқа серверга уланиш",
         proBlockedActivePlan: "Стандарт (Мобил APK чекланган)",
         proBlockedSuccessToast: "PRO тариф тасдиқланди! Хуш келибсиз.",
-        proBlockedStillWarning: "Ресторанда ҳали ҳам Стандарт тариф фаол. Илтимос, админ тарифни PRO га янгилашини кутинг."
+        proBlockedStillWarning: "Ресторанда ҳали ҳам Стандарт тариф фаол. Илтимос, админ тарифни PRO га янгилашини кутинг.",
+        moveTable: "Столни кўчириш",
+        moveTableSub: "Актив буюртмани бошқа бўш столга кўчириш",
+        currentPlace: "Ҳозирги жой:",
+        currentTable: "Ҳозирги жой / стол:",
+        selectZone: "Янги зални танланг:",
+        selectTargetTable: "Янги бўш столни танланг:",
+        onlyFreeHint: "Фақат БЎШ столлар",
+        noFreeTables: "Ушбу залда бўш столлар мавжуд эмас.",
+        moveReason: "Кўчириш сабаби (ихтиёрий):",
+        confirmMove: "Кўчиришни тасдиқлаш",
+        movingBtn: "Кўчирилмоқда...",
+        moveSuccess: "Буюртма янги столга муваффақиятли кўчирилди!",
+        guestRequest: "Мижоз илтимоси",
+        betterPlace: "Қулайроқ жой",
+        mergeTables: "Стол бирлаштириш",
+        otherReason: "Бошқа"
       },
       ru: {
         connectTitle: "Подключение к POS серверу",
@@ -172,7 +207,23 @@ class WaiterPosApp {
         proBlockedChangeServerBtn: "Подключиться к другому серверу",
         proBlockedActivePlan: "Стандарт (Мобильный APK заблокирован)",
         proBlockedSuccessToast: "Тариф PRO подтвержден! Добро пожаловать.",
-        proBlockedStillWarning: "В ресторане все еще действует тариф Стандарт. Пожалуйста, подождите активации PRO администратором."
+        proBlockedStillWarning: "В ресторане все еще действует тариф Стандарт. Пожалуйста, подождите активации PRO администратором.",
+        moveTable: "Перенести стол",
+        moveTableSub: "Перенос активного заказа на другой свободный стол",
+        currentPlace: "Текущее место:",
+        currentTable: "Текущее место / стол:",
+        selectZone: "Выберите зал:",
+        selectTargetTable: "Выберите новый свободный стол:",
+        onlyFreeHint: "Только СВОБОДНЫЕ столы",
+        noFreeTables: "В этом зале нет свободных столов.",
+        moveReason: "Причина переноса (необязательно):",
+        confirmMove: "Подтвердить перенос",
+        movingBtn: "Переносится...",
+        moveSuccess: "Заказ успешно перенесен на новый стол!",
+        guestRequest: "Просьба клиента",
+        betterPlace: "Более удобное место",
+        mergeTables: "Объединение столов",
+        otherReason: "Другое"
       },
       en: {
         connectTitle: "Connect to POS Server",
@@ -211,7 +262,23 @@ class WaiterPosApp {
         proBlockedChangeServerBtn: "Connect to another server",
         proBlockedActivePlan: "Standard (Mobile APK restricted)",
         proBlockedSuccessToast: "PRO plan confirmed! Welcome.",
-        proBlockedStillWarning: "Restaurant is still on the Standard plan. Please wait for the admin to upgrade to PRO."
+        proBlockedStillWarning: "Restaurant is still on the Standard plan. Please wait for the admin to upgrade to PRO.",
+        moveTable: "Transfer Table",
+        moveTableSub: "Move active order to another free table",
+        currentPlace: "Current place:",
+        currentTable: "Current place / table:",
+        selectZone: "Select hall/zone:",
+        selectTargetTable: "Select a new free table:",
+        onlyFreeHint: "Only FREE tables",
+        noFreeTables: "No free tables in this zone.",
+        moveReason: "Transfer reason (optional):",
+        confirmMove: "Confirm Transfer",
+        movingBtn: "Transferring...",
+        moveSuccess: "Order transferred to new table successfully!",
+        guestRequest: "Guest request",
+        betterPlace: "Better location",
+        mergeTables: "Merge tables",
+        otherReason: "Other"
       }
     };
     const cur = dict[this.lang] || dict.uz;
@@ -242,8 +309,10 @@ class WaiterPosApp {
       'check-circle': `<circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line>`,
       'x-circle': `<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>`,
       'arrow-right': `<line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>`,
+      'arrow-right-left': `<path d="m16 3 4 4-4 4"></path><path d="M20 7H4"></path><path d="m8 21-4-4 4-4"></path><path d="M4 17h16"></path>`,
+      'layout': `<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line>`,
       'users': `<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>`,
-      'globe': `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>`,
+      'globe': `<circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>`,
       'map-pin': `<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>`,
       'bell': `<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>`,
       'utensils': `<path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"></path><path d="M15 2v20"></path><path d="M6 2v7a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2"></path><path d="M9 12v10"></path>`,
@@ -941,7 +1010,14 @@ class WaiterPosApp {
       card.innerHTML = `
         <div class="table-card-header">
           <span class="table-number">#${t.tableNumber || t.name}</span>
-          <span class="table-status-pill">${statusTitle}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            ${!isFree ? `
+              <button type="button" class="btn-table-quick-move" onclick="event.stopPropagation(); app.quickOpenMoveTable('${t.id}')" title="${this.t('moveTable')}">
+                ${this.svgIcon('arrow-right-left', 13)}
+              </button>
+            ` : ''}
+            <span class="table-status-pill">${statusTitle}</span>
+          </div>
         </div>
         <div class="table-name">${t.name}</div>
         <div class="table-info">
@@ -998,14 +1074,26 @@ class WaiterPosApp {
 
     const titleEl = document.getElementById('modalTableTitle');
     const subEl = document.getElementById('modalOrderSubtitle');
+    const moveBtn = document.getElementById('btnMoveTableInOrder');
+    const infoCard = document.getElementById('orderTableInfoCard');
+    const infoName = document.getElementById('orderTableInfoName');
+
     if (titleEl) titleEl.textContent = `Stol #${table.tableNumber || table.name} (${table.name})`;
 
     const activeOrderId = table.currentOrderId || table.activeOrderId;
     if (table.status === 'OCCUPIED' && activeOrderId) {
       if (subEl) subEl.textContent = 'Mavjud buyurtma / Yangi taom qo‘shish';
+      if (moveBtn) moveBtn.style.display = 'inline-flex';
+      if (infoCard) {
+        infoCard.style.display = 'flex';
+        const zoneName = table.zoneName || this.zones.find(z => z.id === table.zoneId)?.name || '';
+        if (infoName) infoName.textContent = `${table.name || 'Stol #' + (table.tableNumber || '')}${zoneName ? ' • ' + zoneName : ''}`;
+      }
       await this.fetchActiveOrder(activeOrderId);
     } else {
       if (subEl) subEl.textContent = 'Yangi buyurtma ochish';
+      if (moveBtn) moveBtn.style.display = 'none';
+      if (infoCard) infoCard.style.display = 'none';
       this.activeOrder = null;
     }
 
@@ -1020,6 +1108,10 @@ class WaiterPosApp {
   closeOrderModal() {
     const modal = document.getElementById('modalOrder');
     if (modal) modal.classList.remove('active');
+    const moveBtn = document.getElementById('btnMoveTableInOrder');
+    const infoCard = document.getElementById('orderTableInfoCard');
+    if (moveBtn) moveBtn.style.display = 'none';
+    if (infoCard) infoCard.style.display = 'none';
     this.selectedTable = null;
     this.cart = [];
     this.activeOrder = null;
@@ -1425,6 +1517,229 @@ class WaiterPosApp {
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = '<span>Ha, bekor qilinsin</span>';
+      }
+    }
+  }
+
+  // ========================================================
+  // 6B. BUYURTMA STOLINI KO'CHIRISH / O'ZGARTIRISH
+  // ========================================================
+  async quickOpenMoveTable(tableId) {
+    const table = this.tables.find(t => t.id === tableId);
+    if (!table) return;
+    await this.openMoveTableModal(table);
+  }
+
+  async openMoveTableModal(table = null) {
+    const targetTable = table || this.selectedTable;
+    if (!targetTable) return;
+
+    const activeOrderId = targetTable.currentOrderId || targetTable.activeOrderId;
+    if (!activeOrderId && (!this.activeOrder || (this.activeOrder.tableId !== targetTable.id && this.activeOrder.table?.id !== targetTable.id))) {
+      this.showToast('Ushbu stolda aktiv buyurtma topilmadi', 'error');
+      return;
+    }
+
+    this.moveSourceTable = targetTable;
+    this.selectedTargetTableId = null;
+    this.moveTargetZoneId = null;
+    this.moveReason = 'Mijoz iltimosi';
+
+    // If active order not fetched or mismatch, fetch it
+    const orderIdToFetch = activeOrderId || this.activeOrder?.id;
+    if (orderIdToFetch && (!this.activeOrder || this.activeOrder.id !== orderIdToFetch)) {
+      await this.fetchActiveOrder(orderIdToFetch);
+    }
+
+    // Populate current table information
+    const curTableEl = document.getElementById('moveCurrentTableText');
+    const curOrderEl = document.getElementById('moveCurrentOrderInfo');
+    const curZoneName = targetTable.zoneName || this.zones.find(z => z.id === targetTable.zoneId)?.name || 'Asosiy zal';
+    const tableName = targetTable.name || `Stol #${targetTable.tableNumber || '?'}`;
+
+    if (curTableEl) {
+      curTableEl.textContent = `${tableName} • ${curZoneName}`;
+    }
+
+    if (curOrderEl) {
+      const orderNum = this.activeOrder?.orderNumber || targetTable.activeOrderNumber || 'ORD';
+      const orderTotal = this.activeOrder?.totalAmount ?? targetTable.totalAmount ?? 0;
+      curOrderEl.textContent = `#${orderNum} • ${this.formatMoney(orderTotal)} UZS`;
+    }
+
+    // Reset custom reason input
+    const reasonInput = document.getElementById('inputMoveCustomReason');
+    if (reasonInput) reasonInput.value = '';
+
+    // Reset reason chips
+    document.querySelectorAll('#modalMoveTable .reason-chip').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.trim() === this.moveReason);
+    });
+
+    // Reset confirm button
+    const confirmBtn = document.getElementById('btnConfirmMoveTable');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = `<span>${this.t('confirmMove')}</span>`;
+    }
+
+    this.renderMoveZoneChips();
+    this.renderMoveTablesGrid();
+
+    const modal = document.getElementById('modalMoveTable');
+    if (modal) modal.classList.add('active');
+  }
+
+  closeMoveTableModal() {
+    const modal = document.getElementById('modalMoveTable');
+    if (modal) modal.classList.remove('active');
+    this.moveSourceTable = null;
+    this.selectedTargetTableId = null;
+    this.moveTargetZoneId = null;
+  }
+
+  renderMoveZoneChips() {
+    const wrap = document.getElementById('moveZoneChipsScroll');
+    if (!wrap) return;
+
+    const sourceTableId = this.moveSourceTable ? this.moveSourceTable.id : null;
+    const totalFree = this.tables.filter(t => t.status === 'FREE' && t.active && t.id !== sourceTableId).length;
+
+    let html = `
+      <button type="button" class="cat-chip ${this.moveTargetZoneId === null ? 'active' : ''}" onclick="app.selectMoveTargetZone(null)">
+        ${this.t('allZones')} (${totalFree})
+      </button>
+    `;
+
+    this.zones.forEach(z => {
+      const freeInZone = this.tables.filter(t => t.zoneId === z.id && t.status === 'FREE' && t.active && t.id !== sourceTableId).length;
+      html += `
+        <button type="button" class="cat-chip ${this.moveTargetZoneId === z.id ? 'active' : ''}" onclick="app.selectMoveTargetZone('${z.id}')">
+          ${z.name} (${freeInZone})
+        </button>
+      `;
+    });
+
+    wrap.innerHTML = html;
+  }
+
+  selectMoveTargetZone(zoneId) {
+    this.moveTargetZoneId = zoneId;
+    this.renderMoveZoneChips();
+    this.renderMoveTablesGrid();
+  }
+
+  renderMoveTablesGrid() {
+    const grid = document.getElementById('moveTablesGrid');
+    const emptyHint = document.getElementById('moveNoTablesHint');
+    if (!grid) return;
+
+    const sourceTableId = this.moveSourceTable ? this.moveSourceTable.id : null;
+    let freeTables = this.tables.filter(t => t.status === 'FREE' && t.active && t.id !== sourceTableId);
+
+    if (this.moveTargetZoneId !== null) {
+      freeTables = freeTables.filter(t => t.zoneId === this.moveTargetZoneId);
+    }
+
+    if (freeTables.length === 0) {
+      grid.innerHTML = '';
+      if (emptyHint) emptyHint.style.display = 'block';
+      return;
+    }
+
+    if (emptyHint) emptyHint.style.display = 'none';
+    grid.innerHTML = '';
+
+    freeTables.forEach(t => {
+      const isSelected = this.selectedTargetTableId === t.id;
+      const card = document.createElement('div');
+      card.className = `move-table-card ${isSelected ? 'selected' : ''}`;
+      card.onclick = () => this.selectMoveTargetTable(t.id);
+
+      const zoneName = t.zoneName || this.zones.find(z => z.id === t.zoneId)?.name || '';
+
+      card.innerHTML = `
+        <div class="move-card-header">
+          <span class="move-card-num">#${t.tableNumber || t.name}</span>
+          <span class="move-card-badge ${isSelected ? 'badge-selected' : 'badge-free'}">
+            ${isSelected ? this.svgIcon('check', 11) + ' Tanlandi' : 'BO‘SH'}
+          </span>
+        </div>
+        <div class="move-card-name">${t.name}</div>
+        <div class="move-card-footer">
+          <span class="move-card-cap">${t.capacity || 4} kishilik</span>
+          ${zoneName ? `<span class="move-card-zone">${zoneName}</span>` : ''}
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  selectMoveTargetTable(tableId) {
+    this.selectedTargetTableId = tableId;
+    this.renderMoveTablesGrid();
+
+    const confirmBtn = document.getElementById('btnConfirmMoveTable');
+    if (confirmBtn) {
+      confirmBtn.disabled = !this.selectedTargetTableId;
+    }
+  }
+
+  selectMoveReason(reason, btn) {
+    this.moveReason = reason;
+    document.querySelectorAll('#modalMoveTable .reason-chip').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  }
+
+  async confirmMoveTable() {
+    if (!this.moveSourceTable || !this.selectedTargetTableId) {
+      this.showToast('Iltimos, yangi bo‘sh stolni tanlang', 'error');
+      return;
+    }
+
+    const orderId = this.activeOrder?.id || this.moveSourceTable.currentOrderId || this.moveSourceTable.activeOrderId;
+    if (!orderId) {
+      this.showToast('Ko‘chiriladigan aktiv buyurtma topilmadi', 'error');
+      return;
+    }
+
+    const confirmBtn = document.getElementById('btnConfirmMoveTable');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = `<span>${this.t('movingBtn')}</span>`;
+    }
+
+    const customReason = (document.getElementById('inputMoveCustomReason')?.value || '').trim();
+    const finalReason = customReason || this.moveReason || 'Mijoz iltimosi';
+
+    try {
+      const res = await fetch(`${this.serverBase}/api/orders/${orderId}/move-table`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.auth.accessToken}`
+        },
+        body: JSON.stringify({
+          targetTableId: this.selectedTargetTableId,
+          reason: finalReason
+        })
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || 'Stolni ko‘chirishda xatolik yuz berdi');
+      }
+
+      this.showToast(this.t('moveSuccess'), 'success');
+      this.closeMoveTableModal();
+      this.closeOrderModal();
+      await this.loadTables();
+    } catch (err) {
+      this.showToast(err.message || 'Server xatosi', 'error');
+    } finally {
+      if (confirmBtn) {
+        confirmBtn.disabled = !this.selectedTargetTableId;
+        confirmBtn.innerHTML = `<span>${this.t('confirmMove')}</span>`;
       }
     }
   }
