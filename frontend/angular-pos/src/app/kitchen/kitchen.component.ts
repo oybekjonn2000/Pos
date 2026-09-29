@@ -51,8 +51,8 @@ export interface KitchenTableCard {
   hasAcceptedItems: boolean;
   hasReadyItems: boolean;
   isAllServed: boolean;
-  overallStatus: 'NEW' | 'ACCEPTED' | 'READY' | 'SERVED' | 'CANCELLED';
-  activeAction: 'ACCEPT' | 'READY' | 'SERVE' | 'NONE';
+  overallStatus: 'NEW' | 'READY' | 'SERVED' | 'CANCELLED';
+  activeAction: 'READY' | 'NONE';
 }
 
 @Component({
@@ -102,12 +102,6 @@ export interface KitchenTableCard {
               [class.active]="currentFilter === 'NEW'"
               (click)="setFilter('NEW')">
               {{ 'status.NEW' | translate }} ({{ countCardsByStatus('NEW') }})
-            </button>
-            <button
-              class="filter-tab"
-              [class.active]="currentFilter === 'ACCEPTED'"
-              (click)="setFilter('ACCEPTED')">
-              {{ 'status.ACCEPTED' | translate }} ({{ countCardsByStatus('ACCEPTED') }})
             </button>
             <button
               class="filter-tab"
@@ -396,18 +390,9 @@ export interface KitchenTableCard {
             </div>
           </div>
 
-          <!-- Card Footer: Strict 3-state action workflow -->
+          <!-- Card Footer: 2-step workflow: NEW → TAYYOR → (tarix) -->
           <div class="kds-card-footer">
-            <!-- State 1: New orders awaiting acceptance -->
-            <button
-              *ngIf="card.activeAction === 'ACCEPT'"
-              class="kds-main-action-btn btn-accept"
-              (click)="acceptTable(card)">
-              <app-icon name="download" [size]="14"></app-icon> {{ 'kitchen.acceptBatch' | translate }}
-            </button>
-
-            <!-- State 2: Accepted orders awaiting preparation completion -->
-            <!-- CRITICAL RULE 11: [ TARQATILDI ] is strictly NOT visible here! -->
+            <!-- State 1: Yangi buyurtma – TAYYOR tugmasini ko'rsat -->
             <button
               *ngIf="card.activeAction === 'READY'"
               class="kds-main-action-btn btn-ready"
@@ -415,18 +400,10 @@ export interface KitchenTableCard {
               <app-icon name="check-circle" [size]="14"></app-icon> {{ 'kitchen.markReady' | translate }}
             </button>
 
-            <!-- State 3: Ready orders ready to be distributed to waiter/customer -->
-            <button
-              *ngIf="card.activeAction === 'SERVE'"
-              class="kds-main-action-btn btn-serve"
-              (click)="markTableServed(card)">
-              <app-icon name="restaurant" [size]="14"></app-icon> {{ 'kitchen.markServed' | translate }}
-            </button>
-
-            <!-- State 4: Completed / Served -->
+            <!-- State 2: TAYYOR bo'lgan buyurtma – tarixga o'tkazish tugmasi -->
             <ng-container *ngIf="card.overallStatus === 'SERVED'">
               <div class="served-status-text">
-                <app-icon name="check-circle" [size]="14"></app-icon> Tarqatildi: {{ formatTime(card.servedAt || card.latestSentAt) }}
+                <app-icon name="check-circle" [size]="14"></app-icon> Tayyor: {{ formatTime(card.servedAt || card.latestSentAt) }}
               </div>
               <button
                 class="pos-btn pos-btn--secondary pos-btn--sm btn-revert"
@@ -1505,12 +1482,12 @@ export interface KitchenTableCard {
 
     .kds-main-action-btn {
       width: 100%;
-      min-height: 44px;
+      min-height: 52px;
       border: none;
       border-radius: var(--radius-sm);
-      font-size: 15px;
+      font-size: 17px;
       font-weight: 800;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -1542,10 +1519,13 @@ export interface KitchenTableCard {
       &.btn-ready {
         background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         color: #ffffff;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
+        font-size: 18px;
+        animation: readyPulse 2s ease-in-out infinite;
 
         &:hover {
           background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          animation: none;
         }
       }
 
@@ -1558,6 +1538,11 @@ export interface KitchenTableCard {
           background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         }
       }
+    }
+
+    @keyframes readyPulse {
+      0%, 100% { box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45); }
+      50% { box-shadow: 0 4px 24px rgba(16, 185, 129, 0.75); }
     }
 
     .pos-btn--sm {
@@ -2098,7 +2083,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
   selectedKitchen: KitchenStation | null = null;
   batches: KitchenOrderBatch[] = [];
   loading = false;
-  currentFilter: 'ALL' | 'NEW' | 'ACCEPTED' | 'READY' | 'SERVED' = 'ALL';
+  currentFilter: 'ALL' | 'NEW' | 'READY' | 'SERVED' = 'ALL';
 
   // Fullscreen State (30% scale-down view)
   isKdsFullscreen = false;
@@ -2137,7 +2122,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
-  setFilter(filter: 'ALL' | 'NEW' | 'ACCEPTED' | 'READY' | 'SERVED'): void {
+  setFilter(filter: 'ALL' | 'NEW' | 'READY' | 'SERVED'): void {
     this.currentFilter = filter;
     this.pageIndex = 0;
     sessionStorage.setItem('kds_current_filter', filter);
@@ -2182,8 +2167,12 @@ export class KitchenComponent implements OnInit, OnDestroy {
     this.isKdsStarted = true;
 
     const savedFilter = sessionStorage.getItem('kds_current_filter') as any;
-    if (savedFilter && ['ALL', 'NEW', 'ACCEPTED', 'READY', 'SERVED'].includes(savedFilter)) {
+    // ACCEPTED removed from simplified workflow — map to ALL
+    if (savedFilter && ['ALL', 'NEW', 'READY', 'SERVED'].includes(savedFilter)) {
       this.currentFilter = savedFilter;
+    } else if (savedFilter === 'ACCEPTED') {
+      this.currentFilter = 'ALL';
+      sessionStorage.setItem('kds_current_filter', 'ALL');
     }
 
     const savedTime = sessionStorage.getItem('kds_time_preset') as any;
@@ -2586,29 +2575,41 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
     const allActiveItems = products.flatMap(p => p.subItems);
 
-    const hasNewItems = !forceServed && allActiveItems.some(i => i.status === 'NEW' || (i.status as any) === 'SENT_TO_KITCHEN');
-    const hasAcceptedItems = !forceServed && allActiveItems.some(i => i.status === 'ACCEPTED' || (i.status as any) === 'COOKING' || (i.status as any) === 'PREPARING');
+    // Simplified 2-step: NEW (includes ACCEPTED/COOKING/PREPARING) → READY → SERVED
+    // ACCEPTED/COOKING/PREPARING are treated as still "in progress" = NEW for display
+    const hasNewItems = !forceServed && allActiveItems.some(i =>
+      i.status === 'NEW' || (i.status as any) === 'SENT_TO_KITCHEN' ||
+      i.status === 'ACCEPTED' || (i.status as any) === 'COOKING' || (i.status as any) === 'PREPARING'
+    );
+    const hasAcceptedItems = false; // Removed from simplified workflow
     const hasReadyItems = !forceServed && allActiveItems.some(i => i.status === 'READY');
-    const isAllServed = forceServed || (allActiveItems.length > 0 && allActiveItems.every(i => i.status === 'SERVED' || (i.status as any) === 'DELIVERED'));
+    const isAllServed = forceServed || (
+      allActiveItems.length > 0 &&
+      allActiveItems.every(i => i.status === 'SERVED' || (i.status as any) === 'DELIVERED' || i.status === 'READY')
+    );
 
-    let overallStatus: 'NEW' | 'ACCEPTED' | 'READY' | 'SERVED' | 'CANCELLED';
-    let activeAction: 'ACCEPT' | 'READY' | 'SERVE' | 'NONE';
+    let overallStatus: 'NEW' | 'READY' | 'SERVED' | 'CANCELLED';
+    let activeAction: 'READY' | 'NONE';
 
-    if (isAllServed) {
-      overallStatus = 'SERVED';
-      activeAction = 'NONE';
+    if (isAllServed && !hasNewItems) {
+      // All items are READY or SERVED
+      if (allActiveItems.every(i => i.status === 'SERVED' || (i.status as any) === 'DELIVERED')) {
+        overallStatus = 'SERVED';
+        activeAction = 'NONE';
+      } else {
+        // Some are READY – show as READY with TAYYOR already done, waiting for archive
+        overallStatus = 'READY';
+        activeAction = 'NONE';
+      }
     } else if (hasNewItems) {
       overallStatus = 'NEW';
-      activeAction = 'ACCEPT';
-    } else if (hasAcceptedItems) {
-      overallStatus = 'ACCEPTED';
-      activeAction = 'READY'; // CRITICAL RULE 11: NEVER SERVE while anything is accepted
+      activeAction = 'READY'; // Direct NEW → READY
     } else if (hasReadyItems) {
       overallStatus = 'READY';
-      activeAction = 'SERVE';
+      activeAction = 'NONE';
     } else {
       overallStatus = 'NEW';
-      activeAction = 'ACCEPT';
+      activeAction = 'READY';
     }
 
     return {
@@ -2763,11 +2764,11 @@ export class KitchenComponent implements OnInit, OnDestroy {
     return this.timeFilteredCards.filter(c => c.overallStatus !== 'SERVED').length;
   }
 
-  countCardsByStatus(status: 'NEW' | 'ACCEPTED' | 'READY' | 'SERVED'): number {
+  countCardsByStatus(status: 'NEW' | 'READY' | 'SERVED'): number {
     const cards = this.timeFilteredCards;
-    if (status === 'NEW') return cards.filter(c => c.hasNewItems && c.overallStatus !== 'SERVED').length;
-    if (status === 'ACCEPTED') return cards.filter(c => !c.hasNewItems && c.hasAcceptedItems && c.overallStatus !== 'SERVED').length;
-    if (status === 'READY') return cards.filter(c => !c.hasNewItems && !c.hasAcceptedItems && c.hasReadyItems && c.overallStatus !== 'SERVED').length;
+    // Simplified 2-step: NEW = has any non-ready non-served items; READY = all ready but not archived
+    if (status === 'NEW') return cards.filter(c => c.overallStatus === 'NEW').length;
+    if (status === 'READY') return cards.filter(c => c.overallStatus === 'READY').length;
     if (status === 'SERVED') return cards.filter(c => c.overallStatus === 'SERVED').length;
     return 0;
   }
@@ -2778,13 +2779,10 @@ export class KitchenComponent implements OnInit, OnDestroy {
       return cards.filter(c => c.overallStatus !== 'SERVED');
     }
     if (this.currentFilter === 'NEW') {
-      return cards.filter(c => c.hasNewItems && c.overallStatus !== 'SERVED');
-    }
-    if (this.currentFilter === 'ACCEPTED') {
-      return cards.filter(c => !c.hasNewItems && c.hasAcceptedItems && c.overallStatus !== 'SERVED');
+      return cards.filter(c => c.overallStatus === 'NEW');
     }
     if (this.currentFilter === 'READY') {
-      return cards.filter(c => !c.hasNewItems && !c.hasAcceptedItems && c.hasReadyItems && c.overallStatus !== 'SERVED');
+      return cards.filter(c => c.overallStatus === 'READY');
     }
     if (this.currentFilter === 'SERVED') {
       return cards.filter(c => c.overallStatus === 'SERVED');
@@ -2806,70 +2804,17 @@ export class KitchenComponent implements OnInit, OnDestroy {
     return list.slice(start, start + this.pageSize);
   }
 
-  // Action 1: QABUL QILISH (NEW -> ACCEPTED)
+  // Action 1 (unused in simplified UI, kept for backward compat): QABUL QILISH (NEW -> ACCEPTED)
   acceptTable(card: KitchenTableCard): void {
-    const kitchenId = this.selectedKitchen?.id;
-    const obs = card.tableId
-      ? this.kitchenService.updateTableStatus(card.tableId, 'ACCEPTED', kitchenId)
-      : this.kitchenService.updateOrderBatchesStatus(card.orderId, 'ACCEPTED', kitchenId);
-
-    obs.subscribe({
-      next: () => {
-        for (const batch of card.batches) {
-          if (batch.status === 'NEW' || (batch.status as any) === 'SENT_TO_KITCHEN') {
-            batch.status = 'ACCEPTED';
-          }
-          if (batch.items) {
-            batch.items.forEach(i => {
-              if (i.status === 'NEW' || (i.status as any) === 'SENT_TO_KITCHEN') {
-                i.status = 'ACCEPTED';
-              }
-            });
-          }
-        }
-        this.batches = [...this.batches];
-        this.cdr.markForCheck();
-        this.notify.success(`${card.tableName} buyurtmalari qabul qilindi`);
-      },
-      error: (err) => this.notify.error('Xatolik: ' + (err.error?.message || err.message))
-    });
+    // In simplified 2-step mode, "Accept" is never shown in UI.
+    // If somehow called, treat it as markTableReady.
+    this.markTableReady(card);
   }
 
-  // Action 2: TAYYOR (ACCEPTED -> READY)
+  // Action: TAYYOR (NEW -> SERVED directly in simplified 2-step mode)
   markTableReady(card: KitchenTableCard): void {
     const kitchenId = this.selectedKitchen?.id;
-    const obs = card.tableId
-      ? this.kitchenService.updateTableStatus(card.tableId, 'READY', kitchenId)
-      : this.kitchenService.updateOrderBatchesStatus(card.orderId, 'READY', kitchenId);
-
-    obs.subscribe({
-      next: () => {
-        const now = new Date().toISOString();
-        for (const batch of card.batches) {
-          if (batch.status !== 'SERVED' && batch.status !== 'DELIVERED' && batch.status !== 'CANCELLED') {
-            batch.status = 'READY';
-            batch.readyAt = now;
-          }
-          if (batch.items) {
-            batch.items.forEach(i => {
-              if (i.status !== 'SERVED' && i.status !== 'DELIVERED' && i.status !== 'CANCELLED') {
-                i.status = 'READY';
-                i.readyAt = now;
-              }
-            });
-          }
-        }
-        this.batches = [...this.batches];
-        this.cdr.markForCheck();
-        this.notify.success(`${card.tableName} tayyor deb belgilandi!`);
-      },
-      error: (err) => this.notify.error('Xatolik: ' + (err.error?.message || err.message))
-    });
-  }
-
-  // Action 3: TARQATILDI (READY -> SERVED)
-  markTableServed(card: KitchenTableCard): void {
-    const kitchenId = this.selectedKitchen?.id;
+    // Go directly to SERVED (skip ACCEPTED/READY intermediate steps)
     const obs = card.tableId
       ? this.kitchenService.updateTableStatus(card.tableId, 'SERVED', kitchenId)
       : this.kitchenService.updateOrderBatchesStatus(card.orderId, 'SERVED', kitchenId);
@@ -2880,25 +2825,32 @@ export class KitchenComponent implements OnInit, OnDestroy {
         for (const batch of card.batches) {
           if (batch.status !== 'CANCELLED') {
             batch.status = 'SERVED';
+            batch.readyAt = now;
             batch.servedAt = now;
           }
           if (batch.items) {
             batch.items.forEach(i => {
               if (i.status !== 'CANCELLED') {
                 i.status = 'SERVED';
+                i.readyAt = now;
               }
             });
           }
         }
         this.batches = [...this.batches];
         this.cdr.markForCheck();
-        this.notify.success(`${card.tableName} tarqatildi deb belgilandi!`);
+        this.notify.success(`${card.tableName} tayyor — tarixga o'tkazildi!`);
       },
       error: (err) => this.notify.error('Xatolik: ' + (err.error?.message || err.message))
     });
   }
 
-  // Revert action (from served back to ready)
+  // Archive action (kept for served state revert button)
+  markTableServed(card: KitchenTableCard): void {
+    this.markTableReady(card);
+  }
+
+  // Revert action (from served back to NEW/active)
   revertTableReady(card: KitchenTableCard): void {
     const kitchenId = this.selectedKitchen?.id;
     const obs = card.tableId
@@ -2908,29 +2860,29 @@ export class KitchenComponent implements OnInit, OnDestroy {
     obs.subscribe({
       next: () => {
         for (const batch of card.batches) {
-          batch.status = 'READY';
+          batch.status = 'NEW';
           if (batch.items) {
-            batch.items.forEach(i => i.status = 'READY');
+            batch.items.forEach(i => i.status = 'NEW');
           }
         }
         this.batches = [...this.batches];
         this.cdr.markForCheck();
-        this.notify.info(`${card.tableName} qayta tayyor holatiga o'tkazildi`);
+        this.notify.info(`${card.tableName} qayta faol holatiga o'tkazildi`);
       },
       error: (err) => this.notify.error('Xatolik: ' + (err.error?.message || err.message))
     });
   }
 
-  // Individual product item advancement
+  // Individual product item advancement: simplified NEW -> READY
   advanceProduct(card: KitchenTableCard, prod: KitchenAggregatedProduct): void {
-    let nextStatus: 'ACCEPTED' | 'READY' | 'SERVED';
-    const hasNew = prod.subItems.some(s => s.status === 'NEW' || (s.status as any) === 'SENT_TO_KITCHEN');
-    const hasAccepted = prod.subItems.some(s => s.status === 'ACCEPTED' || s.status === 'COOKING' || s.status === 'PREPARING');
+    let nextStatus: 'READY' | 'SERVED';
+    const isNew = prod.subItems.some(s =>
+      s.status === 'NEW' || (s.status as any) === 'SENT_TO_KITCHEN' ||
+      s.status === 'ACCEPTED' || s.status === 'COOKING' || s.status === 'PREPARING'
+    );
     const hasReady = prod.subItems.some(s => s.status === 'READY');
 
-    if (hasNew) {
-      nextStatus = 'ACCEPTED';
-    } else if (hasAccepted) {
+    if (isNew) {
       nextStatus = 'READY';
     } else if (hasReady) {
       nextStatus = 'SERVED';
@@ -2939,8 +2891,8 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     const targetItems = prod.subItems.filter(s => {
-      if (nextStatus === 'ACCEPTED') return s.status === 'NEW' || (s.status as any) === 'SENT_TO_KITCHEN';
-      if (nextStatus === 'READY') return s.status === 'ACCEPTED' || s.status === 'COOKING' || s.status === 'PREPARING';
+      if (nextStatus === 'READY') return s.status === 'NEW' || (s.status as any) === 'SENT_TO_KITCHEN' ||
+        s.status === 'ACCEPTED' || s.status === 'COOKING' || s.status === 'PREPARING';
       if (nextStatus === 'SERVED') return s.status === 'READY';
       return false;
     });
