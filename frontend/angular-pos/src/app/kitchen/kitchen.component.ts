@@ -2078,19 +2078,11 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   // Fullscreen State (30% scale-down view)
   isKdsFullscreen = false;
-  private savedPageSize = 12;
-
   // Time & Date Filter
   timePreset: 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'ALL' | 'CUSTOM' = 'TODAY';
   hourFilter: 'ALL' | '1H' | '3H' | '6H' = 'ALL';
   customDateFrom: string = '';
   customDateTo: string = '';
-
-  // Pagination
-  pageIndex = 0;
-  pageSize = 12;
-  pageSizeOptions = [12, 24, 48, 96];
-
   cancellationAlert: {
     orderNumber: string;
     tableName: string;
@@ -2115,7 +2107,6 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   setFilter(filter: 'ALL' | 'NEW' | 'READY' | 'SERVED'): void {
     this.currentFilter = filter;
-    this.pageIndex = 0;
     sessionStorage.setItem('kds_current_filter', filter);
     this.cdr.markForCheck();
   }
@@ -2197,13 +2188,8 @@ export class KitchenComponent implements OnInit, OnDestroy {
   toggleKdsFullscreen(): void {
     this.isKdsFullscreen = !this.isKdsFullscreen;
     if (this.isKdsFullscreen) {
-      this.savedPageSize = this.pageSize;
-      this.pageSize = 48; // Maximize visible cards on screen
-      this.pageIndex = 0;
       this.requestBrowserFullscreen();
     } else {
-      this.pageSize = this.savedPageSize;
-      this.pageIndex = 0;
       this.exitBrowserFullscreen();
     }
     this.cdr.markForCheck();
@@ -2214,7 +2200,6 @@ export class KitchenComponent implements OnInit, OnDestroy {
     const isNativeFs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
     if (!isNativeFs && this.isKdsFullscreen) {
       this.isKdsFullscreen = false;
-      this.pageSize = this.savedPageSize;
       this.cdr.markForCheck();
     }
   }
@@ -2285,7 +2270,6 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   selectKitchen(k: KitchenStation | null): void {
     this.selectedKitchen = k;
-    this.pageIndex = 0;
     sessionStorage.setItem('kds_selected_kitchen_id', k ? k.id : 'ALL');
     this.loadBatches();
     this.cdr.markForCheck();
@@ -2628,7 +2612,6 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   setTimePreset(preset: 'TODAY' | 'YESTERDAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'ALL' | 'CUSTOM'): void {
     this.timePreset = preset;
-    this.pageIndex = 0;
     if (preset === 'CUSTOM') {
       if (!this.customDateFrom) this.customDateFrom = this.getTodayDateString();
       if (!this.customDateTo) this.customDateTo = this.getTodayDateString();
@@ -2639,12 +2622,10 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   setHourFilter(hour: 'ALL' | '1H' | '3H' | '6H'): void {
     this.hourFilter = hour;
-    this.pageIndex = 0;
     this.cdr.markForCheck();
   }
 
   onCustomDateChange(): void {
-    this.pageIndex = 0;
     this.cdr.markForCheck();
   }
 
@@ -2781,19 +2762,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     return cards;
   }
 
-  onPageChange(event: PageEvent): void {
-    this.pageIndex = event.pageIndex;
-    this.pageSize = event.pageSize;
-  }
 
-  get pagedCards(): KitchenTableCard[] {
-    const list = this.filteredCards;
-    if (this.pageIndex * this.pageSize >= list.length && list.length > 0) {
-      this.pageIndex = Math.max(0, Math.ceil(list.length / this.pageSize) - 1);
-    }
-    const start = this.pageIndex * this.pageSize;
-    return list.slice(start, start + this.pageSize);
-  }
 
   // Action 1 (unused in simplified UI, kept for backward compat): QABUL QILISH (NEW -> ACCEPTED)
   acceptTable(card: KitchenTableCard): void {
