@@ -1,5 +1,6 @@
 import { Component, computed, Input, Output, EventEmitter, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ConnectionService } from '../../core/services/connection.service';
 import { LanStatusService } from '../../core/services/lan-status.service';
@@ -15,7 +16,7 @@ import { TranslationService } from '../../core/services/translation.service';
   template: `
     <header class="topbar" [class.collapsed]="sidebarCollapsed">
       <div class="topbar__left">
-        @if (!auth.isWaiter()) {
+        @if (!hasNoSidebar()) {
           <button type="button" class="topbar__hamburger" (click)="toggleMobileMenu.emit()" title="Menyuni ochish/yopish" aria-label="Menyu">
             <span class="hamburger-bar"></span>
             <span class="hamburger-bar"></span>
@@ -85,6 +86,16 @@ import { TranslationService } from '../../core/services/translation.service';
             <span class="topbar__user-role">{{ auth.user()?.role || auth.user()?.username }}</span>
           </div>
         </div>
+
+        <!-- Chiqish tugmasi (Faqat icon; ofitsiant va xodimlar uchun; adminga ko'rinmaydi) -->
+        @if (!auth.isAdmin() && !auth.isSuperAdmin()) {
+          <button type="button"
+                  class="topbar__logout-btn"
+                  (click)="logout()"
+                  title="Tizimdan chiqish">
+            <span class="topbar__logout-icon"><app-icon name="logout" [size]="17"></app-icon></span>
+          </button>
+        }
       </div>
     </header>
   `,
@@ -304,6 +315,42 @@ import { TranslationService } from '../../core/services/translation.service';
         }
       }
 
+      &__logout-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: 50%;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.08);
+        color: #ef4444;
+        cursor: pointer;
+        transition: all var(--transition);
+        user-select: none;
+        flex-shrink: 0;
+
+        .topbar__logout-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: inherit;
+        }
+
+        &:hover {
+          background: #ef4444;
+          color: #ffffff;
+          border-color: #ef4444;
+          box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+
       .latency-badge {
         background: rgba(16, 185, 129, 0.2);
         color: #34d399;
@@ -422,6 +469,11 @@ import { TranslationService } from '../../core/services/translation.service';
             display: none;
           }
         }
+
+        &__logout-btn {
+          width: 32px;
+          height: 32px;
+        }
       }
     }
   `]
@@ -445,6 +497,7 @@ export class TopbarComponent implements OnInit, OnDestroy {
 
   lan = inject(LanStatusService);
   theme = inject(ThemeService);
+  private router = inject(Router);
 
   constructor(public i18n: TranslationService, 
     public auth: AuthService,
@@ -494,6 +547,18 @@ export class TopbarComponent implements OnInit, OnDestroy {
     if (this.auth.isAdmin()) {
       this.openProfile.emit();
     }
+  }
+
+  isCook(): boolean {
+    const role = (this.auth.user()?.role || '').toUpperCase();
+    return this.auth.isKitchen() || role === 'COOK' || role === 'KITCHEN';
+  }
+
+  hasNoSidebar(): boolean {
+    if (this.auth.isAdmin() || this.auth.isSuperAdmin()) {
+      return false;
+    }
+    return this.auth.isWaiter() || this.isCook();
   }
 
   logout(): void {

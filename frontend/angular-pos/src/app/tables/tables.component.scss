@@ -1466,3 +1466,19 @@
     }
   }
 }
+
+.btn--danger-outline {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #ef4444 !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.35) !important;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08);
+
+  &:hover {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    transform: translateY(-1px);
+  }
+}
+

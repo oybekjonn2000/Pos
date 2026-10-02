@@ -50,8 +50,8 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
       <!-- FULL-SCREEN MODE: Canvas Constructor, no sidebar/topbar -->
       <router-outlet />
     } @else {
-      <div class="pos-layout" [class.no-sidebar]="auth.isWaiter()">
-        @if (!auth.isWaiter()) {
+      <div class="pos-layout" [class.no-sidebar]="hasNoSidebar()">
+        @if (!hasNoSidebar()) {
           <app-sidebar 
             [mobileOpen]="mobileMenuOpen"
             (closeMobile)="mobileMenuOpen = false"
@@ -63,7 +63,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           }
         }
 
-        <div class="pos-content" [class.sidebar-collapsed]="sidebarCollapsed" [class.no-sidebar]="auth.isWaiter()">
+        <div class="pos-content" [class.sidebar-collapsed]="sidebarCollapsed" [class.no-sidebar]="hasNoSidebar()">
           <app-topbar 
             [sidebarCollapsed]="sidebarCollapsed"
             (toggleMobileMenu)="mobileMenuOpen = !mobileMenuOpen"
@@ -540,7 +540,16 @@ export class ShellComponent {
 
   isCook(): boolean {
     const role = (this.auth.user()?.role || '').toUpperCase();
-    return role === 'COOK' || role === 'KITCHEN';
+    return this.auth.isKitchen() || role === 'COOK' || role === 'KITCHEN';
+  }
+
+  hasNoSidebar(): boolean {
+    // Admin yoki SuperAdmin bo'lsa, oshxona ekranida ham sidebar saqlanib qoladi
+    if (this.auth.isAdmin() || this.auth.isSuperAdmin()) {
+      return false;
+    }
+    // Faqat oshpaz yoki ofitsiant rolida sidebar bo'lmaydi
+    return this.auth.isWaiter() || this.isCook();
   }
 
   getUserInitials(): string {

@@ -1,5 +1,6 @@
 # Build outputs & large binaries - DO NOT commit
 dist/
+demo/
 desktop/electron/node_modules/
 desktop/electron/dist/
 

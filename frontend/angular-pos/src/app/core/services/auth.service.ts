@@ -107,7 +107,7 @@ export class AuthService {
   });
   readonly isKitchen = computed(() => {
     const role = (this._user()?.role || '').toUpperCase();
-    return role === 'KITCHEN' || role === 'ROLE_KITCHEN';
+    return role === 'KITCHEN' || role === 'ROLE_KITCHEN' || role === 'COOK' || role === 'ROLE_COOK' || role === 'CHEF';
   });
 
   isAdminUser(): boolean {

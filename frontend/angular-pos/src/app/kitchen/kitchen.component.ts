@@ -7,6 +7,7 @@ import { KitchenService, KitchenStation, KitchenOrderBatch, KitchenOrderBatchIte
 import { WebsocketService } from '../core/services/websocket.service';
 import { NotificationService } from '../core/services/notification.service';
 import { FeatureService } from '../core/services/feature.service';
+import { AuthService } from '../core/services/auth.service';
 import { AppIconComponent } from '../shared/components/icon/icon.component';
 import { TranslatePipe } from '../shared/pipes/translate.pipe';
 import { TranslationService } from '../core/services/translation.service';
@@ -129,6 +130,7 @@ export interface KitchenTableCard {
             <span class="fs-btn-badge" *ngIf="!isKdsFullscreen">-30%</span>
             <span class="fs-btn-esc" *ngIf="isKdsFullscreen">Esc</span>
           </button>
+
         </div>
       </div>
 
@@ -396,7 +398,7 @@ export interface KitchenTableCard {
             <button
               *ngIf="card.activeAction === 'READY'"
               class="kds-main-action-btn btn-ready"
-              (click)="markTableReady(card)">
+              (click)="promptMarkReady(card)">
               <app-icon name="check-circle" [size]="14"></app-icon> {{ 'kitchen.markReady' | translate }}
             </button>
 
@@ -416,6 +418,40 @@ export interface KitchenTableCard {
         </div>
       </div>
 
+      <!-- CONFIRMATION MODAL: TAYYORMI? (Ha / Yo'q) -->
+      <div class="kds-confirm-backdrop" *ngIf="cardToConfirm" (click)="cancelConfirmReady()">
+        <div class="kds-confirm-modal" (click)="$event.stopPropagation()">
+          <div class="confirm-icon-wrap">
+            <app-icon name="check-circle" [size]="36"></app-icon>
+          </div>
+          
+          <h2 class="confirm-title">Tayyormi?</h2>
+          
+          <p class="confirm-desc">
+            <span class="confirm-table-pill">{{ cardToConfirm.tableName }}</span>
+            <span *ngIf="cardToConfirm.orderNumber" class="confirm-order-pill">#{{ cardToConfirm.orderNumber }}</span>
+            <br>
+            buyurtma taomlari haqiqatan ham tayyormi?
+          </p>
+
+          <div class="confirm-actions">
+            <button
+              type="button"
+              class="btn-confirm-no"
+              (click)="cancelConfirmReady()">
+              <app-icon name="close" [size]="18"></app-icon>
+              <span>Yo'q</span>
+            </button>
+            <button
+              type="button"
+              class="btn-confirm-yes"
+              (click)="confirmMarkReady()">
+              <app-icon name="check" [size]="18"></app-icon>
+              <span>Ha</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
     </div>
     </ng-container>
@@ -793,6 +829,7 @@ export interface KitchenTableCard {
     .kds-filters {
       display: flex;
       background: var(--bg-tertiary);
+      border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 3px;
       gap: 2px;
@@ -2001,6 +2038,7 @@ export interface KitchenTableCard {
       }
     }
 
+
     .kds-container--fullscreen {
       position: fixed !important;
       inset: 0 !important;
@@ -2023,11 +2061,11 @@ export interface KitchenTableCard {
         z-index: 1000;
         padding: 10px 16px;
         margin-bottom: 12px;
-        background: rgba(15, 23, 42, 0.94);
+        background: var(--bg-card);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.08));
         border-radius: var(--radius-md, 12px);
       }
 
@@ -2066,10 +2104,151 @@ export interface KitchenTableCard {
         }
       }
     }
+
+    /* =========================================================
+     * CONFIRMATION MODAL: TAYYORMI? (Ha / Yo'q)
+     * ========================================================= */
+    .kds-confirm-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 1000001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeInBackdrop 0.2s ease-out;
+    }
+
+    .kds-confirm-modal {
+      width: 100%;
+      max-width: 400px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px 24px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.25);
+      animation: popInModal 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .confirm-icon-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.15);
+        border: 2px solid rgba(16, 185, 129, 0.4);
+        color: #10b981;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+      }
+
+      .confirm-title {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0 0 10px 0;
+        letter-spacing: -0.5px;
+      }
+
+      .confirm-desc {
+        font-size: 15px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+        margin: 0 0 24px 0;
+
+        .confirm-table-pill {
+          display: inline-block;
+          background: rgba(99, 102, 241, 0.15);
+          color: #818cf8;
+          padding: 3px 12px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 15px;
+          border: 1px solid rgba(99, 102, 241, 0.3);
+          margin-bottom: 6px;
+        }
+
+        .confirm-order-pill {
+          display: inline-block;
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          padding: 3px 10px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 13px;
+          margin-left: 6px;
+          border: 1px solid var(--border);
+        }
+      }
+
+      .confirm-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        width: 100%;
+
+        button {
+          min-height: 52px;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          user-select: none;
+          touch-action: manipulation;
+        }
+
+        .btn-confirm-no {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border);
+          color: var(--text-secondary);
+
+          &:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+
+        .btn-confirm-yes {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          border: 1px solid #10b981;
+          color: #ffffff;
+          box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+
+          &:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+            transform: translateY(-1px);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+      }
+    }
   `]
 })
 export class KitchenComponent implements OnInit, OnDestroy {
   public i18n = inject(TranslationService);
+  public auth = inject(AuthService);
   kitchens: KitchenStation[] = [];
   selectedKitchen: KitchenStation | null = null;
   batches: KitchenOrderBatch[] = [];
@@ -2093,6 +2272,9 @@ export class KitchenComponent implements OnInit, OnDestroy {
     timestamp: Date;
   } | null = null;
 
+  // Confirmation state for "Tayyormi?" (Ha / Yo'q)
+  cardToConfirm: KitchenTableCard | null = null;
+
   private wsUnsubs: (() => void)[] = [];
   private timerTick?: any;
   private isKdsStarted = false;
@@ -2109,6 +2291,10 @@ export class KitchenComponent implements OnInit, OnDestroy {
     this.currentFilter = filter;
     sessionStorage.setItem('kds_current_filter', filter);
     this.cdr.markForCheck();
+  }
+
+  logout(): void {
+    this.auth.logout();
   }
 
   ngOnInit(): void {
@@ -2206,9 +2392,37 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   onEscapePress(): void {
+    if (this.cardToConfirm) {
+      this.cancelConfirmReady();
+      return;
+    }
     if (this.isKdsFullscreen) {
       this.toggleKdsFullscreen();
     }
+  }
+
+  @HostListener('document:keydown.enter')
+  onEnterPress(): void {
+    if (this.cardToConfirm) {
+      this.confirmMarkReady();
+    }
+  }
+
+  promptMarkReady(card: KitchenTableCard): void {
+    this.cardToConfirm = card;
+    this.cdr.markForCheck();
+  }
+
+  cancelConfirmReady(): void {
+    this.cardToConfirm = null;
+    this.cdr.markForCheck();
+  }
+
+  confirmMarkReady(): void {
+    if (!this.cardToConfirm) return;
+    const card = this.cardToConfirm;
+    this.cardToConfirm = null;
+    this.markTableReady(card);
   }
 
   private requestBrowserFullscreen(): void {

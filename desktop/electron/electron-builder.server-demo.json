@@ -1,0 +1,45 @@
+{
+  "appId": "com.restaurantpos.server.demo",
+  "productName": "RestaurantPOS-Server",
+  "compression": "store",
+  "directories": {
+    "output": "../../dist/demo-server-build"
+  },
+  "files": [
+    "main.js",
+    "preload.js",
+    "splash.html",
+    "assets/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "../../frontend/angular-pos/dist/angular-pos/browser",
+      "to": "app",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "../../backend/restaurant-pos-api/target",
+      "to": "backend",
+      "filter": ["restaurant-pos-api-*.jar"]
+    },
+    {
+      "from": "../../installer/config/app-mode-server.json",
+      "to": "app-mode.json"
+    }
+  ],
+  "win": {
+    "signAndEditExecutable": false,
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/icon.ico",
+    "requestedExecutionLevel": "asInvoker"
+  },
+  "portable": {
+    "artifactName": "POS-Server-Demo.exe"
+  }
+}

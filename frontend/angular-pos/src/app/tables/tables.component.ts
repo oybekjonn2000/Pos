@@ -518,6 +518,10 @@ export class TablesComponent implements OnInit, OnDestroy {
     }
   }
 
+  logout(): void {
+    this.auth.logout();
+  }
+
   private setupWebSocket(): void {
     const user = this.auth.user();
     if (user?.tenantId) {
