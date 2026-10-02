@@ -22,6 +22,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     Optional<Order> findByIdAndTenantIdAndDeletedAtIsNull(UUID id, UUID tenantId);
 
+    Optional<Order> findByIdAndTenantId(UUID id, UUID tenantId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id AND o.tenant.id = :tenantId AND o.deletedAt IS NULL")
     Optional<Order> findByIdWithLock(@Param("id") UUID id, @Param("tenantId") UUID tenantId);

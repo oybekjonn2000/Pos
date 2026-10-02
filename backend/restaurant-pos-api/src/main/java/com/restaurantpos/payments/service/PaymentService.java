@@ -302,6 +302,16 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public List<PaymentDto.Response> getPaymentsByOrder(UUID tenantId, UUID orderId, com.restaurantpos.auth.security.UserPrincipal user) {
+        Order order = orderRepository.findByIdAndTenantId(orderId, tenantId)
+                .orElseThrow(() -> PosException.notFound("Order not found: " + orderId));
+        orderService.validateOrderOwnership(order, user);
+        return paymentRepository.findByOrderIdAndTenantId(orderId, tenantId).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public List<PaymentDto.Response> getPaymentsByOrder(UUID orderId) {
         return paymentRepository.findByOrderId(orderId).stream()
                 .map(this::toResponse)

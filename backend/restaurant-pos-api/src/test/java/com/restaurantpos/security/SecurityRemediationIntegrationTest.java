@@ -53,6 +53,13 @@ class SecurityRemediationIntegrationTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    @DisplayName("SEC-AUTH-03: Unauthenticated request to /api/payments/order/{id} must return 401 Unauthorized")
+    void unauthenticatedRequest_PaymentsByOrder_Returns401() throws Exception {
+        mockMvc.perform(get("/api/payments/order/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+    }
+
     // =========================================================================
     // 2. PRIVILEGE ESCALATION / RBAC (Broken Function Level Authorization)
     // =========================================================================

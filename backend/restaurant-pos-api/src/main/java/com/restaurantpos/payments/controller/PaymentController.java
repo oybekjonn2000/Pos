@@ -46,10 +46,12 @@ public class PaymentController {
     }
 
     @GetMapping("/order/{orderId}")
+    @PreAuthorize("hasAnyAuthority('CREATE_ORDER', 'EDIT_ORDER', 'PROCESS_PAYMENT', 'VIEW_ORDERS', 'ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_CASHIER', 'ROLE_WAITER')")
     @Operation(summary = "Get all payments for an order")
     public ResponseEntity<ApiResponse<List<PaymentDto.Response>>> getPaymentsByOrder(
-            @PathVariable UUID orderId) {
-        List<PaymentDto.Response> payments = paymentService.getPaymentsByOrder(orderId);
+            @PathVariable UUID orderId,
+            @AuthenticationPrincipal UserPrincipal user) {
+        List<PaymentDto.Response> payments = paymentService.getPaymentsByOrder(user.getTenantId(), orderId, user);
         return ResponseEntity.ok(ApiResponse.success(payments));
     }
 }

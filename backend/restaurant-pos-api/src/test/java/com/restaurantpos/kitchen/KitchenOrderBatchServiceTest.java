@@ -60,6 +60,12 @@ public class KitchenOrderBatchServiceTest {
     private WebSocketNotificationService wsNotification;
     @Mock
     private PrintRoutingService printRoutingService;
+    @Mock
+    private com.restaurantpos.payments.repository.PaymentRepository paymentRepository;
+    @Mock
+    private com.restaurantpos.debt.repository.DebtRepository debtRepository;
+    @Mock
+    private com.restaurantpos.settings.service.AuditLogService auditLogService;
 
     @InjectMocks
     private OrderService orderService;
@@ -125,6 +131,8 @@ public class KitchenOrderBatchServiceTest {
         });
 
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentRepository.findByOrderId(any())).thenReturn(Collections.emptyList());
+        when(debtRepository.findByTenantIdAndOrderIdAndDeletedAtIsNull(any(), any())).thenReturn(Optional.empty());
     }
 
     @Test
