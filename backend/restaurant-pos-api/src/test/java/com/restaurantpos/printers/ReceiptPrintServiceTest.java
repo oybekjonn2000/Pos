@@ -106,13 +106,15 @@ public class ReceiptPrintServiceTest {
         System.out.println(receiptText);
         System.out.println("=========================");
 
-        assertTrue(receiptText.contains("JAMI SUMMA:"), "Receipt must contain JAMI SUMMA");
-        assertTrue(receiptText.contains("16000 so'm"), "Receipt must contain 16000 so'm");
-        assertTrue(receiptText.contains("XIZMAT HAQI (10%):"), "Receipt must contain XIZMAT HAQI (10%)");
-        assertTrue(receiptText.contains("+1600 so'm"), "Receipt must contain +1600 so'm");
-        assertTrue(receiptText.contains("YAKUNIY SUMMA:"), "Receipt must contain YAKUNIY SUMMA");
-        assertTrue(receiptText.contains("17600 so'm"), "Receipt must contain 17600 so'm");
-        assertTrue(receiptText.contains("TO'LANGAN SUMMA:"), "Receipt must contain TO'LANGAN SUMMA");
+        assertTrue(receiptText.contains("Mahsulotlar summasi:"), "Receipt must contain Mahsulotlar summasi");
+        assertTrue(receiptText.contains("16 000 so'm"), "Receipt must contain 16 000 so'm");
+        assertTrue(receiptText.contains("Joy foizi (10%):"), "Receipt must contain Joy foizi (10%)");
+        assertTrue(receiptText.contains("+1 600 so'm"), "Receipt must contain +1 600 so'm");
+        assertTrue(receiptText.contains("JAMI TO'LOV:"), "Receipt must contain JAMI TO'LOV");
+        assertTrue(receiptText.contains("17 600 so'm"), "Receipt must contain 17 600 so'm");
+        assertTrue(receiptText.contains("TO'LANGAN"), "Receipt must contain TO'LANGAN");
+        assertTrue(receiptText.contains("OCHILDI:"), "Receipt must contain OCHILDI");
+        assertTrue(receiptText.contains("YOPILDI:"), "Receipt must contain YOPILDI");
     }
 
     @Test
@@ -132,10 +134,12 @@ public class ReceiptPrintServiceTest {
         System.out.println(receiptText);
         System.out.println("====================");
 
-        assertTrue(receiptText.contains("JAMI SUMMA:"));
-        assertTrue(receiptText.contains("CHEGIRMA(6%):"));
-        assertTrue(receiptText.contains("XIZMAT(10%):"));
-        assertTrue(receiptText.contains("YAKUNIY SUMMA:"));
-        assertTrue(receiptText.contains("16500 so'm"));
+        assertTrue(receiptText.contains("Mahsulotlar summasi:"));
+        assertTrue(receiptText.contains("Chegirma (6%):"));
+        assertTrue(receiptText.contains("Joy foizi (10%):"));
+        assertTrue(receiptText.contains("JAMI TO'LOV:"));
+        assertTrue(receiptText.contains("16 500 so'm"));
+        assertTrue(receiptText.contains("OCHILDI:"));
+        assertTrue(receiptText.contains("YOPILDI:"));
     }
 }

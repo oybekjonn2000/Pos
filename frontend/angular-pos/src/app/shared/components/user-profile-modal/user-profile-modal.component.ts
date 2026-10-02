@@ -778,6 +778,11 @@ export class UserProfileModalComponent implements OnInit {
   showConfirmPassword = false;
 
   ngOnInit(): void {
+    if (!this.auth.isAdmin()) {
+      this.notification.warning("Faqat administrator o'z ma'lumotlarini o'zgartira oladi.");
+      this.closed.emit();
+      return;
+    }
     this.loadProfile();
   }
 
@@ -830,6 +835,11 @@ export class UserProfileModalComponent implements OnInit {
 
   saveProfile(): void {
     this.errorMessage.set(null);
+
+    if (!this.auth.isAdmin()) {
+      this.errorMessage.set("Faqat administrator o'z ma'lumotlarini o'zgartira oladi.");
+      return;
+    }
 
     // Validations
     if (!this.firstName || !this.firstName.trim()) {

@@ -1,6 +1,7 @@
 package com.restaurantpos.users.controller;
 
 import com.restaurantpos.auth.security.UserPrincipal;
+import com.restaurantpos.common.exception.PosException;
 import com.restaurantpos.common.response.ApiResponse;
 import com.restaurantpos.users.dto.UserDto;
 import com.restaurantpos.users.service.UserService;
@@ -105,6 +106,9 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserDto.Response>> updateProfile(
             @AuthenticationPrincipal UserPrincipal user,
             @Valid @RequestBody UserDto.ProfileUpdateRequest request) {
+        if (!user.isAdmin()) {
+            throw PosException.forbidden("Faqat administrator o'z ma'lumotlarini yoki parolini o'zgartira oladi.");
+        }
         UserDto.Response response = userService.updateProfile(user.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success(response, "Profil ma'lumotlari muvaffaqiyatli yangilandi"));
     }
@@ -114,6 +118,9 @@ public class UserController {
     public ResponseEntity<ApiResponse<Void>> changePersonalPin(
             @AuthenticationPrincipal UserPrincipal user,
             @Valid @RequestBody UserDto.ChangePinRequest request) {
+        if (!user.isAdmin()) {
+            throw PosException.forbidden("Faqat administrator o'z PIN-kodini o'zgartira oladi.");
+        }
         userService.changeAdminPin(user.getUserId(), user.getTenantId(), request);
         return ResponseEntity.ok(ApiResponse.success(null, "PIN kod muvaffaqiyatli o'zgartirildi"));
     }

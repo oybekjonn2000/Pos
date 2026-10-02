@@ -72,7 +72,11 @@ import { TranslationService } from '../../core/services/translation.service';
         </div>
 
         <!-- User Profile (Admin block) -->
-        <div class="topbar__user" (click)="openProfile.emit()" [title]="auth.user()?.fullName || 'Foydalanuvchi'">
+        <div class="topbar__user"
+             [class.topbar__user--admin]="auth.isAdmin()"
+             [class.topbar__user--readonly]="!auth.isAdmin()"
+             (click)="onUserClick()"
+             [title]="auth.isAdmin() ? ((auth.user()?.fullName || 'Admin') + ' — Profilni tahrirlash') : (auth.user()?.fullName || 'Foydalanuvchi')">
           <div class="topbar__avatar">
             {{ getUserInitials() }}
           </div>
@@ -237,13 +241,27 @@ import { TranslationService } from '../../core/services/translation.service';
         border-radius: 100px;
         background: var(--bg-tertiary);
         border: 1px solid var(--border);
-        cursor: pointer;
         user-select: none;
         transition: all var(--transition);
 
-        &:hover {
-          background: var(--bg-hover);
-          border-color: var(--primary-light);
+        &--admin {
+          cursor: pointer;
+
+          &:hover {
+            background: var(--bg-hover);
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow-sm);
+          }
+        }
+
+        &--readonly {
+          cursor: default;
+
+          &:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border);
+            box-shadow: none;
+          }
         }
 
         .topbar__avatar {
@@ -470,6 +488,12 @@ export class TopbarComponent implements OnInit, OnDestroy {
   getUserInitials(): string {
     const name = this.auth.user()?.fullName ?? 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  onUserClick(): void {
+    if (this.auth.isAdmin()) {
+      this.openProfile.emit();
+    }
   }
 
   logout(): void {

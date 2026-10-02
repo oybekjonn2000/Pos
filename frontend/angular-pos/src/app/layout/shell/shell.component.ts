@@ -68,7 +68,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
             [sidebarCollapsed]="sidebarCollapsed"
             (toggleMobileMenu)="mobileMenuOpen = !mobileMenuOpen"
             (openLanSettings)="showLanModal = true"
-            (openProfile)="showEditProfileModal = true" />
+            (openProfile)="auth.isAdmin() ? (showEditProfileModal = true) : null" />
           <main class="pos-page" [class.pos-page--in-pos]="isInPos()">
             <router-outlet />
           </main>
@@ -152,17 +152,19 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
           </div>
 
           <div class="sheet-body">
-            <!-- Edit Profile Row -->
-            <div class="sheet-row" (click)="showProfileModal = false; showEditProfileModal = true">
-              <div class="sheet-row-info">
-                <span class="sheet-icon"><app-icon name="user" [size]="20"></app-icon></span>
-                <div>
-                  <div class="sheet-row-title">Profilni tahrirlash</div>
-                  <div class="sheet-row-sub">Ism, telefon, email, PIN va parol</div>
+            <!-- Edit Profile Row (Admin Only) -->
+            @if (auth.isAdmin()) {
+              <div class="sheet-row" (click)="showProfileModal = false; showEditProfileModal = true">
+                <div class="sheet-row-info">
+                  <span class="sheet-icon"><app-icon name="user" [size]="20"></app-icon></span>
+                  <div>
+                    <div class="sheet-row-title">Profilni tahrirlash</div>
+                    <div class="sheet-row-sub">Ism, telefon, email, PIN va parol</div>
+                  </div>
                 </div>
+                <span class="sheet-action-arrow"><app-icon name="arrow-right" [size]="16"></app-icon></span>
               </div>
-              <span class="sheet-action-arrow"><app-icon name="arrow-right" [size]="16"></app-icon></span>
-            </div>
+            }
 
             <!-- Language Row -->
             <div class="sheet-row" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border);">
@@ -208,8 +210,8 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
       </div>
     }
 
-    <!-- Edit User Profile Modal (Admin & SuperAdmin) -->
-    @if (showEditProfileModal) {
+    <!-- Edit User Profile Modal (Admin & SuperAdmin Only) -->
+    @if (showEditProfileModal && auth.isAdmin()) {
       <app-user-profile-modal (closed)="showEditProfileModal = false" />
     }
 

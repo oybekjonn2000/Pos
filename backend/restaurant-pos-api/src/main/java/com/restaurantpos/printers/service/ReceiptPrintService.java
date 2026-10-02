@@ -38,9 +38,20 @@ public class ReceiptPrintService {
         int maxChars = width == 58 ? 32 : 42;
 
         ZoneId zoneId = ZoneId.of("Asia/Tashkent");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(zoneId);
+
+        Instant openedTime = order.getOpenedAt() != null ? order.getOpenedAt() : Instant.now();
+        String openedStr = dtf.format(openedTime);
+
         Instant receiptTime = (payment != null && payment.getPaidAt() != null) ? payment.getPaidAt() : Instant.now();
-        String dateStr = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zoneId).format(receiptTime);
-        String timeStr = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(zoneId).format(receiptTime);
+        Instant closedTime = order.getClosedAt() != null
+                ? order.getClosedAt()
+                : (order.getPaidAt() != null
+                        ? order.getPaidAt()
+                        : (payment != null && payment.getPaidAt() != null
+                                ? payment.getPaidAt()
+                                : receiptTime));
+        String closedStr = dtf.format(closedTime);
 
         UUID tenantId = (order.getTenant() != null) ? order.getTenant().getId() : null;
 
@@ -149,7 +160,8 @@ public class ReceiptPrintService {
         if (isPaid && cashierName != null && !cashierName.isBlank()) {
             sb.append(String.format("KASSIR:       %s\n", cashierName));
         }
-        sb.append(String.format("SANA VA VAQT: %s  %s\n", dateStr, timeStr));
+        sb.append(String.format("OCHILDI:      %s\n", openedStr));
+        sb.append(String.format("YOPILDI:      %s\n", closedStr));
         sb.append(divider);
 
         if (width == 58) {

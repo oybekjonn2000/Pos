@@ -7,7 +7,7 @@
       </div>
       <div>
         <h1 class="mgmt-header__title">Restoran Konfiguratsiyasi va Boshqaruv</h1>
-        <p class="mgmt-header__subtitle">Zallar, stollar, menyu, oshxonalar, xodimlar va printerlar boshqaruv markazi</p>
+        <p class="mgmt-header__subtitle">Zallar, stollar, menyu, oshxonalar va printerlar boshqaruv markazi</p>
       </div>
     </div>
 
@@ -53,19 +53,9 @@
       <span>Printerlar</span>
       <span class="tab-badge">{{ printers().length }}</span>
     </button>
-    <a routerLink="/employees" class="mgmt-tab-btn">
-      <app-icon name="users" [size]="16"></app-icon>
-      <span>Xodimlar</span>
-      <app-icon name="arrow-up-right" [size]="12" class="opacity-50"></app-icon>
-    </a>
     <a routerLink="/restaurant/billing" class="mgmt-tab-btn">
       <app-icon name="credit-card" [size]="16"></app-icon>
       <span>Obuna & Tariflar</span>
-      <app-icon name="arrow-up-right" [size]="12" class="opacity-50"></app-icon>
-    </a>
-    <a routerLink="/settings" class="mgmt-tab-btn">
-      <app-icon name="settings" [size]="16"></app-icon>
-      <span>Tizim sozlamalari</span>
       <app-icon name="arrow-up-right" [size]="12" class="opacity-50"></app-icon>
     </a>
   </nav>
@@ -156,25 +146,6 @@
           </div>
         </div>
 
-        <!-- 5. Xodimlar Card -->
-        <div class="hub-card" [routerLink]="['/employees']">
-          <div class="hub-card__top">
-            <div class="hub-card__icon-wrap">
-              <app-icon name="users" [size]="28"></app-icon>
-            </div>
-            <span class="hub-card__pill">Xodimlar bazasi</span>
-          </div>
-          <div class="hub-card__body">
-            <h2 class="hub-card__title">Xodimlar</h2>
-            <p class="hub-card__desc">Ofitsiantlar, oshpazlar, kassirlar va administratorlar hisoblari, PIN-kodlar va ruxsatlar</p>
-          </div>
-          <div class="hub-card__footer">
-            <button class="mgmt-btn mgmt-btn--primary mgmt-btn--full">
-              <span>Boshqarish</span>
-              <app-icon name="arrow-right" [size]="14"></app-icon>
-            </button>
-          </div>
-        </div>
 
         <!-- 6. Printerlar Card -->
         <div class="hub-card" (click)="setTab('printers')">
