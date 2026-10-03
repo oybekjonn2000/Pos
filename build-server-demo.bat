@@ -11,6 +11,28 @@ echo.
 set "ROOT_DIR=%~dp0"
 cd /d "%ROOT_DIR%"
 
+:: 0. Muhit o'zgaruvchilari va asboblarni avtomatik aniqlash (JDK 21, Maven, Node)
+if not defined JAVA_HOME (
+    if exist "C:\Program Files\Java\jdk-21.0.12.1" set "JAVA_HOME=C:\Program Files\Java\jdk-21.0.12.1"
+    if exist "C:\Program Files\Java\latest" set "JAVA_HOME=C:\Program Files\Java\latest"
+    if exist "C:\Program Files\Java\jdk-21" set "JAVA_HOME=C:\Program Files\Java\jdk-21"
+    if exist "C:\Program Files\Java\jdk-21.0.12" set "JAVA_HOME=C:\Program Files\Java\jdk-21.0.12"
+    if exist "%USERPROFILE%\.jdks\jbr-21.0.11" set "JAVA_HOME=%USERPROFILE%\.jdks\jbr-21.0.11"
+)
+if defined JAVA_HOME set "PATH=%JAVA_HOME%\bin;%PATH%"
+if exist "C:\apache-maven-3.9.16\bin" set "PATH=C:\apache-maven-3.9.16\bin;%PATH%"
+if exist "%USERPROFILE%\tools\apache-maven-3.9.9\bin" set "PATH=%USERPROFILE%\tools\apache-maven-3.9.9\bin;%PATH%"
+
+set "MVN_CMD=mvn.cmd"
+where mvn.cmd >nul 2>&1
+if %errorlevel% neq 0 (
+    if exist "%ROOT_DIR%backend\restaurant-pos-api\mvnw.cmd" (
+        set "MVN_CMD=%ROOT_DIR%backend\restaurant-pos-api\mvnw.cmd"
+    ) else (
+        set "MVN_CMD=mvn"
+    )
+)
+
 :: 1. Ishlayotgan eski demo jarayonlarini xavfsiz to'xtatish
 echo [1/5] Ishlayotgan eski demo jarayonlarini to'xtatish...
 taskkill /F /IM POS-Server-Demo.exe /T >nul 2>&1
@@ -23,7 +45,7 @@ timeout /t 1 /nobreak >nul
 echo.
 echo [2/5] Backend Spring Boot paketi (JAR) tayyorlanmoqda...
 cd /d "%ROOT_DIR%backend\restaurant-pos-api"
-call mvn.cmd package -DskipTests
+call %MVN_CMD% package -DskipTests
 if %errorlevel% neq 0 (
     echo.
     echo ========================================================

@@ -1,3 +1,8 @@
+param(
+    [ValidateSet("all", "server", "client", "standalone")]
+    [string]$Target = "all"
+)
+
 # ========================================================
 # RESTAURANT POS — MASTER OFFLINE INSTALLER BUILD SCRIPT
 # Generates a 100% self-contained Windows setup executable
@@ -7,38 +12,20 @@ $ErrorActionPreference = "Stop"
 $ROOT_DIR = (Get-Item $PSScriptRoot).Parent.FullName
 
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host "    RESTAURANT POS - FULL DESKTOP INSTALLER BUILD" -ForegroundColor Cyan
+Write-Host "    RESTAURANT POS - WINDOWS INSTALLER BUILD" -ForegroundColor Cyan
+Write-Host "    Target: $($Target.ToUpper())" -ForegroundColor Yellow
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "Root Directory: $ROOT_DIR"
 
 # 0. Locate Tools & Paths
-$JDK_CANDIDATES = @(
-    "C:\Program Files\Java\jdk-21.0.12",
-    "C:\Program Files\Java\jdk-21",
-    "C:\Program Files\Java\jdk-21.0.12.1",
-    $env:JAVA_HOME
-)
-$JDK_DIR = $JDK_CANDIDATES | Where-Object { $_ -and (Test-Path "$_\bin\jlink.exe") } | Select-Object -First 1
-if (-not $JDK_DIR) {
-    throw "JDK 21 not found! Checked: $($JDK_CANDIDATES -join ', ')"
-}
-
-$PG_CANDIDATES = @(
-    "C:\Program Files\PostgreSQL\18",
-    "C:\Program Files\PostgreSQL\17",
-    "C:\Program Files\PostgreSQL\16"
-)
-$PG_DIR = $PG_CANDIDATES | Where-Object { $_ -and (Test-Path "$_\bin\postgres.exe") } | Select-Object -First 1
-if (-not $PG_DIR) {
-    throw "PostgreSQL 18 not found!"
-}
-
 $ISCC_CANDIDATES = @(
     "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+    "C:\Users\Steam\AppData\Local\Programs\Inno Setup 6\ISCC.exe",
     "C:\Users\User\AppData\Local\Programs\Inno Setup 6\ISCC.exe",
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+    "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
     "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    "C:\Program Files\Inno Setup 6\ISCC.exe",
-    "C:\Users\Steam\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
+    "C:\Program Files\Inno Setup 6\ISCC.exe"
 )
 $ISCC_EXE = $ISCC_CANDIDATES | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if (-not $ISCC_EXE) {
@@ -46,7 +33,37 @@ if (-not $ISCC_EXE) {
     if ($cmd) { $ISCC_EXE = $cmd.Source }
 }
 if (-not $ISCC_EXE) {
-    throw "Inno Setup Compiler (ISCC.exe) not found!"
+    throw "Inno Setup Compiler (ISCC.exe) not found! Please install Inno Setup 6."
+}
+Write-Host "Inno Setup Compiler: $ISCC_EXE" -ForegroundColor DarkGray
+
+$JDK_DIR = $null
+$PG_DIR = $null
+
+if ($Target -ne "client") {
+    $JDK_CANDIDATES = @(
+        "C:\Program Files\Java\jdk-21.0.12.1",
+        "C:\Program Files\Java\latest",
+        "C:\Program Files\Java\jdk-21",
+        "C:\Program Files\Java\jdk-21.0.12",
+        $env:JAVA_HOME
+    )
+    $JDK_DIR = $JDK_CANDIDATES | Where-Object { $_ -and (Test-Path "$_\bin\jlink.exe") } | Select-Object -First 1
+    if (-not $JDK_DIR) {
+        throw "JDK 21 not found! Checked: $($JDK_CANDIDATES -join ', ')"
+    }
+    Write-Host "JDK 21 Directory: $JDK_DIR" -ForegroundColor DarkGray
+
+    $PG_CANDIDATES = @(
+        "C:\Program Files\PostgreSQL\18",
+        "C:\Program Files\PostgreSQL\17",
+        "C:\Program Files\PostgreSQL\16"
+    )
+    $PG_DIR = $PG_CANDIDATES | Where-Object { $_ -and (Test-Path "$_\bin\postgres.exe") } | Select-Object -First 1
+    if (-not $PG_DIR) {
+        throw "PostgreSQL (18/17/16) not found!"
+    }
+    Write-Host "PostgreSQL Directory: $PG_DIR" -ForegroundColor DarkGray
 }
 
 $STAGING_DIR = Join-Path $ROOT_DIR "dist\staging"
@@ -65,53 +82,59 @@ Set-Location (Join-Path $ROOT_DIR "frontend\angular-pos")
 if ($LASTEXITCODE -ne 0) { throw "Angular build failed!" }
 
 # ========================================================
-# 2. Build Spring Boot Backend Fat JAR
+# 2. Build Spring Boot Backend Fat JAR (Server & Standalone)
 # ========================================================
-Write-Host "`n[2/6] Building Spring Boot Fat JAR..." -ForegroundColor Green
-Set-Location (Join-Path $ROOT_DIR "backend\restaurant-pos-api")
-$env:JAVA_HOME = $JDK_DIR
-$env:PATH = "$JDK_DIR\bin;$env:PATH"
-if (Test-Path ".\mvnw.cmd") {
-    & .\mvnw.cmd package -DskipTests
+if ($Target -ne "client") {
+    Write-Host "`n[2/6] Building Spring Boot Fat JAR..." -ForegroundColor Green
+    Set-Location (Join-Path $ROOT_DIR "backend\restaurant-pos-api")
+    $env:JAVA_HOME = $JDK_DIR
+    $env:PATH = "$JDK_DIR\bin;$env:PATH"
+    if (Test-Path ".\mvnw.cmd") {
+        & .\mvnw.cmd package -DskipTests
+    } else {
+        & mvn package -DskipTests
+    }
+    if ($LASTEXITCODE -ne 0) { throw "Backend Maven package failed!" }
+
+    $JAR_FILE = Get-ChildItem (Join-Path $ROOT_DIR "backend\restaurant-pos-api\target") -Filter "*.jar" | Where-Object { $_.Name -notlike "*sources*" -and $_.Name -notlike "*.original" } | Select-Object -First 1
+    if (-not $JAR_FILE) { throw "Spring Boot JAR not found in target!" }
+    Write-Host "Found Backend JAR: $($JAR_FILE.Name) ($([math]::Round($JAR_FILE.Length / 1MB, 2)) MB)"
+
+    # ========================================================
+    # 3. Create Custom Bundled JRE 21 with jlink
+    # ========================================================
+    $JRE_OUT = Join-Path $STAGING_DIR "jre"
+    if (-not (Test-Path "$JRE_OUT\bin\java.exe")) {
+        Write-Host "`n[3/6] Generating Custom Bundled JRE 21 via jlink..." -ForegroundColor Green
+        $JLINK_MODULES = "java.base,java.desktop,java.sql,java.naming,java.management,java.instrument,java.security.jgss,java.net.http,java.compiler,java.rmi,jdk.crypto.ec,jdk.unsupported"
+        & "$JDK_DIR\bin\jlink.exe" --module-path "$JDK_DIR\jmods" --add-modules $JLINK_MODULES --output $JRE_OUT --strip-debug --no-man-pages --no-header-files
+        if ($LASTEXITCODE -ne 0) { throw "jlink JRE generation failed!" }
+        Write-Host "Bundled JRE generated at: $JRE_OUT"
+    } else {
+        Write-Host "`n[3/6] Bundled JRE 21 already exists at: $JRE_OUT" -ForegroundColor Green
+    }
+
+    # ========================================================
+    # 4. Bundle Portable PostgreSQL Binaries
+    # ========================================================
+    $PG_OUT = Join-Path $STAGING_DIR "pgsql"
+    if (-not (Test-Path "$PG_OUT\bin\postgres.exe")) {
+        Write-Host "`n[4/6] Bundling Portable PostgreSQL binaries..." -ForegroundColor Green
+        New-Item -ItemType Directory -Force (Join-Path $PG_OUT "bin") | Out-Null
+        New-Item -ItemType Directory -Force (Join-Path $PG_OUT "lib") | Out-Null
+        New-Item -ItemType Directory -Force (Join-Path $PG_OUT "share") | Out-Null
+
+        Copy-Item "$PG_DIR\bin\*" (Join-Path $PG_OUT "bin") -Recurse -Force
+        Copy-Item "$PG_DIR\lib\*" (Join-Path $PG_OUT "lib") -Recurse -Force
+        Copy-Item "$PG_DIR\share\*" (Join-Path $PG_OUT "share") -Recurse -Force
+        Write-Host "PostgreSQL binaries bundled at: $PG_OUT"
+    } else {
+        Write-Host "`n[4/6] PostgreSQL binaries already bundled at: $PG_OUT" -ForegroundColor Green
+    }
 } else {
-    & mvn package -DskipTests
-}
-if ($LASTEXITCODE -ne 0) { throw "Backend Maven package failed!" }
-
-$JAR_FILE = Get-ChildItem (Join-Path $ROOT_DIR "backend\restaurant-pos-api\target") -Filter "*.jar" | Where-Object { $_.Name -notlike "*sources*" -and $_.Name -notlike "*.original" } | Select-Object -First 1
-if (-not $JAR_FILE) { throw "Spring Boot JAR not found in target!" }
-Write-Host "Found Backend JAR: $($JAR_FILE.Name) ($([math]::Round($JAR_FILE.Length / 1MB, 2)) MB)"
-
-# ========================================================
-# 3. Create Custom Bundled JRE 21 with jlink
-# ========================================================
-$JRE_OUT = Join-Path $STAGING_DIR "jre"
-if (-not (Test-Path "$JRE_OUT\bin\java.exe")) {
-    Write-Host "`n[3/6] Generating Custom Bundled JRE 21 via jlink..." -ForegroundColor Green
-    $JLINK_MODULES = "java.base,java.desktop,java.sql,java.naming,java.management,java.instrument,java.security.jgss,java.net.http,java.compiler,java.rmi,jdk.crypto.ec,jdk.unsupported"
-    & "$JDK_DIR\bin\jlink.exe" --module-path "$JDK_DIR\jmods" --add-modules $JLINK_MODULES --output $JRE_OUT --strip-debug --no-man-pages --no-header-files
-    if ($LASTEXITCODE -ne 0) { throw "jlink JRE generation failed!" }
-    Write-Host "Bundled JRE generated at: $JRE_OUT"
-} else {
-    Write-Host "`n[3/6] Bundled JRE 21 already exists at: $JRE_OUT" -ForegroundColor Green
-}
-
-# ========================================================
-# 4. Bundle Portable PostgreSQL 18 Binaries
-# ========================================================
-$PG_OUT = Join-Path $STAGING_DIR "pgsql"
-if (-not (Test-Path "$PG_OUT\bin\postgres.exe")) {
-    Write-Host "`n[4/6] Bundling Portable PostgreSQL 18 binaries..." -ForegroundColor Green
-    New-Item -ItemType Directory -Force (Join-Path $PG_OUT "bin") | Out-Null
-    New-Item -ItemType Directory -Force (Join-Path $PG_OUT "lib") | Out-Null
-    New-Item -ItemType Directory -Force (Join-Path $PG_OUT "share") | Out-Null
-
-    Copy-Item "$PG_DIR\bin\*" (Join-Path $PG_OUT "bin") -Recurse -Force
-    Copy-Item "$PG_DIR\lib\*" (Join-Path $PG_OUT "lib") -Recurse -Force
-    Copy-Item "$PG_DIR\share\*" (Join-Path $PG_OUT "share") -Recurse -Force
-    Write-Host "PostgreSQL binaries bundled at: $PG_OUT"
-} else {
-    Write-Host "`n[4/6] PostgreSQL binaries already bundled at: $PG_OUT" -ForegroundColor Green
+    Write-Host "`n[2/6] Client mode: Skipping Spring Boot JAR build." -ForegroundColor DarkGray
+    Write-Host "[3/6] Client mode: Skipping bundled JRE generation." -ForegroundColor DarkGray
+    Write-Host "[4/6] Client mode: Skipping PostgreSQL bundling." -ForegroundColor DarkGray
 }
 
 # ========================================================
@@ -123,66 +146,77 @@ Set-Location (Join-Path $ROOT_DIR "desktop\electron")
 if ($LASTEXITCODE -ne 0) { throw "Electron pack failed!" }
 
 # ========================================================
-# 6. Compile Inno Setup Installers (Server, Client & Standalone)
+# 6. Compile Inno Setup Installers
 # ========================================================
 Write-Host "`n[6/6] Compiling Offline Installers with Inno Setup..." -ForegroundColor Green
 Set-Location (Join-Path $ROOT_DIR "installer")
 
 # 6A. Compile Server Installer
-Write-Host "  -> Compiling Server Installer (PostgreSQL + JRE + Spring Boot)..." -ForegroundColor Cyan
-& "$ISCC_EXE" "RestaurantPOS-Server.iss"
-if ($LASTEXITCODE -ne 0) { throw "Server Inno Setup compilation failed!" }
+if ($Target -eq "all" -or $Target -eq "server") {
+    Write-Host "  -> Compiling Server Installer (PostgreSQL + JRE + Spring Boot)..." -ForegroundColor Cyan
+    & "$ISCC_EXE" "RestaurantPOS-Server.iss"
+    if ($LASTEXITCODE -ne 0) { throw "Server Inno Setup compilation failed!" }
 
-$SERVER_SETUP = Join-Path $DIST_INSTALLER "RestaurantPOS-Server-Setup-1.0.0.exe"
-$SERVER_ALT = Join-Path $DIST_INSTALLER "POS-Server-Setup.exe"
-if (Test-Path $SERVER_SETUP) {
-    Copy-Item $SERVER_SETUP $SERVER_ALT -Force
+    $SERVER_SETUP = Join-Path $DIST_INSTALLER "RestaurantPOS-Server-Setup-1.0.0.exe"
+    $SERVER_ALT = Join-Path $DIST_INSTALLER "POS-Server-Setup.exe"
+    if (Test-Path $SERVER_SETUP) {
+        Copy-Item $SERVER_SETUP $SERVER_ALT -Force
+    }
 }
 
 # 6B. Compile Client Installer
-Write-Host "  -> Compiling Client Installer (Lightweight Desktop Terminal)..." -ForegroundColor Cyan
-& "$ISCC_EXE" "RestaurantPOS-Client.iss"
-if ($LASTEXITCODE -ne 0) { throw "Client Inno Setup compilation failed!" }
+if ($Target -eq "all" -or $Target -eq "client") {
+    Write-Host "  -> Compiling Client Installer (Lightweight Desktop Terminal)..." -ForegroundColor Cyan
+    & "$ISCC_EXE" "RestaurantPOS-Client.iss"
+    if ($LASTEXITCODE -ne 0) { throw "Client Inno Setup compilation failed!" }
 
-$CLIENT_SETUP = Join-Path $DIST_INSTALLER "RestaurantPOS-Client-Setup-1.0.0.exe"
-$CLIENT_ALT = Join-Path $DIST_INSTALLER "POS-Client-Setup.exe"
-if (Test-Path $CLIENT_SETUP) {
-    Copy-Item $CLIENT_SETUP $CLIENT_ALT -Force
+    $CLIENT_SETUP = Join-Path $DIST_INSTALLER "RestaurantPOS-Client-Setup-1.0.0.exe"
+    $CLIENT_ALT = Join-Path $DIST_INSTALLER "POS-Client-Setup.exe"
+    if (Test-Path $CLIENT_SETUP) {
+        Copy-Item $CLIENT_SETUP $CLIENT_ALT -Force
+    }
 }
 
 # 6C. Compile Standalone Installer
-Write-Host "  -> Compiling Standalone POS Installer..." -ForegroundColor Cyan
-& "$ISCC_EXE" "RestaurantPOS.iss"
-if ($LASTEXITCODE -ne 0) { throw "Standalone Inno Setup compilation failed!" }
+if ($Target -eq "all" -or $Target -eq "standalone") {
+    Write-Host "  -> Compiling Standalone POS Installer..." -ForegroundColor Cyan
+    & "$ISCC_EXE" "RestaurantPOS.iss"
+    if ($LASTEXITCODE -ne 0) { throw "Standalone Inno Setup compilation failed!" }
 
-$STANDALONE_SETUP = Join-Path $DIST_INSTALLER "RestaurantPOS-Setup-1.0.0.exe"
-$STANDALONE_ALT = Join-Path $DIST_INSTALLER "POS-Setup.exe"
-if (Test-Path $STANDALONE_SETUP) {
-    Copy-Item $STANDALONE_SETUP $STANDALONE_ALT -Force
+    $STANDALONE_SETUP = Join-Path $DIST_INSTALLER "RestaurantPOS-Setup-1.0.0.exe"
+    $STANDALONE_ALT = Join-Path $DIST_INSTALLER "POS-Setup.exe"
+    if (Test-Path $STANDALONE_SETUP) {
+        Copy-Item $STANDALONE_SETUP $STANDALONE_ALT -Force
+    }
 }
 
 Write-Host "`n========================================================" -ForegroundColor Cyan
-Write-Host "    ALL WINDOWS DESKTOP INSTALLERS BUILT SUCCESSFULLY!" -ForegroundColor Cyan
+Write-Host "    WINDOWS DESKTOP INSTALLER(S) BUILT SUCCESSFULLY!" -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 
-if (Test-Path $SERVER_SETUP) {
-    $serverSize = [math]::Round((Get-Item $SERVER_SETUP).Length / 1MB, 2)
+$SERVER_EXE = Join-Path $DIST_INSTALLER "POS-Server-Setup.exe"
+$CLIENT_EXE = Join-Path $DIST_INSTALLER "POS-Client-Setup.exe"
+$STAND_EXE = Join-Path $DIST_INSTALLER "POS-Setup.exe"
+
+if (Test-Path $SERVER_EXE) {
+    $serverSize = [math]::Round((Get-Item $SERVER_EXE).Length / 1MB, 2)
     Write-Host "Central Server Installer (Admin / Kassa PC):" -ForegroundColor Green
-    Write-Host "  -> $SERVER_SETUP ($serverSize MB)" -ForegroundColor Yellow
+    Write-Host "  -> $SERVER_EXE ($serverSize MB)" -ForegroundColor Yellow
 }
 
-if (Test-Path $CLIENT_SETUP) {
-    $clientSize = [math]::Round((Get-Item $CLIENT_SETUP).Length / 1MB, 2)
+if (Test-Path $CLIENT_EXE) {
+    $clientSize = [math]::Round((Get-Item $CLIENT_EXE).Length / 1MB, 2)
     Write-Host "`nClient Terminal Installer (Ofitsiant / Oshxona PC):" -ForegroundColor Green
-    Write-Host "  -> $CLIENT_SETUP ($clientSize MB)" -ForegroundColor Yellow
+    Write-Host "  -> $CLIENT_EXE ($clientSize MB)" -ForegroundColor Yellow
 }
 
-if (Test-Path $STANDALONE_SETUP) {
-    $standSize = [math]::Round((Get-Item $STANDALONE_SETUP).Length / 1MB, 2)
+if (Test-Path $STAND_EXE) {
+    $standSize = [math]::Round((Get-Item $STAND_EXE).Length / 1MB, 2)
     Write-Host "`nStandalone Single-PC Installer:" -ForegroundColor Green
-    Write-Host "  -> $STANDALONE_SETUP ($standSize MB)" -ForegroundColor Yellow
+    Write-Host "  -> $STAND_EXE ($standSize MB)" -ForegroundColor Yellow
 }
 
 Write-Host "`nReady for deployment!" -ForegroundColor White
 Set-Location $ROOT_DIR
+
 

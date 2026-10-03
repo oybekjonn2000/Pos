@@ -1,5 +1,5 @@
 @echo off
-title Restaurant POS - Build & Run Demo
+title Restaurant POS - Build and Run Demo
 echo ========================================================
 echo    RESTAURANT POS - BUILD AND RUN DEMO WORKFLOW
 echo ========================================================

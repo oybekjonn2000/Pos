@@ -10,22 +10,67 @@ echo.
 set "ROOT_DIR=%~dp0"
 cd /d "%ROOT_DIR%"
 
+:: 0. Muhit o'zgaruvchilari va asboblarni avtomatik aniqlash (JDK 21, Maven, Node)
+if not defined JAVA_HOME (
+    if exist "C:\Program Files\Java\jdk-21.0.12.1" set "JAVA_HOME=C:\Program Files\Java\jdk-21.0.12.1"
+    if exist "C:\Program Files\Java\latest" set "JAVA_HOME=C:\Program Files\Java\latest"
+    if exist "C:\Program Files\Java\jdk-21" set "JAVA_HOME=C:\Program Files\Java\jdk-21"
+    if exist "C:\Program Files\Java\jdk-21.0.12" set "JAVA_HOME=C:\Program Files\Java\jdk-21.0.12"
+    if exist "%USERPROFILE%\.jdks\jbr-21.0.11" set "JAVA_HOME=%USERPROFILE%\.jdks\jbr-21.0.11"
+)
+if defined JAVA_HOME set "PATH=%JAVA_HOME%\bin;%PATH%"
+if exist "C:\apache-maven-3.9.16\bin" set "PATH=C:\apache-maven-3.9.16\bin;%PATH%"
+if exist "%USERPROFILE%\tools\apache-maven-3.9.9\bin" set "PATH=%USERPROFILE%\tools\apache-maven-3.9.9\bin;%PATH%"
+if exist "%LOCALAPPDATA%\Programs\Inno Setup 6" set "PATH=%LOCALAPPDATA%\Programs\Inno Setup 6;%PATH%"
+
 set "CHOICE=1"
 if "%~1"=="--client" goto build_client
 if "%~1"=="--server" goto build_server
+if "%~1"=="--installer" goto build_installer
+if "%~1"=="--all" goto build_all
 if "%~1"=="--no-pause" goto build_server
 
-echo Qaysi demo versiyani yaratmoqchisiz?
-echo  [1] SERVER DEMO (Spring Boot + PostgreSQL + Desktop UI) [STANDART]
-echo  [2] CLIENT DEMO (Faqat frontend terminal, tashqi serverga ulanish)
+echo Qaysi dastur yoki ornatuvchini yaratmoqchisiz:
+echo  [1] SERVER DEMO [Spring Boot + PostgreSQL + Desktop UI Portable EXE] (STANDART)
+echo  [2] CLIENT DEMO [Faqat frontend terminal Portable EXE]
+echo  [3] WINDOWS DESKTOP INSTALLER [To'liq Setup.exe O'rnatuvchi - Server va Client]
+echo  [4] BARCHASINI YARATISH [Demo EXE + Windows Installer]
 echo.
-set /p "CHOICE=Tanlovingiz [1/2] (Standart: 1): "
+set /p "CHOICE=Tanlovingiz [1/2/3/4] (Standart: 1): "
 if "%CHOICE%"=="" set "CHOICE=1"
 
 if "%CHOICE%"=="2" goto build_client
+if "%CHOICE%"=="3" goto build_installer
+if "%CHOICE%"=="4" goto build_all
 
 :build_server
 call "%ROOT_DIR%build-server-demo.bat" %*
+exit /b %errorlevel%
+
+:build_installer
+call "%ROOT_DIR%build-installer.bat" %*
+exit /b %errorlevel%
+
+:build_all
+echo.
+echo ========================================================
+echo [1/3] Server Demo EXE yaratilmoqda...
+echo ========================================================
+call "%ROOT_DIR%build-server-demo.bat" --no-pause
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+echo.
+echo ========================================================
+echo [2/3] Client Demo EXE yaratilmoqda...
+echo ========================================================
+call "%ROOT_DIR%build-demo.bat" --client
+if %errorlevel% neq 0 exit /b %errorlevel%
+
+echo.
+echo ========================================================
+echo [3/3] Windows Setup Installer(lar) yaratilmoqda...
+echo ========================================================
+call "%ROOT_DIR%build-installer.bat" --all
 exit /b %errorlevel%
 
 :build_client
